@@ -252,16 +252,20 @@ Service completed for: {description}
     thread.start()
 
 def deliver_to_client(order_id, deliverable):
-    """Deliver completed service to client"""
+    """Deliver completed service to client (Store & Forward pattern)"""
     order = orders[order_id]
     delivery_endpoint = order.get('delivery_endpoint')
 
-    if not delivery_endpoint:
-        print(f"❌ No delivery endpoint for order {order_id}")
-        return
-
     # Create content hash
     content_hash = create_content_hash(deliverable['content'])
+
+    # ALWAYS save deliverable first (store & forward)
+    order['deliverable'] = deliverable
+    order['content_hash'] = content_hash
+    order['completed_at'] = datetime.utcnow().isoformat()
+    save_orders(orders)
+
+    print(f"📦 Service {order_id} completed and saved")
 
     # Create delivery payload
     payload = {
@@ -278,26 +282,28 @@ def deliver_to_client(order_id, deliverable):
         'content_hash': content_hash
     }
 
-    try:
-        # Send to client
-        response = requests.post(delivery_endpoint, json=payload, timeout=30)
+    # Try P2P delivery if endpoint provided (optional optimization)
+    if delivery_endpoint:
+        try:
+            print(f"📤 Attempting P2P delivery to {delivery_endpoint}")
+            response = requests.post(delivery_endpoint, json=payload, timeout=30)
 
-        if response.status_code == 200:
-            order['status'] = 'delivered'
-            order['delivered_at'] = datetime.utcnow().isoformat()
-            save_orders(orders)
-            print(f"✅ Service {order_id} delivered successfully")
-        else:
-            print(f"❌ Delivery failed for {order_id}: {response.status_code}")
-            order['status'] = 'delivery_failed'
-            order['delivery_error'] = response.text
-            save_orders(orders)
+            if response.status_code == 200:
+                order['status'] = 'delivered'
+                order['delivered_at'] = datetime.utcnow().isoformat()
+                save_orders(orders)
+                print(f"✅ P2P delivery successful for {order_id}")
+                return
+            else:
+                print(f"⚠️  P2P delivery failed: {response.status_code}")
 
-    except Exception as e:
-        print(f"❌ Delivery error for {order_id}: {e}")
-        order['status'] = 'delivery_failed'
-        order['delivery_error'] = str(e)
-        save_orders(orders)
+        except Exception as e:
+            print(f"⚠️  P2P delivery error: {e}")
+
+    # P2P failed or no endpoint - client can poll/download
+    order['status'] = 'delivery_failed'  # P2P failed, but deliverable is saved
+    save_orders(orders)
+    print(f"📥 Service {order_id} ready for download (client can poll)")
 
 def create_content_hash(content):
     """Create SHA256 hash of content"""
@@ -338,6 +344,48 @@ def get_service_catalog():
         'services': catalog
     }), 200
 
+@app.route('/ivxp/download/<order_id>', methods=['GET'])
+def download_deliverable(order_id):
+    """Download completed deliverable (for polling clients or when P2P delivery failed)"""
+    if order_id not in orders:
+        return jsonify({'error': 'Order not found'}), 404
+
+    order = orders[order_id]
+
+    # Check if service is completed
+    if order['status'] == 'quoted':
+        return jsonify({
+            'status': 'pending_payment',
+            'message': 'Waiting for payment'
+        }), 202
+
+    if order['status'] == 'paid':
+        return jsonify({
+            'status': 'processing',
+            'message': 'Service is being processed'
+        }), 202
+
+    # Allow download if delivered or delivery failed (store & forward)
+    if order['status'] in ['delivered', 'delivery_failed'] and 'deliverable' in order:
+        return jsonify({
+            'protocol': 'IVXP/1.0',
+            'message_type': 'service_delivery',
+            'order_id': order_id,
+            'status': 'completed',
+            'provider_agent': {
+                'name': AGENT_NAME,
+                'wallet_address': WALLET_ADDRESS
+            },
+            'deliverable': order['deliverable'],
+            'delivered_at': order.get('delivered_at'),
+            'content_hash': order.get('content_hash')
+        }), 200
+
+    return jsonify({
+        'error': 'Service not yet completed',
+        'status': order['status']
+    }), 404
+
 if __name__ == '__main__':
     import sys
 
@@ -353,7 +401,12 @@ if __name__ == '__main__':
     print(f"   POST /ivxp/request - Request service")
     print(f"   POST /ivxp/deliver - Request delivery (after payment)")
     print(f"   GET  /ivxp/status/<order_id> - Check order status")
+    print(f"   GET  /ivxp/download/<order_id> - Download deliverable (polling)")
     print(f"   GET  /ivxp/catalog - View service catalog")
+    print("")
+    print("Delivery Methods:")
+    print(f"   • Push: Provider POSTs to client endpoint (requires client server)")
+    print(f"   • Pull: Client polls /ivxp/download (no client server needed)")
     print("")
 
     app.run(host='0.0.0.0', port=port, debug=False)

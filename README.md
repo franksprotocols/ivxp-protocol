@@ -48,7 +48,13 @@ IVXP enables AI agents to:
        ├───────────────────────────────────────────────>│
        │                                                │
        │                         6. Verify Signature    │
-       │                         7. Deliver Service     │
+       │                         7. Process & Save      │
+       │                                                │
+       │ 8a. PUSH: Provider POSTs (if client has server)│
+       │<───────────────────────────────────────────────┤
+       │                                                │
+       │ 8b. PULL: Client polls & downloads (anytime)   │
+       ├───────────────────────────────────────────────>│
        │<───────────────────────────────────────────────┤
        │                                                │
 ```
@@ -104,50 +110,61 @@ Universal P2P protocol - any agent can integrate!
 
 ### For Service Clients
 
-**1. Set Environment**
+**Method 1: Polling (No Server Needed) - Recommended**
+
 ```bash
+# 1. Set environment (no RECEIVE_ENDPOINT needed!)
 export WALLET_ADDRESS="0x..."
 export WALLET_PRIVATE_KEY="0x..."
-export RECEIVE_ENDPOINT="http://your-agent:6000/ivxp/receive"
-```
 
-**2. View Available Services**
-```bash
-python3 ivxp-client.py catalog http://provider-server:5000
-```
+# 2. Request service
+python3 ivxp-client.py request http://provider:5000 research "AGI safety" 50
+# Note the order_id returned
 
-**3. Request Service**
-```bash
-python3 ivxp-client.py request http://provider-server:5000 research "AGI safety" 50
+# 3. Poll for completion and download
+python3 ivxp-client.py poll http://provider:5000 ivxp-123...
 ```
 
 This will:
 - Request the service
 - Prompt for payment confirmation
 - Send USDC payment
-- Sign delivery request with your private key
-- Request delivery
+- Sign delivery request
+- **Automatically poll and download when ready**
+- **No server required!**
 
-**4. Receive Deliverable**
-Set up an endpoint to receive the service:
-```python
-from flask import Flask, request, jsonify
+**Method 2: Push Delivery (Requires Server)**
 
-app = Flask(__name__)
+```bash
+# 1. Start receiver server
+python3 ivxp-receiver.py 6000
 
-@app.route('/ivxp/receive', methods=['POST'])
-def receive():
-    data = request.json
-    order_id = data['order_id']
-    deliverable = data['deliverable']
+# 2. Expose publicly (choose one):
+ngrok http 6000                                    # Option A: ngrok
+cloudflared tunnel --url http://localhost:6000     # Option B: Cloudflare
 
-    # Save deliverable
-    with open(f'service_{order_id}.md', 'w') as f:
-        f.write(deliverable['content']['body'])
+# 3. Set environment with public endpoint
+export WALLET_ADDRESS="0x..."
+export WALLET_PRIVATE_KEY="0x..."
+export RECEIVE_ENDPOINT="https://your-public-url/ivxp/receive"
 
-    return jsonify({'status': 'received'}), 200
+# 4. Request service
+python3 ivxp-client.py request http://provider:5000 research "AGI safety" 50
+```
 
-app.run(port=6000)
+Provider will automatically POST deliverable to your endpoint.
+
+**Manual Commands:**
+
+```bash
+# View available services
+python3 ivxp-client.py catalog http://provider:5000
+
+# Check order status
+python3 ivxp-client.py status http://provider:5000 ivxp-123...
+
+# Download deliverable manually
+python3 ivxp-client.py download http://provider:5000 ivxp-123...
 ```
 
 ## Protocol Specification
@@ -175,12 +192,39 @@ See [IVXP-SKILL.md](./IVXP-SKILL.md) for the complete protocol specification inc
 | `/ivxp/request` | POST | Request a service (get quote) |
 | `/ivxp/deliver` | POST | Request delivery after payment |
 | `/ivxp/status/<order_id>` | GET | Check order status |
+| `/ivxp/download/<order_id>` | GET | Download deliverable (polling) |
 
-### Client Endpoint
+### Client Endpoint (Optional)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/ivxp/receive` | POST | Receive service delivery |
+| `/ivxp/receive` | POST | Receive push delivery (if using server) |
+
+## Delivery Methods
+
+IVXP supports two delivery methods:
+
+### 1. Push Delivery (P2P POST)
+- **How:** Provider POSTs deliverable to client's endpoint
+- **Requires:** Client must run public HTTP server
+- **Best for:** Real-time delivery, always-online agents
+- **Setup:** Use `ivxp-receiver.py` with ngrok/cloudflare
+
+### 2. Pull Delivery (Polling) - Recommended
+- **How:** Client polls and downloads from provider
+- **Requires:** Nothing! Just HTTP client
+- **Best for:** Most agents, flexible timing, offline capability
+- **Setup:** Use `ivxp-client.py poll` command
+
+**Comparison:**
+
+| Feature | Push (POST) | Pull (Polling) |
+|---------|-------------|----------------|
+| Client server needed | ✅ Yes | ❌ No |
+| Real-time delivery | ✅ Yes | ⏰ Polling delay |
+| Client can be offline | ❌ No | ✅ Yes |
+| Setup complexity | 🔧 High | ✅ Simple |
+| Recommended | For production | For most cases |
 
 ## Protocol Messages
 

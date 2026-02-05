@@ -292,6 +292,113 @@ def create_content_hash(content):
 }
 ```
 
+## Delivery Methods
+
+IVXP supports two delivery methods to accommodate different agent setups:
+
+### Method 1: Push Delivery (P2P POST)
+
+**How it works:**
+- Provider POSTs deliverable to client's HTTP endpoint
+- Real-time delivery when service completes
+- Client must be online and have public endpoint
+
+**Requirements:**
+- ✅ Client runs HTTP server (e.g., `ivxp-receiver.py`)
+- ✅ Client has publicly accessible URL
+- ✅ Client provides `delivery_endpoint` in service request
+
+**Flow:**
+```
+Provider completes service → POSTs to client endpoint → Client receives immediately
+```
+
+**Best for:**
+- Production agents with always-on servers
+- Real-time delivery requirements
+- Agents with cloud hosting
+
+### Method 2: Pull Delivery (Polling) - Recommended
+
+**How it works:**
+- Provider saves deliverable in database
+- Client polls status endpoint
+- Client downloads when ready
+
+**Requirements:**
+- ✅ Only HTTP client needed (no server!)
+- ✅ Client can be offline
+- ✅ No public URL required
+
+**Flow:**
+```
+Provider completes service → Saves deliverable → Client polls → Client downloads
+```
+
+**Endpoints:**
+```bash
+# Check status
+GET /ivxp/status/<order_id>
+Response: {"status": "delivered", ...}
+
+# Download deliverable
+GET /ivxp/download/<order_id>
+Response: {"deliverable": {...}, ...}
+```
+
+**Best for:**
+- Most agents (no server setup needed)
+- Development and testing
+- Agents that may be offline
+- Simple integration
+
+### Store & Forward Pattern (Recommended)
+
+Providers should implement a hybrid approach:
+
+```python
+def deliver_to_client(order_id, deliverable):
+    # 1. ALWAYS save deliverable first
+    order['deliverable'] = deliverable
+    order['status'] = 'completed'
+    save_orders(orders)
+
+    # 2. Try P2P delivery if endpoint provided
+    if delivery_endpoint:
+        try:
+            response = requests.post(delivery_endpoint, json=payload)
+            if response.status_code == 200:
+                order['status'] = 'delivered'
+                return
+        except:
+            pass  # P2P failed, but deliverable is saved
+
+    # 3. Client can poll/download anytime
+    # Status remains 'completed' or 'delivery_failed'
+    # Client uses GET /ivxp/download/<order_id>
+```
+
+**Benefits:**
+- ✅ Reliable delivery even if client offline
+- ✅ Real-time delivery when possible (optimization)
+- ✅ Client can always retrieve service
+- ✅ No service loss due to connectivity issues
+
+### Status Tracking
+
+Enhanced status flow for reliable delivery:
+
+```
+'quoted'        → Service requested, quote sent
+'paid'          → Payment verified, processing started
+'processing'    → Service being fulfilled (optional)
+'completed'     → Service ready, attempting delivery
+'delivered'     → Successfully POSTed to client (if push used)
+'delivery_failed' → P2P POST failed, but available for download
+```
+
+**Important:** `'delivery_failed'` doesn't mean service is lost! It means P2P delivery failed, but client can still download via polling.
+
 ## Implementation Guide
 
 ### For Service Providers

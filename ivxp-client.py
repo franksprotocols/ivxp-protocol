@@ -206,6 +206,81 @@ class IVXPClient:
             print(f"❌ Error checking status: {e}")
             return None
 
+    def download_deliverable(self, provider_url, order_id):
+        """Download deliverable via polling (no client server needed)"""
+        try:
+            print(f"📥 Downloading deliverable for {order_id}...")
+
+            response = requests.get(f"{provider_url}/ivxp/download/{order_id}", timeout=30)
+
+            if response.status_code == 200:
+                delivery = response.json()
+                print(f"✅ Deliverable downloaded!")
+                print(f"   Order ID: {delivery['order_id']}")
+                print(f"   Type: {delivery['deliverable']['type']}")
+                print(f"   Format: {delivery['deliverable']['format']}")
+
+                # Save deliverable
+                filename = f"deliverable_{order_id}.json"
+                with open(filename, 'w') as f:
+                    json.dump(delivery, f, indent=2)
+
+                print(f"   Saved to: {filename}")
+
+                # Also save content separately if markdown
+                if delivery['deliverable']['format'] == 'markdown':
+                    content_file = f"deliverable_{order_id}.md"
+                    with open(content_file, 'w') as f:
+                        f.write(delivery['deliverable']['content']['body'])
+                    print(f"   Content saved to: {content_file}")
+
+                return delivery
+
+            elif response.status_code == 202:
+                result = response.json()
+                print(f"⏳ Service not ready yet")
+                print(f"   Status: {result.get('status')}")
+                print(f"   Message: {result.get('message')}")
+                return None
+
+            else:
+                print(f"❌ Download failed: {response.status_code}")
+                print(f"   {response.text}")
+                return None
+
+        except Exception as e:
+            print(f"❌ Error downloading: {e}")
+            return None
+
+    def poll_and_download(self, provider_url, order_id, max_attempts=20, interval=30):
+        """Poll for completion and download (recommended for clients without server)"""
+        import time
+
+        print(f"\n⏳ Polling for service completion...")
+        print(f"   Checking every {interval} seconds (max {max_attempts} attempts)")
+        print("")
+
+        for attempt in range(max_attempts):
+            status = self.check_order_status(provider_url, order_id)
+
+            if status:
+                # Check if ready for download
+                if status['status'] in ['delivered', 'delivery_failed']:
+                    print(f"\n✅ Service ready! Downloading...")
+                    deliverable = self.download_deliverable(provider_url, order_id)
+
+                    if deliverable:
+                        return deliverable
+                    else:
+                        print(f"❌ Download failed, will retry...")
+
+            if attempt < max_attempts - 1:
+                print(f"   Attempt {attempt + 1}/{max_attempts}, waiting {interval}s...")
+                time.sleep(interval)
+
+        print(f"\n❌ Timeout: Service not completed after {max_attempts} attempts")
+        return None
+
 
 def main():
     import sys
@@ -217,15 +292,22 @@ def main():
         print("  python3 ivxp-client.py catalog <provider_url>")
         print("  python3 ivxp-client.py request <provider_url> <service_type> <description> <budget>")
         print("  python3 ivxp-client.py status <provider_url> <order_id>")
+        print("  python3 ivxp-client.py download <provider_url> <order_id>")
+        print("  python3 ivxp-client.py poll <provider_url> <order_id>")
         print("")
         print("Environment Variables:")
         print("  WALLET_ADDRESS - Your wallet address")
         print("  WALLET_PRIVATE_KEY - Your wallet private key (for signing)")
-        print("  RECEIVE_ENDPOINT - Your endpoint for receiving deliveries")
+        print("  RECEIVE_ENDPOINT - Your endpoint for receiving deliveries (optional)")
+        print("")
+        print("Delivery Methods:")
+        print("  • Push: Provider POSTs to RECEIVE_ENDPOINT (requires running server)")
+        print("  • Pull: Use 'poll' or 'download' commands (no server needed)")
         print("")
         print("Example:")
         print("  python3 ivxp-client.py catalog http://localhost:5000")
         print("  python3 ivxp-client.py request http://localhost:5000 research 'AGI safety' 50")
+        print("  python3 ivxp-client.py poll http://localhost:5000 ivxp-123...")
         sys.exit(1)
 
     # Get wallet details from environment
@@ -313,8 +395,37 @@ def main():
 
         client.check_order_status(provider_url, order_id)
 
+    elif command == 'download':
+        if len(sys.argv) < 4:
+            print("Usage: download <provider_url> <order_id>")
+            sys.exit(1)
+
+        provider_url = sys.argv[2]
+        order_id = sys.argv[3]
+
+        client.download_deliverable(provider_url, order_id)
+
+    elif command == 'poll':
+        if len(sys.argv) < 4:
+            print("Usage: poll <provider_url> <order_id> [interval_seconds] [max_attempts]")
+            sys.exit(1)
+
+        provider_url = sys.argv[2]
+        order_id = sys.argv[3]
+        interval = int(sys.argv[4]) if len(sys.argv) > 4 else 30
+        max_attempts = int(sys.argv[5]) if len(sys.argv) > 5 else 20
+
+        result = client.poll_and_download(provider_url, order_id, max_attempts, interval)
+
+        if result:
+            print(f"\n✅ Service completed and downloaded successfully!")
+        else:
+            print(f"\n❌ Failed to receive service")
+            sys.exit(1)
+
     else:
         print(f"Unknown command: {command}")
+        print("Available commands: catalog, request, status, download, poll")
         sys.exit(1)
 
 
