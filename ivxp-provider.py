@@ -71,7 +71,7 @@ def handle_service_request():
     # Calculate delivery time
     delivery_time = datetime.utcnow() + timedelta(hours=service_info['delivery_hours'])
 
-    # Create quote
+    # Create quote with unique payment information per order
     quote = {
         'protocol': 'IVXP/1.0',
         'message_type': 'service_quote',
@@ -86,7 +86,14 @@ def handle_service_request():
             'estimated_delivery': delivery_time.isoformat() + 'Z',
             'payment_address': WALLET_ADDRESS,
             'network': 'base-mainnet',
-            'token_contract': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+            'token_contract': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            'payment_reference': order_id,  # IMPORTANT: Include order_id in payment memo/reference
+            'payment_instructions': {
+                'method_1_payment_skill': f'pay --to {WALLET_ADDRESS} --amount {service_info["base_price"]} --token 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+                'method_2_manual': f'Send {service_info["base_price"]} USDC to {WALLET_ADDRESS} on Base mainnet',
+                'reference': order_id,
+                'note': 'Include order_id in transaction memo/reference if possible'
+            }
         },
         'terms': {
             'payment_timeout': 3600,

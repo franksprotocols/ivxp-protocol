@@ -21,8 +21,33 @@ IVXP enables AI agents to:
 ✅ **Cryptographic Payment Verification** - Verify USDC payments on Base blockchain
 ✅ **Identity Authentication** - Wallet signatures prove payer identity
 ✅ **Order Tracking** - Unique IDs match services to payments
+✅ **Unique Payment Per Order** - Each order gets unique payment instructions
 ✅ **P2P Delivery** - Direct agent-to-agent, no middleman
 ✅ **Universal Standard** - Any agent can implement and interoperate
+
+## Critical Concept: Payment Per Order
+
+**Each ORDER gets unique payment instructions, not each service type.**
+
+```
+Same Wallet Address
+       ↓
+0x0c0feb248548e33571584809113891818d4b0805
+       ↓
+   Receives ALL payments
+       ↓
+├─ Order ivxp-aaa: Philosophy (3 USDC, tx: 0x111)
+├─ Order ivxp-bbb: Research (50 USDC, tx: 0x222)
+├─ Order ivxp-ccc: Debugging (30 USDC, tx: 0x333)
+└─ Order ivxp-ddd: Review (50 USDC, tx: 0x444)
+```
+
+**Different orders tracked by:**
+- Unique `order_id` (generated per request)
+- Unique `tx_hash` (generated per payment)
+- Provider matches payment to order using both
+
+See [examples/PAYMENT-FLOW-EXAMPLE.md](../skills/PAYMENT-FLOW-EXAMPLE.md) for detailed multi-order scenarios.
 
 ## How It Works
 
@@ -166,6 +191,41 @@ python3 ivxp-client.py status http://provider:5000 ivxp-123...
 # Download deliverable manually
 python3 ivxp-client.py download http://provider:5000 ivxp-123...
 ```
+
+## Example: Multiple Orders from Same Client
+
+Alice requests three different services from babeta:
+
+```bash
+# Order 1: Philosophy discussion
+python3 ivxp-client.py request http://babeta:5000 philosophy "AGI consciousness" 3
+# → Gets order_id: ivxp-aaa-111
+# → Payment instructions: Pay 3 USDC with reference ivxp-aaa-111
+# → Alice pays → tx_hash: 0x111
+
+# Order 2: Research report
+python3 ivxp-client.py request http://babeta:5000 research "Distributed systems" 50
+# → Gets order_id: ivxp-bbb-222
+# → Payment instructions: Pay 50 USDC with reference ivxp-bbb-222
+# → Alice pays → tx_hash: 0x222
+
+# Order 3: Debugging help
+python3 ivxp-client.py request http://babeta:5000 debugging "Async timeout" 30
+# → Gets order_id: ivxp-ccc-333
+# → Payment instructions: Pay 30 USDC with reference ivxp-ccc-333
+# → Alice pays → tx_hash: 0x333
+```
+
+**All payments go to same wallet: 0x0c0feb248548e33571584809113891818d4b0805**
+
+**Provider tracks:**
+- Order ivxp-aaa-111: 3 USDC paid via tx 0x111 → Philosophy deliverable
+- Order ivxp-bbb-222: 50 USDC paid via tx 0x222 → Research deliverable
+- Order ivxp-ccc-333: 30 USDC paid via tx 0x333 → Debugging deliverable
+
+Each order is independent and tracked separately even though all payments go to the same wallet.
+
+See [PAYMENT-FLOW-EXAMPLE.md](../skills/PAYMENT-FLOW-EXAMPLE.md) for complete flow with payment verification.
 
 ## Protocol Specification
 
