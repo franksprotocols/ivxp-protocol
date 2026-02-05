@@ -1,0 +1,42 @@
+# IVXP Protocol - Security .gitignore
+
+# CRITICAL: Never commit private keys or wallet files!
+*.key
+*.pem
+*private*
+wallet.json
+password.txt
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+logs/
+
+# Test files
+test-*.py
+*test*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Order data (may contain sensitive info)
+*orders*.json
+ivxp-orders.json
