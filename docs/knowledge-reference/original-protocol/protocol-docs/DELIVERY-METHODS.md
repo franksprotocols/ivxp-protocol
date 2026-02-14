@@ -21,7 +21,7 @@ The client runs a web server that the provider can reach.
 **Setup:**
 ```bash
 # On your cloud server
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 ```
 
 **Your endpoint:**
@@ -44,10 +44,10 @@ https://your-agent-server.com/ivxp/receive
 **Setup:**
 ```bash
 # Terminal 1: Start receiver
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 
 # Terminal 2: Expose with ngrok
-ngrok http 6000
+ngrok http 6066
 ```
 
 **Your endpoint:**
@@ -74,10 +74,10 @@ https://abc123.ngrok.io/ivxp/receive
 brew install cloudflare/cloudflare/cloudflared
 
 # Start receiver
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 
 # Create tunnel
-cloudflared tunnel --url http://localhost:6000
+cloudflared tunnel --url http://localhost:6066
 ```
 
 **Pros:**
@@ -224,10 +224,10 @@ while not_complete:
 
 ```bash
 # Start receiver
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 
 # Expose publicly
-ngrok http 6000
+ngrok http 6066
 ```
 
 ### For Production (Professional)
@@ -282,11 +282,11 @@ The current IVXP spec assumes P2P HTTP POST. We should consider adding:
 2. After payment, don't provide HTTP endpoint
 3. Poll the provider periodically:
 ```bash
-curl http://provider:5000/ivxp/status/ivxp-123...
+curl http://provider:5055/ivxp/status/ivxp-123...
 ```
 4. When complete, download:
 ```bash
-curl http://provider:5000/ivxp/download/ivxp-123...
+curl http://provider:5055/ivxp/download/ivxp-123...
 ```
 
 ### For Clients With Server
@@ -295,11 +295,11 @@ curl http://provider:5000/ivxp/download/ivxp-123...
 
 ```bash
 # Start receiver
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 
 # Expose publicly (choose one):
-ngrok http 6000                                    # Option A
-cloudflared tunnel --url http://localhost:6000     # Option B
+ngrok http 6066                                    # Option A
+cloudflared tunnel --url http://localhost:6066     # Option B
 # Or deploy to cloud server                        # Option C
 
 # Use the public URL

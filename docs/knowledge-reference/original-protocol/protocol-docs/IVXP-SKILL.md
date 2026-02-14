@@ -655,9 +655,9 @@ def create_content_hash(content):
     return hashlib.sha256(content_str.encode()).hexdigest()
 
 if __name__ == '__main__':
-    print("🚀 IVXP Provider running on http://localhost:5000")
+    print("🚀 IVXP Provider running on http://localhost:5055")
     print(f"💳 Payment address: {WALLET_ADDRESS}")
-    app.run(port=5000)
+    app.run(port=5055)
 ```
 
 ### For Service Clients
@@ -844,7 +844,7 @@ if __name__ == '__main__':
             )
 
     # Start receiving endpoint
-    app.run(port=6000)
+    app.run(port=6066)
 ```
 
 ## Security Considerations
@@ -890,7 +890,7 @@ if __name__ == '__main__':
 python3 ivxp-provider.py
 
 # Client requests service
-curl -X POST http://provider:5000/ivxp/request \
+curl -X POST http://provider:5055/ivxp/request \
   -H "Content-Type: application/json" \
   -d '{
     "protocol": "IVXP/1.0",
@@ -905,7 +905,7 @@ curl -X POST http://provider:5000/ivxp/request \
 ~/.claude/skills/payment/scripts/pay --to 0x... --amount 50
 
 # Client requests delivery with signed message
-curl -X POST http://provider:5000/ivxp/deliver \
+curl -X POST http://provider:5055/ivxp/deliver \
   -H "Content-Type: application/json" \
   -d '{
     "order_id": "ivxp-...",
