@@ -76,7 +76,7 @@ def health_check():
 if __name__ == '__main__':
     import sys
 
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 6000
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 6066
 
     print("🚀 IVXP Client Receiver Starting")
     print(f"   Port: {port}")

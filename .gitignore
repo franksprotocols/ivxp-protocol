@@ -40,3 +40,32 @@ Thumbs.db
 # Order data (may contain sensitive info)
 *orders*.json
 ivxp-orders.json
+
+
+# ----------------------------------------
+# Claude
+# ----------------------------------------
+.claude/
+.worktrees/
+.codex/
+
+# ----------------------------------------
+# opencode/oh-my-opencode
+# ----------------------------------------
+.sisyphus/
+
+CLAUDE.md
+
+.venv/
+
+.agent/
+.agent/*
+
+# PRD
+PRD-IVXP-Protocol-v2.0.cn.md
+
+# BMAD
+_bmad/*
+_bmad/
+_bmad-output/*
+_bmad-output/

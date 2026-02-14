@@ -15,8 +15,8 @@
 │   CLIENT        │                           │   PROVIDER      │
 │                 │                           │                 │
 │  HTTP Client    │                           │  HTTP Server    │
-│  HTTP Server ⚠️ │                           │  (port 5000)    │
-│  (port 6000)    │                           │                 │
+│  HTTP Server ⚠️ │                           │  (port 5055)    │
+│  (port 6066)    │                           │                 │
 └────────┬────────┘                           └────────┬────────┘
          │                                             │
          │  1. POST /ivxp/request                     │
@@ -52,13 +52,13 @@
 ### What This Means
 
 **Provider (Server):**
-- ✅ Has HTTP server on port 5000 (always listening)
+- ✅ Has HTTP server on port 5055 (always listening)
 - ✅ Receives: service requests, delivery requests
 - ✅ **Initiates: HTTP POST to client's endpoint**
 
 **Client (Both Client AND Server!):**
 - ✅ Acts as HTTP client to provider (requests, payments)
-- ⚠️ **MUST also run HTTP server on port 6000** (to receive delivery)
+- ⚠️ **MUST also run HTTP server on port 6066** (to receive delivery)
 - ⚠️ **Must have publicly accessible endpoint**
 
 ### Code Example
@@ -72,7 +72,7 @@ def deliver_to_client(order_id, deliverable):
 
     # PROVIDER makes HTTP request TO CLIENT
     response = requests.post(
-        delivery_endpoint,  # http://client-server:6000/ivxp/receive
+        delivery_endpoint,  # http://client-server:6066/ivxp/receive
         json=payload,
         timeout=30
     )
@@ -92,7 +92,7 @@ def receive_delivery():
     # Save deliverable
     return jsonify({'status': 'received'}), 200
 
-app.run(host='0.0.0.0', port=6000)  # Must be publicly accessible!
+app.run(host='0.0.0.0', port=6066)  # Must be publicly accessible!
 ```
 
 ### The Problem with This Design
@@ -115,7 +115,7 @@ app.run(host='0.0.0.0', port=6000)  # Must be publicly accessible!
 │   CLIENT        │                           │   PROVIDER      │
 │                 │                           │                 │
 │  HTTP Client    │                           │  HTTP Server    │
-│  (no server!) ✅│                           │  (port 5000)    │
+│  (no server!) ✅│                           │  (port 5055)    │
 │                 │                           │                 │
 └────────┬────────┘                           └────────┬────────┘
          │                                             │

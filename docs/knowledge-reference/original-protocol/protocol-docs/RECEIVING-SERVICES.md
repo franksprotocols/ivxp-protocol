@@ -12,15 +12,15 @@
 
 #### Option 1: Run HTTP Server (Original Design)
 ```bash
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 # Expose via ngrok/cloudflare/cloud server
 ```
 
 #### Option 2: Polling (Easier!)
 ```bash
 # Client just polls for completion
-curl http://provider:5000/ivxp/status/ivxp-123...
-curl http://provider:5000/ivxp/download/ivxp-123...
+curl http://provider:5055/ivxp/status/ivxp-123...
+curl http://provider:5055/ivxp/download/ivxp-123...
 ```
 
 ### Q2: Is there any service identifier to know which service is providing in case of multiple services are requested by an agent?
@@ -82,15 +82,15 @@ global_id = f"{provider_wallet}:{order_id}"
 **Client Side:**
 ```bash
 # 1. Start receiver
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 
 # 2. Expose publicly
-ngrok http 6000
+ngrok http 6066
 # URL: https://abc123.ngrok.io
 
 # 3. Request service
 export RECEIVE_ENDPOINT="https://abc123.ngrok.io/ivxp/receive"
-python3 ivxp-client.py request http://provider:5000 research "topic" 50
+python3 ivxp-client.py request http://provider:5055 research "topic" 50
 ```
 
 **What Happens:**
