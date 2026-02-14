@@ -105,6 +105,32 @@ export {
   DeliveryResponseSchema,
 } from "./schemas/index.js";
 
+// Re-export internal interface contracts
+export type {
+  // Crypto service
+  ICryptoService,
+
+  // Payment service
+  IPaymentService,
+  PaymentExpectedDetails,
+
+  // HTTP client
+  IHttpClient,
+  JsonSerializable,
+  RequestOptions,
+
+  // Event emitter
+  IEventEmitter,
+  SDKEvent,
+  SDKEventMap,
+
+  // Order storage
+  IOrderStorage,
+  OrderFilters,
+  OrderUpdates,
+  StoredOrder,
+} from "./contracts/index.js";
+
 // Re-export schema output types
 export type {
   // Order output types
