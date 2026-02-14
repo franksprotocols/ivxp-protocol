@@ -4,7 +4,7 @@
  * IVXP Protocol types, schemas, and constants.
  *
  * Provides all IVXP/1.0 protocol message type definitions
- * for building type-safe SDK implementations.
+ * and Zod validation schemas for building type-safe SDK implementations.
  */
 
 // Re-export all types and constants
@@ -60,3 +60,73 @@ export {
   ERROR_CODES,
   MESSAGE_TYPES,
 } from "./types/index.js";
+
+// Re-export all Zod validation schemas
+export {
+  // Common schemas
+  DeliveryFormatSchema,
+  HexAddressLenientSchema,
+  HexAddressSchema,
+  HexHashSchema,
+  HexSignatureSchema,
+  ISOTimestampSchema,
+  IVXPMessageTypeSchema,
+  NetworkIdSchema,
+  OrderStatusSchema,
+  ProtocolVersionSchema,
+
+  // Order schemas
+  DeliveryRequestSchema,
+  OrderStatusResponseSchema,
+  PaymentProofSchema,
+  ProviderAgentSchema,
+  QuoteDetailsSchema,
+  QuoteTermsSchema,
+  ServiceQuoteSchema,
+
+  // Service schemas
+  ClientAgentSchema,
+  ServiceCatalogSchema,
+  ServiceDefinitionSchema,
+  ServiceRequestDetailsSchema,
+  ServiceRequestSchema,
+
+  // Payment schemas
+  IVXPErrorResponseSchema,
+  PaymentInfoSchema,
+  PaymentVerificationResultSchema,
+  TransactionRefSchema,
+
+  // Delivery schemas
+  DeliverableSchema,
+  DeliveryAcceptedSchema,
+  DeliveryConfirmationSchema,
+  DeliveryProviderAgentSchema,
+  DeliveryResponseSchema,
+} from "./schemas/index.js";
+
+// Re-export schema output types
+export type {
+  // Order output types
+  DeliveryRequestOutput,
+  OrderStatusResponseOutput,
+  PaymentProofOutput,
+  ServiceQuoteOutput,
+
+  // Service output types
+  ClientAgentOutput,
+  ServiceCatalogOutput,
+  ServiceDefinitionOutput,
+  ServiceRequestOutput,
+
+  // Payment output types
+  PaymentInfoOutput,
+  PaymentVerificationResultOutput,
+  TransactionRefOutput,
+
+  // Delivery output types
+  DeliverableOutput,
+  DeliveryAcceptedOutput,
+  DeliveryConfirmationOutput,
+  DeliveryResponseOutput,
+} from "./schemas/index.js";
