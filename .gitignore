@@ -1,6 +1,8 @@
-# IVXP Protocol - Security .gitignore
+# IVXP Protocol .gitignore
 
-# CRITICAL: Never commit private keys or wallet files!
+# ----------------------------------------
+# Security: Never commit secrets
+# ----------------------------------------
 *.key
 *.pem
 *private*
@@ -8,8 +10,42 @@ wallet.json
 password.txt
 .env
 .env.*
+!.env.example
 
-# Python
+# ----------------------------------------
+# Node.js / TypeScript
+# ----------------------------------------
+node_modules/
+dist/
+*.tsbuildinfo
+.turbo/
+
+# ----------------------------------------
+# Package managers
+# ----------------------------------------
+# pnpm
+# (pnpm-lock.yaml should be committed)
+
+# ----------------------------------------
+# Build output
+# ----------------------------------------
+*.js.map
+*.d.ts.map
+
+# ----------------------------------------
+# Testing
+# ----------------------------------------
+coverage/
+
+# ----------------------------------------
+# Next.js
+# ----------------------------------------
+.next/
+out/
+
+# ----------------------------------------
+# Python (legacy v1)
+# ----------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,53 +54,44 @@ __pycache__/
 venv/
 env/
 ENV/
+.venv/
 
+# ----------------------------------------
 # Logs
+# ----------------------------------------
 *.log
 logs/
+npm-debug.log*
+pnpm-debug.log*
 
-# Test files
-test-*.py
-*test*.json
-
+# ----------------------------------------
 # OS files
+# ----------------------------------------
 .DS_Store
 Thumbs.db
 
+# ----------------------------------------
 # IDE
+# ----------------------------------------
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Order data (may contain sensitive info)
-*orders*.json
-ivxp-orders.json
-
-
 # ----------------------------------------
-# Claude
+# Claude / AI agents
 # ----------------------------------------
 .claude/
 .worktrees/
 .codex/
-
-# ----------------------------------------
-# opencode/oh-my-opencode
-# ----------------------------------------
 .sisyphus/
-
-CLAUDE.md
-
-.venv/
-
 .agent/
 .agent/*
 
-# PRD
+# ----------------------------------------
+# Project-specific ignores
+# ----------------------------------------
 PRD-IVXP-Protocol-v2.0.cn.md
-
-# BMAD
 _bmad/*
 _bmad/
 _bmad-output/*
