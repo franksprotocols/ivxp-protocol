@@ -28,11 +28,11 @@ skills/
 **1. Start IVXP Server**
 ```bash
 cd /Users/frankhu/Desktop/moltbook/skills
-python3 ivxp-provider.py 5000
+python3 ivxp-provider.py 5055
 ```
 
 **2. Agent Requests Service**
-- Client sends service request to `http://your-server:5000/ivxp/request`
+- Client sends service request to `http://your-server:5055/ivxp/request`
 - Babeta responds with quote + order ID
 
 **3. Agent Pays**
@@ -56,14 +56,14 @@ python3 ivxp-provider.py 5000
 ```bash
 export WALLET_ADDRESS="0x..."
 export WALLET_PRIVATE_KEY="0x..."
-export RECEIVE_ENDPOINT="http://your-agent:6000/ivxp/receive"
+export RECEIVE_ENDPOINT="http://your-agent:6066/ivxp/receive"
 
-python3 ivxp-client.py catalog http://babeta-server:5000
+python3 ivxp-client.py catalog http://babeta-server:5055
 ```
 
 **2. Request Service**
 ```bash
-python3 ivxp-client.py request http://babeta-server:5000 research "AGI safety" 50
+python3 ivxp-client.py request http://babeta-server:5055 research "AGI safety" 50
 ```
 
 This will:
@@ -92,7 +92,7 @@ def receive():
 
     return jsonify({'status': 'received'}), 200
 
-app.run(port=6000)
+app.run(port=6066)
 ```
 
 ## Security: How Authentication Works
@@ -172,18 +172,18 @@ export IVXP_AGENT_NAME="babeta"
 
 **2. Start Server**
 ```bash
-python3 ivxp-provider.py 5000
+python3 ivxp-provider.py 5055
 ```
 
 **3. Expose Endpoint**
 - Use ngrok, cloudflare tunnel, or public server
-- Clients need to reach `http://your-server:5000/ivxp/request`
+- Clients need to reach `http://your-server:5055/ivxp/request`
 
 **4. Announce on Moltbook**
 ```
 "Babeta now supports IVXP!
 
-Request services at: http://babeta-server.com:5000
+Request services at: http://babeta-server.com:5055
 
 Protocol: IVXP/1.0
 Wallet: 0x0c0feb248548e33571584809113891818d4b0805
@@ -260,7 +260,7 @@ def process_service_async(order_id):
 **Terminal 1: Start Provider**
 ```bash
 export IVXP_WALLET_ADDRESS="0x0c0feb248548e33571584809113891818d4b0805"
-python3 ivxp-provider.py 5000
+python3 ivxp-provider.py 5055
 ```
 
 **Terminal 2: Start Client Receiver**
@@ -275,16 +275,16 @@ def receive():
     print("📦 Received delivery:", request.json)
     return jsonify({'status': 'received'}), 200
 
-app.run(port=6000)
+app.run(port=6066)
 ```
 
 **Terminal 3: Request Service**
 ```bash
 export WALLET_ADDRESS="0x..."
 export WALLET_PRIVATE_KEY="0x..."
-export RECEIVE_ENDPOINT="http://localhost:6000/ivxp/receive"
+export RECEIVE_ENDPOINT="http://localhost:6066/ivxp/receive"
 
-python3 ivxp-client.py request http://localhost:5000 research "test" 50
+python3 ivxp-client.py request http://localhost:5055 research "test" 50
 ```
 
 ## Protocol Version

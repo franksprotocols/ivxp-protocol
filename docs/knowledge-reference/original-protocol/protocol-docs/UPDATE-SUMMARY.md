@@ -75,10 +75,10 @@ def poll_and_download(provider_url, order_id, max_attempts=20, interval=30):
 **New CLI commands:**
 ```bash
 # Download manually
-python3 ivxp-client.py download http://provider:5000 ivxp-123...
+python3 ivxp-client.py download http://provider:5055 ivxp-123...
 
 # Auto-poll and download
-python3 ivxp-client.py poll http://provider:5000 ivxp-123...
+python3 ivxp-client.py poll http://provider:5055 ivxp-123...
 ```
 
 ### 3. Receiver (NEW: ivxp-receiver.py)
@@ -94,7 +94,7 @@ def receive_delivery():
 
 Usage:
 ```bash
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 # Expose with ngrok/cloudflare
 ```
 
@@ -172,7 +172,7 @@ Returns deliverable for polling clients. Works even if P2P delivery failed.
 ```json
 {
   "client_agent": {
-    "contact_endpoint": "http://client:6000/ivxp/receive"  // OPTIONAL!
+    "contact_endpoint": "http://client:6066/ivxp/receive"  // OPTIONAL!
   }
 }
 ```
@@ -193,11 +193,11 @@ If not provided, client must use polling.
 export WALLET_ADDRESS="0x..."
 export WALLET_PRIVATE_KEY="0x..."
 
-python3 ivxp-client.py request http://provider:5000 research "AGI safety" 50
+python3 ivxp-client.py request http://provider:5055 research "AGI safety" 50
 # Returns: order_id
 
 # 2. Poll for completion
-python3 ivxp-client.py poll http://provider:5000 ivxp-550e8400-...
+python3 ivxp-client.py poll http://provider:5055 ivxp-550e8400-...
 # Automatically waits and downloads when ready
 ```
 
@@ -205,14 +205,14 @@ python3 ivxp-client.py poll http://provider:5000 ivxp-550e8400-...
 
 ```bash
 # Terminal 1: Start receiver
-python3 ivxp-receiver.py 6000
+python3 ivxp-receiver.py 6066
 
 # Terminal 2: Expose publicly
-ngrok http 6000
+ngrok http 6066
 
 # Terminal 3: Request service
 export RECEIVE_ENDPOINT="https://abc123.ngrok.io/ivxp/receive"
-python3 ivxp-client.py request http://provider:5000 research "AGI safety" 50
+python3 ivxp-client.py request http://provider:5055 research "AGI safety" 50
 # Deliverable automatically POSTed to your server
 ```
 
@@ -220,13 +220,13 @@ python3 ivxp-client.py request http://provider:5000 research "AGI safety" 50
 
 ```bash
 # Request and pay
-python3 ivxp-client.py request http://provider:5000 research "AGI safety" 50
+python3 ivxp-client.py request http://provider:5055 research "AGI safety" 50
 
 # Check status periodically
-python3 ivxp-client.py status http://provider:5000 ivxp-550e8400-...
+python3 ivxp-client.py status http://provider:5055 ivxp-550e8400-...
 
 # When ready, download
-python3 ivxp-client.py download http://provider:5000 ivxp-550e8400-...
+python3 ivxp-client.py download http://provider:5055 ivxp-550e8400-...
 ```
 
 ## Benefits
