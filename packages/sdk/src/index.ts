@@ -35,6 +35,7 @@ export {
   IVXPClient,
   createIVXPClient,
   type IVXPClientConfig,
+  type OrderPollOptions,
   type ServiceRequestParams,
   type SubmitPaymentQuote,
   type PaymentResult,

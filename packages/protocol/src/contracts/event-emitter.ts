@@ -44,6 +44,14 @@ export type SDKEvent =
         readonly txHash: string;
         readonly blockNumber: number;
       };
+    }
+  | {
+      readonly type: "order.status_changed";
+      readonly payload: {
+        readonly orderId: string;
+        readonly previousStatus: string | null;
+        readonly newStatus: string;
+      };
     };
 
 /**
