@@ -30,4 +30,8 @@ export {
   InsufficientBalanceError,
   TransactionError,
   TransactionSubmissionError,
+  PaymentNotFoundError,
+  PaymentPendingError,
+  PaymentFailedError,
+  PaymentAmountMismatchError,
 } from "./errors/index.js";

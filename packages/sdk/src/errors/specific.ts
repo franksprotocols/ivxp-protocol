@@ -54,3 +54,65 @@ export class TransactionSubmissionError extends IVXPError {
     this.name = "TransactionSubmissionError";
   }
 }
+
+// ---------------------------------------------------------------------------
+// Payment Verification Errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when a transaction hash cannot be found on-chain.
+ *
+ * This means the transaction does not exist -- it was never submitted
+ * or is not yet visible to the node.
+ */
+export class PaymentNotFoundError extends IVXPError {
+  constructor(message: string, cause?: unknown) {
+    super(message, "PAYMENT_NOT_FOUND", cause);
+    this.name = "PaymentNotFoundError";
+  }
+}
+
+/**
+ * Thrown when a transaction exists but has not yet been included in a block.
+ *
+ * The caller should wait and retry verification later.
+ */
+export class PaymentPendingError extends IVXPError {
+  constructor(message: string, cause?: unknown) {
+    super(message, "PAYMENT_PENDING", cause);
+    this.name = "PaymentPendingError";
+  }
+}
+
+/**
+ * Thrown when a transaction was confirmed but reverted on-chain.
+ *
+ * The txHash is included for diagnostic purposes.
+ */
+export class PaymentFailedError extends IVXPError {
+  constructor(
+    message: string,
+    public readonly txHash: `0x${string}`,
+    cause?: unknown,
+  ) {
+    super(message, "PAYMENT_FAILED", cause);
+    this.name = "PaymentFailedError";
+  }
+}
+
+/**
+ * Thrown when the on-chain transfer amount does not match the expected amount.
+ *
+ * Provides both expected and actual amounts for diagnostic purposes.
+ */
+export class PaymentAmountMismatchError extends IVXPError {
+  constructor(
+    message: string,
+    public readonly expectedAmount: string,
+    public readonly actualAmount: string,
+    cause?: unknown,
+  ) {
+    super(message, "PAYMENT_AMOUNT_MISMATCH", cause);
+    this.name = "PaymentAmountMismatchError";
+  }
+}

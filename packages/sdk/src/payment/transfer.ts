@@ -19,8 +19,6 @@ import {
   http,
   parseUnits,
   formatUnits,
-  keccak256,
-  toHex,
   type PublicClient,
   type WalletClient,
   type Transport,
@@ -35,6 +33,10 @@ import {
   InsufficientBalanceError,
   TransactionError,
   TransactionSubmissionError,
+  PaymentNotFoundError,
+  PaymentPendingError,
+  PaymentFailedError,
+  PaymentAmountMismatchError,
 } from "../errors/index.js";
 
 // ---------------------------------------------------------------------------
@@ -54,16 +56,13 @@ const HEX_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
 /**
  * Keccak-256 hash of the ERC-20 Transfer event signature.
  *
- * Computed from: `Transfer(address,address,uint256)`
+ * Pre-computed from: `keccak256(toHex("Transfer(address,address,uint256)"))`
  *
  * This is the topic[0] value emitted by all ERC-20 Transfer events,
  * used to identify USDC transfer logs when verifying payments.
- *
- * Value: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
  */
-const ERC20_TRANSFER_EVENT_TOPIC = keccak256(
-  toHex("Transfer(address,address,uint256)"),
-);
+const ERC20_TRANSFER_EVENT_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as const;
 
 // ---------------------------------------------------------------------------
 // USDC ABI (minimal -- only functions we need)
@@ -150,13 +149,12 @@ const CHAIN_MAP: Readonly<Record<NetworkType, Chain>> = {
 /**
  * Check whether an error is a transient network/RPC failure that should
  * be surfaced to the caller rather than silently treated as "not verified".
+ *
+ * Handles both Error instances and non-Error thrown values by coercing
+ * to a string for pattern matching.
  */
 function isSystemError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const message = error.message.toLowerCase();
+  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
 
   // HTTP / fetch failures
   if (message.includes("fetch failed") || message.includes("econnrefused")) {
@@ -216,9 +214,7 @@ export class PaymentService implements IPaymentService {
       try {
         new URL(rpcUrl);
       } catch {
-        throw new Error(
-          `Invalid rpcUrl: "${rpcUrl}" is not a valid URL`,
-        );
+        throw new Error(`Invalid rpcUrl: "${rpcUrl}" is not a valid URL`);
       }
     }
 
@@ -231,16 +227,20 @@ export class PaymentService implements IPaymentService {
     this.usdcAddress = overrides?.usdcAddress ?? USDC_CONTRACT_ADDRESSES[network];
 
     // Use injected clients if provided, otherwise create from config
-    this.walletClient = overrides?.walletClient ?? createWalletClient({
-      account: this.account,
-      chain,
-      transport: http(rpcUrl),
-    });
+    this.walletClient =
+      overrides?.walletClient ??
+      createWalletClient({
+        account: this.account,
+        chain,
+        transport: http(rpcUrl),
+      });
 
-    this.publicClient = overrides?.publicClient ?? createPublicClient({
-      chain,
-      transport: http(rpcUrl),
-    });
+    this.publicClient =
+      overrides?.publicClient ??
+      createPublicClient({
+        chain,
+        transport: http(rpcUrl),
+      });
   }
 
   /**
@@ -255,9 +255,7 @@ export class PaymentService implements IPaymentService {
    */
   async getBalance(address: `0x${string}`): Promise<string> {
     if (!address || !HEX_ADDRESS_REGEX.test(address)) {
-      throw new Error(
-        "Invalid address: must be a 0x-prefixed 40-character hex string (20 bytes)",
-      );
+      throw new Error("Invalid address: must be a 0x-prefixed 40-character hex string (20 bytes)");
     }
 
     const balance = await this.publicClient.readContract({
@@ -342,10 +340,7 @@ export class PaymentService implements IPaymentService {
     const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
 
     if (receipt.status === "reverted") {
-      throw new TransactionError(
-        `Transaction reverted: ${hash}`,
-        hash,
-      );
+      throw new TransactionError(`Transaction reverted: ${hash}`, hash);
     }
 
     return hash;
@@ -357,67 +352,150 @@ export class PaymentService implements IPaymentService {
    * Checks the transaction receipt and logs to confirm that the
    * sender, recipient, and amount match the expected values.
    *
-   * Returns false when the transaction does not match expected details
-   * (verification failure). Re-throws system errors such as network
-   * failures, timeouts, and rate limiting so callers can retry.
+   * Returns true only when all conditions match. Returns false when
+   * the sender or recipient does not match (soft mismatch). Throws
+   * specific error types for actionable failure modes:
+   * - PaymentNotFoundError: transaction or USDC transfer not found
+   * - PaymentPendingError: transaction exists but not yet mined
+   * - PaymentFailedError: transaction was mined but reverted
+   * - PaymentAmountMismatchError: USDC amount differs from expected
+   *
+   * Re-throws system errors (network, timeout, rate limit) so callers
+   * can distinguish transient failures from verification failures.
    *
    * @param txHash - Transaction hash to verify
    * @param expected - Expected transaction details (from, to, amount)
    * @returns true if all conditions match and the transaction is confirmed
+   * @throws PaymentNotFoundError when transaction or transfer event not found
+   * @throws PaymentPendingError when transaction is still pending
+   * @throws PaymentFailedError when transaction reverted on-chain
+   * @throws PaymentAmountMismatchError when transfer amount differs
    * @throws When a system error occurs (network failure, timeout, rate limit)
    */
   async verify(txHash: `0x${string}`, expected: PaymentExpectedDetails): Promise<boolean> {
+    // Step 1: Fetch the transaction receipt
+    let receipt;
     try {
-      const receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
-
-      if (receipt.status !== "success") {
-        return false;
-      }
-
-      // Verify the sender
-      const tx = await this.publicClient.getTransaction({ hash: txHash });
-      if (tx.from.toLowerCase() !== expected.from.toLowerCase()) {
-        return false;
-      }
-
-      // Verify the transaction was to the USDC contract
-      if (tx.to?.toLowerCase() !== this.usdcAddress.toLowerCase()) {
-        return false;
-      }
-
-      // Parse the transfer event logs to verify recipient and amount
-      const transferLog = receipt.logs.find(
-        (log) =>
-          log.topics[0] === ERC20_TRANSFER_EVENT_TOPIC &&
-          log.address.toLowerCase() === this.usdcAddress.toLowerCase(),
-      );
-
-      if (!transferLog) {
-        return false;
-      }
-
-      // Topic[2] is the 'to' address in a Transfer event (padded to 32 bytes)
-      const toAddress = `0x${transferLog.topics[2]?.slice(26)}` as `0x${string}`;
-      if (toAddress.toLowerCase() !== expected.to.toLowerCase()) {
-        return false;
-      }
-
-      // Data contains the amount (uint256)
-      const actualAmount = BigInt(transferLog.data);
-      const expectedAmount = parseUnits(expected.amount, USDC_DECIMALS);
-
-      return actualAmount === expectedAmount;
+      receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
     } catch (error) {
-      // Re-throw system errors (network, timeout, rate limit) so callers
-      // can distinguish "not verified" from "could not check" (Fix #4).
+      // Re-throw system errors immediately
       if (isSystemError(error)) {
         throw error;
       }
 
-      // All other errors (tx not found, malformed data, etc.) indicate
-      // the verification itself failed -- return false.
+      // Receipt not available -- check if transaction is pending
+      try {
+        const tx = await this.publicClient.getTransaction({ hash: txHash });
+        if (tx && !tx.blockNumber) {
+          throw new PaymentPendingError(`Transaction ${txHash} is still pending`);
+        }
+      } catch (innerError) {
+        // If the inner check itself is a PaymentPendingError, re-throw
+        if (innerError instanceof PaymentPendingError) {
+          throw innerError;
+        }
+        // Re-throw system errors from the inner call
+        if (isSystemError(innerError)) {
+          throw innerError;
+        }
+      }
+
+      // Transaction truly not found
+      throw new PaymentNotFoundError(`Transaction ${txHash} not found on chain`);
+    }
+
+    // Step 2: Check transaction status
+    if (receipt.status === "reverted") {
+      throw new PaymentFailedError(`Transaction ${txHash} reverted`, txHash);
+    }
+
+    // Step 3: Verify the sender (available on the receipt directly)
+    if (receipt.from.toLowerCase() !== expected.from.toLowerCase()) {
       return false;
     }
+
+    // Step 4: Verify the transaction was to the USDC contract
+    if (receipt.to?.toLowerCase() !== this.usdcAddress.toLowerCase()) {
+      throw new PaymentNotFoundError(`No USDC transfer found in transaction ${txHash}`);
+    }
+
+    // Step 5: Find the Transfer event from the USDC contract
+    const transferLog = receipt.logs.find(
+      (log) =>
+        log.topics[0] === ERC20_TRANSFER_EVENT_TOPIC &&
+        log.address.toLowerCase() === this.usdcAddress.toLowerCase(),
+    );
+
+    if (!transferLog) {
+      throw new PaymentNotFoundError(`No USDC transfer event found in transaction ${txHash}`);
+    }
+
+    // Step 6: Verify the recipient from the Transfer event
+    // Topic[2] is the 'to' address in a Transfer event (padded to 32 bytes)
+    const rawToTopic = transferLog.topics[2];
+    if (!rawToTopic || rawToTopic.length < 66) {
+      throw new PaymentNotFoundError(
+        `Malformed Transfer event in transaction ${txHash}: missing recipient topic`,
+      );
+    }
+    const toAddress = `0x${rawToTopic.slice(26)}` as `0x${string}`;
+    if (toAddress.toLowerCase() !== expected.to.toLowerCase()) {
+      return false;
+    }
+
+    // Step 7: Verify the amount
+    const actualAmount = BigInt(transferLog.data);
+    const expectedAmount = parseUnits(expected.amount, USDC_DECIMALS);
+
+    if (actualAmount !== expectedAmount) {
+      throw new PaymentAmountMismatchError(
+        `Amount mismatch: expected ${expected.amount} USDC, got ${formatUnits(actualAmount, USDC_DECIMALS)} USDC`,
+        expected.amount,
+        formatUnits(actualAmount, USDC_DECIMALS),
+      );
+    }
+
+    return true;
+  }
+
+  /**
+   * Get the status of a transaction on-chain.
+   *
+   * Provides transaction status information including confirmation count.
+   * Useful for checking whether a payment has been confirmed before
+   * calling verify().
+   *
+   * @param txHash - Transaction hash to check
+   * @returns Transaction status object with status, blockNumber, and confirmations
+   */
+  async getTransactionStatus(txHash: `0x${string}`): Promise<{
+    readonly status: "pending" | "success" | "reverted" | "not_found";
+    readonly confirmations?: number;
+    readonly blockNumber?: bigint;
+  }> {
+    // Try to get the receipt first (confirmed transactions)
+    const receipt = await this.publicClient
+      .getTransactionReceipt({ hash: txHash })
+      .catch(() => null);
+
+    if (!receipt) {
+      // Check if the transaction exists but is unconfirmed
+      const tx = await this.publicClient.getTransaction({ hash: txHash }).catch(() => null);
+
+      if (tx) {
+        return { status: "pending" } as const;
+      }
+
+      return { status: "not_found" } as const;
+    }
+
+    const currentBlock = await this.publicClient.getBlockNumber();
+
+    return {
+      status: receipt.status,
+      blockNumber: receipt.blockNumber,
+      confirmations: Number(currentBlock - receipt.blockNumber),
+    } as const;
   }
 
   /**

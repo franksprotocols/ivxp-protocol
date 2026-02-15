@@ -15,22 +15,15 @@ import {
   type AnvilTestClient,
 } from "@ivxp/test-utils";
 import type { IPaymentService } from "@ivxp/protocol";
-import {
-  parseUnits,
-  createPublicClient,
-  createWalletClient,
-  http,
-} from "viem";
+import { parseUnits, createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
-import {
-  PaymentService,
-  createPaymentService,
-  type PaymentServiceConfig,
-} from "./transfer.js";
+import { PaymentService, createPaymentService, type PaymentServiceConfig } from "./transfer.js";
 import {
   InsufficientBalanceError,
   TransactionSubmissionError,
+  PaymentNotFoundError,
+  PaymentAmountMismatchError,
 } from "../errors/index.js";
 
 // ---------------------------------------------------------------------------
@@ -581,10 +574,7 @@ describe("PaymentService", () => {
         mockUsdcAddress,
       );
 
-      const txHash = await service.send(
-        TEST_ACCOUNTS.provider.address as `0x${string}`,
-        "5.00",
-      );
+      const txHash = await service.send(TEST_ACCOUNTS.provider.address as `0x${string}`, "5.00");
 
       const verified = await service.verify(txHash, {
         from: TEST_ACCOUNTS.client.address as `0x${string}`,
@@ -595,7 +585,7 @@ describe("PaymentService", () => {
       expect(verified).toBe(true);
     });
 
-    it("should return false for non-existent transaction hash", async () => {
+    it("should throw PaymentNotFoundError for non-existent transaction hash", async () => {
       const service = createTestPaymentService(
         TEST_ACCOUNTS.client.privateKey as `0x${string}`,
         mockUsdcAddress,
@@ -604,16 +594,16 @@ describe("PaymentService", () => {
       const fakeTxHash =
         "0x0000000000000000000000000000000000000000000000000000000000000001" as `0x${string}`;
 
-      const verified = await service.verify(fakeTxHash, {
-        from: TEST_ACCOUNTS.client.address as `0x${string}`,
-        to: TEST_ACCOUNTS.provider.address as `0x${string}`,
-        amount: "10.00",
-      });
-
-      expect(verified).toBe(false);
+      await expect(
+        service.verify(fakeTxHash, {
+          from: TEST_ACCOUNTS.client.address as `0x${string}`,
+          to: TEST_ACCOUNTS.provider.address as `0x${string}`,
+          amount: "10.00",
+        }),
+      ).rejects.toThrow(PaymentNotFoundError);
     });
 
-    it("should return false when amount does not match", async () => {
+    it("should throw PaymentAmountMismatchError when amount does not match", async () => {
       await mintMockUSDC(
         testClient,
         mockUsdcAddress,
@@ -626,18 +616,15 @@ describe("PaymentService", () => {
         mockUsdcAddress,
       );
 
-      const txHash = await service.send(
-        TEST_ACCOUNTS.provider.address as `0x${string}`,
-        "5.00",
-      );
+      const txHash = await service.send(TEST_ACCOUNTS.provider.address as `0x${string}`, "5.00");
 
-      const verified = await service.verify(txHash, {
-        from: TEST_ACCOUNTS.client.address as `0x${string}`,
-        to: TEST_ACCOUNTS.provider.address as `0x${string}`,
-        amount: "99.00", // Wrong amount
-      });
-
-      expect(verified).toBe(false);
+      await expect(
+        service.verify(txHash, {
+          from: TEST_ACCOUNTS.client.address as `0x${string}`,
+          to: TEST_ACCOUNTS.provider.address as `0x${string}`,
+          amount: "99.00", // Wrong amount
+        }),
+      ).rejects.toThrow(PaymentAmountMismatchError);
     });
 
     it("should return false when sender does not match", async () => {
@@ -653,10 +640,7 @@ describe("PaymentService", () => {
         mockUsdcAddress,
       );
 
-      const txHash = await service.send(
-        TEST_ACCOUNTS.provider.address as `0x${string}`,
-        "5.00",
-      );
+      const txHash = await service.send(TEST_ACCOUNTS.provider.address as `0x${string}`, "5.00");
 
       const verified = await service.verify(txHash, {
         from: TEST_ACCOUNTS.thirdParty.address as `0x${string}`, // Wrong sender

@@ -9,6 +9,12 @@
  */
 export class IVXPError extends Error {
   /**
+   * Optional original error that caused this error.
+   * Follows the Error.cause pattern from ES2022.
+   */
+  public readonly cause?: unknown;
+
+  /**
    * Create a new IVXPError.
    *
    * @param message - Human-readable error description
@@ -22,5 +28,6 @@ export class IVXPError extends Error {
   ) {
     super(message, cause !== undefined ? { cause } : undefined);
     this.name = "IVXPError";
+    this.cause = cause;
   }
 }
