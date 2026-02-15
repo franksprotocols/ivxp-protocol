@@ -38,6 +38,8 @@ export {
   type IVXPProviderConfig,
   type ProviderStartResult,
   type ServiceHandler,
+  type OrderStatusResponse,
+  type DownloadResponse,
 } from "./provider.js";
 
 /** Default in-memory order storage implementation. */
