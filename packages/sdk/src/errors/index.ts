@@ -17,4 +17,5 @@ export {
   PaymentVerificationError,
   OrderNotFoundError,
   ServiceUnavailableError,
+  MaxPollAttemptsError,
 } from "./specific.js";

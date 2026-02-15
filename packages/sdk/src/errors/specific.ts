@@ -172,3 +172,22 @@ export class ServiceUnavailableError extends IVXPError {
     this.name = "ServiceUnavailableError";
   }
 }
+
+// ---------------------------------------------------------------------------
+// Polling Errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when polling exceeds the maximum number of attempts.
+ *
+ * Provides the number of attempts that were made for diagnostic purposes.
+ */
+export class MaxPollAttemptsError extends IVXPError {
+  constructor(
+    public readonly attempts: number,
+    cause?: unknown,
+  ) {
+    super(`Max polling attempts (${attempts}) exceeded`, "MAX_POLL_ATTEMPTS", cause);
+    this.name = "MaxPollAttemptsError";
+  }
+}
