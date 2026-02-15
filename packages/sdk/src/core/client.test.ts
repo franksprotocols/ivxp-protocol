@@ -7,14 +7,17 @@
  * Uses mocks from @ivxp/test-utils to avoid real blockchain calls.
  */
 
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   MockCryptoService,
   MockPaymentService,
   MockHttpClient,
   TEST_ACCOUNTS,
   createMockServiceCatalog,
+  createMockQuote,
+  resetOrderCounter,
 } from "@ivxp/test-utils";
+import type { ServiceRequestParams } from "./types.js";
 import { IVXPClient, createIVXPClient, type IVXPClientConfig } from "./client.js";
 import { ServiceUnavailableError } from "../errors/specific.js";
 import { IVXPError } from "../errors/base.js";
@@ -663,6 +666,595 @@ describe("IVXPClient", () => {
         expect(ivxpError.details).toHaveProperty("issueCount");
         expect(ivxpError.details).not.toHaveProperty("issues");
       }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // requestQuote() tests
+  // -------------------------------------------------------------------------
+
+  describe("requestQuote()", () => {
+    /** Standard request params used across tests. */
+    const DEFAULT_REQUEST_PARAMS: ServiceRequestParams = {
+      serviceType: "code_review",
+      description: "Review my TypeScript code for security issues",
+      budgetUsdc: 10,
+    };
+
+    /** Create a client with mock HTTP and crypto services. */
+    function createClientWithMocks(mockHttp: MockHttpClient, address?: `0x${string}`): IVXPClient {
+      const mockCrypto = new MockCryptoService({
+        address: address ?? TEST_ACCOUNTS.client.address,
+      });
+      return new IVXPClient({
+        ...MINIMAL_CONFIG,
+        httpClient: mockHttp,
+        cryptoService: mockCrypto,
+      });
+    }
+
+    beforeEach(() => {
+      resetOrderCounter();
+    });
+
+    it("should request a quote and return a validated ServiceQuote", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      const quote = await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      // Verify the response is transformed to camelCase
+      expect(quote.protocol).toBe("IVXP/1.0");
+      expect(quote.messageType).toBe("service_quote");
+      expect(quote.orderId).toBeDefined();
+      expect(quote.providerAgent.name).toBe("TestProvider");
+      expect(quote.quote.priceUsdc).toBe(10);
+      expect(quote.quote.network).toBe("base-sepolia");
+    });
+
+    it("should POST to {providerUrl}/ivxp/request", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      const calls = mockHttp.getPostCalls();
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url).toBe("http://provider.test/ivxp/request");
+    });
+
+    it("should strip trailing slashes from provider URL", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      await client.requestQuote("http://provider.test///", DEFAULT_REQUEST_PARAMS);
+
+      const calls = mockHttp.getPostCalls();
+      expect(calls[0].url).toBe("http://provider.test/ivxp/request");
+    });
+
+    it("should auto-inject client wallet address", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp, TEST_ACCOUNTS.client.address);
+
+      await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      const calls = mockHttp.getPostCalls();
+      const body = calls[0].body as Record<string, unknown>;
+      const clientAgent = body.client_agent as Record<string, unknown>;
+      expect(clientAgent.wallet_address).toBe(TEST_ACCOUNTS.client.address);
+    });
+
+    it("should auto-inject timestamp in ISO format", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      const calls = mockHttp.getPostCalls();
+      const body = calls[0].body as Record<string, unknown>;
+      expect(body.timestamp).toBeDefined();
+      expect(typeof body.timestamp).toBe("string");
+      // Should be a valid ISO timestamp
+      expect(Date.parse(body.timestamp as string)).not.toBeNaN();
+    });
+
+    it("should include protocol version in request body", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      const calls = mockHttp.getPostCalls();
+      const body = calls[0].body as Record<string, unknown>;
+      expect(body.protocol).toBe("IVXP/1.0");
+      expect(body.message_type).toBe("service_request");
+    });
+
+    it("should include service request details in wire format", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      await client.requestQuote("http://provider.test", {
+        serviceType: "translation",
+        description: "Translate my docs",
+        budgetUsdc: 25,
+        deliveryFormat: "markdown",
+      });
+
+      const calls = mockHttp.getPostCalls();
+      const body = calls[0].body as Record<string, unknown>;
+      const serviceRequest = body.service_request as Record<string, unknown>;
+      expect(serviceRequest.type).toBe("translation");
+      expect(serviceRequest.description).toBe("Translate my docs");
+      expect(serviceRequest.budget_usdc).toBe(25);
+      expect(serviceRequest.delivery_format).toBe("markdown");
+    });
+
+    it("should include optional deadline in ISO format", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+      const deadline = new Date("2026-03-01T12:00:00Z");
+
+      await client.requestQuote("http://provider.test", {
+        ...DEFAULT_REQUEST_PARAMS,
+        deadline,
+      });
+
+      const calls = mockHttp.getPostCalls();
+      const body = calls[0].body as Record<string, unknown>;
+      const serviceRequest = body.service_request as Record<string, unknown>;
+      expect(serviceRequest.deadline).toBe("2026-03-01T12:00:00.000Z");
+    });
+
+    it("should include optional contact endpoint", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      await client.requestQuote("http://provider.test", {
+        ...DEFAULT_REQUEST_PARAMS,
+        contactEndpoint: "https://my-callback.example.com",
+      });
+
+      const calls = mockHttp.getPostCalls();
+      const body = calls[0].body as Record<string, unknown>;
+      const clientAgent = body.client_agent as Record<string, unknown>;
+      expect(clientAgent.contact_endpoint).toBe("https://my-callback.example.com");
+    });
+
+    it("should validate response using Zod schema (camelCase output)", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      const quote = await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      // Should have camelCase fields (Zod transform output)
+      expect(quote).toHaveProperty("orderId");
+      expect(quote).toHaveProperty("messageType");
+      expect(quote).toHaveProperty("providerAgent");
+      expect(quote.providerAgent).toHaveProperty("walletAddress");
+      expect(quote.quote).toHaveProperty("priceUsdc");
+      expect(quote.quote).toHaveProperty("estimatedDelivery");
+      expect(quote.quote).toHaveProperty("paymentAddress");
+
+      // Should NOT have snake_case fields (wire format)
+      expect(quote).not.toHaveProperty("order_id");
+      expect(quote).not.toHaveProperty("message_type");
+      expect(quote).not.toHaveProperty("provider_agent");
+    });
+
+    it("should throw IVXPError with INVALID_QUOTE_FORMAT for invalid response", async () => {
+      const mockHttp = new MockHttpClient({ defaultPostResponse: { invalid: true } });
+      const client = createClientWithMocks(mockHttp);
+
+      await expect(
+        client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS),
+      ).rejects.toThrow(IVXPError);
+
+      try {
+        await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_QUOTE_FORMAT");
+        expect((error as IVXPError).message).toMatch(/validation issue/);
+      }
+    });
+
+    it("should throw ServiceUnavailableError on network failure", async () => {
+      const mockHttp = new MockHttpClient({
+        postError: new Error("Network error"),
+      });
+      const client = createClientWithMocks(mockHttp);
+
+      await expect(
+        client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS),
+      ).rejects.toThrow(ServiceUnavailableError);
+    });
+
+    it("should re-throw IVXPError subclasses without wrapping", async () => {
+      const mockHttp = new MockHttpClient({
+        postError: new ServiceUnavailableError("Provider is down"),
+      });
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ServiceUnavailableError);
+        expect((error as ServiceUnavailableError).message).toBe("Provider is down");
+      }
+    });
+
+    it("should reject empty provider URL", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("", DEFAULT_REQUEST_PARAMS);
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_PROVIDER_URL");
+      }
+    });
+
+    it("should reject non-HTTP protocol URLs", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("ftp://provider.test", DEFAULT_REQUEST_PARAMS);
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_PROVIDER_URL");
+      }
+    });
+
+    it("should emit 'order.quoted' event on successful quote", async () => {
+      const wireQuote = createMockQuote({
+        quote: {
+          price_usdc: 8.5,
+          estimated_delivery: new Date(Date.now() + 3_600_000).toISOString(),
+          payment_address: TEST_ACCOUNTS.provider.address,
+          network: "base-sepolia",
+        },
+      });
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      const receivedEvents: Array<{ orderId: string; priceUsdc: string }> = [];
+      client.on("order.quoted", (payload) => {
+        receivedEvents.push(payload);
+      });
+
+      await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      expect(receivedEvents).toHaveLength(1);
+      expect(receivedEvents[0].orderId).toBeDefined();
+      expect(receivedEvents[0].priceUsdc).toBe("8.5");
+    });
+
+    it("should not emit event on request failure", async () => {
+      const mockHttp = new MockHttpClient({
+        postError: new Error("Network error"),
+      });
+      const client = createClientWithMocks(mockHttp);
+
+      const receivedEvents: unknown[] = [];
+      client.on("order.quoted", (payload) => {
+        receivedEvents.push(payload);
+      });
+
+      await expect(
+        client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS),
+      ).rejects.toThrow();
+
+      expect(receivedEvents).toHaveLength(0);
+    });
+
+    it("should not propagate event handler errors to requestQuote caller", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      client.on("order.quoted", () => {
+        throw new Error("Handler error that should be swallowed");
+      });
+
+      // requestQuote should succeed despite the throwing handler
+      const quote = await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+      expect(quote.orderId).toBeDefined();
+    });
+
+    it("should include provider URL in ServiceUnavailableError message", async () => {
+      const mockHttp = new MockHttpClient({
+        postError: new Error("Connection refused"),
+      });
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ServiceUnavailableError);
+        expect((error as ServiceUnavailableError).message).toContain("http://provider.test");
+      }
+    });
+
+    it("should handle quote with optional terms", async () => {
+      const wireQuote = createMockQuote({
+        terms: {
+          payment_timeout: 3600,
+          revision_policy: "1 free revision",
+          refund_policy: "Full refund within 24h",
+        },
+      });
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      const quote = await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      expect(quote.terms).toBeDefined();
+      expect(quote.terms?.paymentTimeout).toBe(3600);
+      expect(quote.terms?.revisionPolicy).toBe("1 free revision");
+      expect(quote.terms?.refundPolicy).toBe("Full refund within 24h");
+    });
+
+    it("should normalize provider wallet address via Zod transform", async () => {
+      const wireQuote = createMockQuote({
+        provider_agent: {
+          name: "TestProvider",
+          wallet_address: "0xABCDef1234567890ABCDEF1234567890AbCdEf12",
+        },
+      });
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      const quote = await client.requestQuote("http://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      expect(quote.providerAgent.walletAddress).toBe("0xabcdef1234567890abcdef1234567890abcdef12");
+    });
+
+    it("should accept https:// provider URLs", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      const quote = await client.requestQuote("https://provider.test", DEFAULT_REQUEST_PARAMS);
+
+      expect(quote.orderId).toBeDefined();
+      const calls = mockHttp.getPostCalls();
+      expect(calls[0].url).toBe("https://provider.test/ivxp/request");
+    });
+
+    // -----------------------------------------------------------------------
+    // Optional field omission (Issue #3)
+    // -----------------------------------------------------------------------
+
+    it("should not include optional fields in wire body when not provided", async () => {
+      const wireQuote = createMockQuote();
+      const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
+      const client = createClientWithMocks(mockHttp);
+
+      await client.requestQuote("http://provider.test", {
+        serviceType: "code_review",
+        description: "Review my code",
+        budgetUsdc: 10,
+        // No deliveryFormat, deadline, or contactEndpoint
+      });
+
+      const calls = mockHttp.getPostCalls();
+      const body = calls[0].body as Record<string, unknown>;
+      const clientAgent = body.client_agent as Record<string, unknown>;
+      const serviceRequest = body.service_request as Record<string, unknown>;
+
+      // Optional fields should NOT be present (not even as undefined)
+      expect(clientAgent).not.toHaveProperty("contact_endpoint");
+      expect(serviceRequest).not.toHaveProperty("delivery_format");
+      expect(serviceRequest).not.toHaveProperty("deadline");
+    });
+
+    // -----------------------------------------------------------------------
+    // Input validation (Issues #1, #8, #10)
+    // -----------------------------------------------------------------------
+
+    it("should reject empty serviceType", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          serviceType: "",
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+        expect((error as IVXPError).message).toContain("serviceType");
+      }
+    });
+
+    it("should reject whitespace-only serviceType", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          serviceType: "   ",
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+      }
+    });
+
+    it("should reject empty description", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          description: "",
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+        expect((error as IVXPError).message).toContain("description");
+      }
+    });
+
+    it("should reject zero budgetUsdc", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          budgetUsdc: 0,
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+        expect((error as IVXPError).message).toContain("budgetUsdc");
+      }
+    });
+
+    it("should reject negative budgetUsdc", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          budgetUsdc: -5,
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+      }
+    });
+
+    it("should reject NaN budgetUsdc", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          budgetUsdc: NaN,
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+      }
+    });
+
+    it("should reject Infinity budgetUsdc", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          budgetUsdc: Infinity,
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+      }
+    });
+
+    it("should reject invalid deliveryFormat at runtime", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          // Force invalid value past TypeScript via cast
+          deliveryFormat: "pdf" as "markdown",
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+        expect((error as IVXPError).message).toContain("deliveryFormat");
+      }
+    });
+
+    it("should reject past deadline", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+      const pastDate = new Date("2020-01-01T00:00:00Z");
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          deadline: pastDate,
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+        expect((error as IVXPError).message).toContain("future");
+      }
+    });
+
+    it("should reject invalid Date (NaN) deadline", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+      const invalidDate = new Date("not-a-date");
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          deadline: invalidDate,
+        });
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST_PARAMS");
+        expect((error as IVXPError).message).toContain("valid Date");
+      }
+    });
+
+    it("should not make HTTP request when params validation fails", async () => {
+      const mockHttp = new MockHttpClient();
+      const client = createClientWithMocks(mockHttp);
+
+      try {
+        await client.requestQuote("http://provider.test", {
+          ...DEFAULT_REQUEST_PARAMS,
+          serviceType: "",
+        });
+      } catch {
+        // Expected
+      }
+
+      // No HTTP calls should have been made
+      expect(mockHttp.getPostCallCount()).toBe(0);
     });
   });
 });

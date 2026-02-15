@@ -20,15 +20,23 @@ import type {
   ICryptoService,
   IPaymentService,
   IHttpClient,
+  JsonSerializable,
   SDKEvent,
   SDKEventMap,
 } from "@ivxp/protocol";
-import { ServiceCatalogSchema, type ServiceCatalogOutput } from "@ivxp/protocol";
+import {
+  PROTOCOL_VERSION,
+  ServiceCatalogSchema,
+  ServiceQuoteSchema,
+  type ServiceCatalogOutput,
+  type ServiceQuoteOutput,
+} from "@ivxp/protocol";
 import { createCryptoService } from "../crypto/index.js";
 import { PaymentService, type NetworkType } from "../payment/index.js";
 import { createHttpClient } from "../http/index.js";
 import { IVXPError } from "../errors/base.js";
 import { ServiceUnavailableError } from "../errors/specific.js";
+import type { ServiceRequestParams } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Validation constants
@@ -39,6 +47,12 @@ const PRIVATE_KEY_REGEX = /^0x[0-9a-fA-F]{64}$/;
 
 /** Allowed URL protocols for provider URLs. */
 const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+
+/** Default name for the SDK client agent in wire-format messages. */
+const SDK_CLIENT_NAME = "IVXP SDK Client";
+
+/** Valid delivery format values for runtime validation. */
+const VALID_DELIVERY_FORMATS = new Set(["markdown", "json", "code"]);
 
 /**
  * Validate and normalize a provider URL.
@@ -76,6 +90,110 @@ function validateProviderUrl(providerUrl: string): string {
 
   // Strip trailing slashes from origin + pathname
   return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, "");
+}
+
+/**
+ * Validate ServiceRequestParams at runtime.
+ *
+ * Checks all required fields for emptiness, type correctness, and
+ * domain constraints. Called at the start of requestQuote() to fail
+ * fast before making any network requests.
+ *
+ * @param params - The request parameters to validate
+ * @throws IVXPError with code INVALID_REQUEST_PARAMS if any field is invalid
+ */
+function validateRequestParams(params: ServiceRequestParams): void {
+  if (!params.serviceType || params.serviceType.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid request params: serviceType must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "serviceType" },
+    );
+  }
+
+  if (!params.description || params.description.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid request params: description must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "description" },
+    );
+  }
+
+  if (
+    typeof params.budgetUsdc !== "number" ||
+    !Number.isFinite(params.budgetUsdc) ||
+    params.budgetUsdc <= 0
+  ) {
+    throw new IVXPError(
+      "Invalid request params: budgetUsdc must be a positive finite number",
+      "INVALID_REQUEST_PARAMS",
+      { field: "budgetUsdc", value: params.budgetUsdc },
+    );
+  }
+
+  if (params.deliveryFormat !== undefined && !VALID_DELIVERY_FORMATS.has(params.deliveryFormat)) {
+    throw new IVXPError(
+      `Invalid request params: deliveryFormat must be one of "markdown", "json", "code"`,
+      "INVALID_REQUEST_PARAMS",
+      { field: "deliveryFormat", value: params.deliveryFormat },
+    );
+  }
+
+  if (params.deadline !== undefined) {
+    if (!(params.deadline instanceof Date) || isNaN(params.deadline.getTime())) {
+      throw new IVXPError(
+        "Invalid request params: deadline must be a valid Date",
+        "INVALID_REQUEST_PARAMS",
+        { field: "deadline" },
+      );
+    }
+
+    if (params.deadline.getTime() <= Date.now()) {
+      throw new IVXPError(
+        "Invalid request params: deadline must be in the future",
+        "INVALID_REQUEST_PARAMS",
+        { field: "deadline" },
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wire-format types (for requestQuote body construction)
+// ---------------------------------------------------------------------------
+
+/**
+ * Wire-format client agent identification.
+ * Matches the snake_case structure expected by POST /ivxp/request.
+ */
+interface WireFormatClientAgent {
+  readonly name: string;
+  readonly wallet_address: string;
+  readonly contact_endpoint?: string;
+}
+
+/**
+ * Wire-format service request details.
+ * Matches the snake_case structure expected by POST /ivxp/request.
+ */
+interface WireFormatServiceRequest {
+  readonly type: string;
+  readonly description: string;
+  readonly budget_usdc: number;
+  readonly delivery_format?: string;
+  readonly deadline?: string;
+}
+
+/**
+ * Complete wire-format service request message.
+ * Sent as the POST body to {providerUrl}/ivxp/request.
+ */
+interface WireFormatServiceRequestMessage {
+  readonly protocol: string;
+  readonly message_type: "service_request";
+  readonly timestamp: string;
+  readonly client_agent: WireFormatClientAgent;
+  readonly service_request: WireFormatServiceRequest;
 }
 
 // ---------------------------------------------------------------------------
@@ -335,6 +453,114 @@ export class IVXPClient {
 
       throw new ServiceUnavailableError(
         `Failed to fetch catalog from ${normalizedUrl}: ${errorMessage}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Request Quote
+  // -------------------------------------------------------------------------
+
+  /**
+   * Request a service quote from a provider.
+   *
+   * Builds a wire-format service request message with auto-injected client
+   * info (wallet address, timestamp, protocol version), sends it via
+   * POST to `{providerUrl}/ivxp/request`, validates the response against
+   * the ServiceQuote Zod schema, and emits an 'order.quoted' event on success.
+   *
+   * @param providerUrl - Base URL of the provider (e.g. "http://provider.example.com")
+   * @param params - Service request parameters (serviceType, description, budgetUsdc, etc.)
+   * @returns Validated and typed ServiceQuote with camelCase fields
+   * @throws IVXPError with code INVALID_PROVIDER_URL if providerUrl is not a valid HTTP(S) URL
+   * @throws IVXPError with code INVALID_REQUEST_PARAMS if request parameters fail validation
+   * @throws IVXPError with code INVALID_QUOTE_FORMAT if response fails Zod validation
+   * @throws ServiceUnavailableError if the provider is unreachable or returns a network error
+   */
+  async requestQuote(
+    providerUrl: string,
+    params: ServiceRequestParams,
+  ): Promise<ServiceQuoteOutput> {
+    validateRequestParams(params);
+    const normalizedUrl = validateProviderUrl(providerUrl);
+    const requestUrl = `${normalizedUrl}/ivxp/request`;
+
+    // Auto-inject client info into wire-format request
+    const walletAddress = await this.getAddress();
+
+    // Build client_agent, omitting undefined optional fields
+    const clientAgent: WireFormatClientAgent = {
+      name: SDK_CLIENT_NAME,
+      wallet_address: walletAddress,
+      ...(params.contactEndpoint !== undefined && {
+        contact_endpoint: params.contactEndpoint,
+      }),
+    };
+
+    // Build service_request, omitting undefined optional fields
+    const serviceRequest: WireFormatServiceRequest = {
+      type: params.serviceType,
+      description: params.description,
+      budget_usdc: params.budgetUsdc,
+      ...(params.deliveryFormat !== undefined && {
+        delivery_format: params.deliveryFormat,
+      }),
+      ...(params.deadline !== undefined && {
+        deadline: params.deadline.toISOString(),
+      }),
+    };
+
+    const request: WireFormatServiceRequestMessage = {
+      protocol: PROTOCOL_VERSION,
+      message_type: "service_request" as const,
+      timestamp: new Date().toISOString(),
+      client_agent: clientAgent,
+      service_request: serviceRequest,
+    };
+
+    try {
+      // Cast is safe: conditional spreads above guarantee no undefined
+      // values exist in the serialized object. TypeScript cannot verify
+      // this through the recursive JsonSerializable type.
+      const rawResponse = await this.httpClient.post<unknown>(
+        requestUrl,
+        request as unknown as JsonSerializable,
+      );
+
+      // Validate and transform wire-format JSON using Zod schema
+      const quote = ServiceQuoteSchema.parse(rawResponse);
+
+      // Emit event on successful quote
+      this.emit("order.quoted", {
+        orderId: quote.orderId,
+        priceUsdc: String(quote.quote.priceUsdc),
+      });
+
+      return quote;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new IVXPError(
+          `Invalid quote format from ${normalizedUrl}: ${error.issues.length} validation issue(s)`,
+          "INVALID_QUOTE_FORMAT",
+          { issueCount: error.issues.length },
+          error,
+        );
+      }
+
+      if (error instanceof IVXPError) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Unknown error";
+
+      throw new ServiceUnavailableError(
+        `Failed to request quote from ${normalizedUrl}: ${errorMessage}`,
         error instanceof Error ? error : undefined,
       );
     }
