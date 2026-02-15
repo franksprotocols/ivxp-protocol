@@ -92,10 +92,19 @@ class IVXPClient:
     def send_payment(self, payment_address, amount):
         """Send USDC payment using payment-skill"""
 
-        payment_script = os.path.expanduser('~/.claude/skills/payment/scripts/pay')
+        local_payment_script = os.path.join(os.getcwd(), '.skills', 'payment', 'scripts', 'pay')
+        legacy_payment_script = os.path.expanduser('~/.claude/skills/payment/scripts/pay')
+        payment_script = os.getenv('PAYMENT_SCRIPT_PATH', local_payment_script)
+
+        # Backward compatibility: keep old default if local project skill is missing.
+        if payment_script == local_payment_script and not os.path.exists(payment_script):
+            payment_script = legacy_payment_script
 
         if not os.path.exists(payment_script):
-            print(f"❌ Payment skill not installed at {payment_script}")
+            print("❌ Payment skill not found.")
+            print(f"   Checked: {local_payment_script}")
+            print(f"   Checked: {legacy_payment_script}")
+            print("   Or set PAYMENT_SCRIPT_PATH to your script path.")
             return None
 
         try:
@@ -299,21 +308,22 @@ def main():
         print("  WALLET_ADDRESS - Your wallet address")
         print("  WALLET_PRIVATE_KEY - Your wallet private key (for signing)")
         print("  RECEIVE_ENDPOINT - Your endpoint for receiving deliveries (optional)")
+        print("  PAYMENT_SCRIPT_PATH - Path to payment script (optional)")
         print("")
         print("Delivery Methods:")
         print("  • Push: Provider POSTs to RECEIVE_ENDPOINT (requires running server)")
         print("  • Pull: Use 'poll' or 'download' commands (no server needed)")
         print("")
         print("Example:")
-        print("  python3 ivxp-client.py catalog http://localhost:5000")
-        print("  python3 ivxp-client.py request http://localhost:5000 research 'AGI safety' 50")
-        print("  python3 ivxp-client.py poll http://localhost:5000 ivxp-123...")
+        print("  python3 ivxp-client.py catalog http://localhost:5055")
+        print("  python3 ivxp-client.py request http://localhost:5055 research 'AGI safety' 50")
+        print("  python3 ivxp-client.py poll http://localhost:5055 ivxp-123...")
         sys.exit(1)
 
     # Get wallet details from environment
     wallet_address = os.getenv('WALLET_ADDRESS')
     private_key = os.getenv('WALLET_PRIVATE_KEY')
-    receive_endpoint = os.getenv('RECEIVE_ENDPOINT', 'http://localhost:6000/ivxp/receive')
+    receive_endpoint = os.getenv('RECEIVE_ENDPOINT', 'http://localhost:6066/ivxp/receive')
 
     if not wallet_address or not private_key:
         print("❌ Missing environment variables:")
