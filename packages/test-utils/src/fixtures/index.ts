@@ -13,6 +13,7 @@ export {
 
 export {
   createMockDeliveryRequest,
+  createMockDeliveryResponse,
   createMockOrder,
   createMockOrderStatusResponse,
   createMockPaymentProof,

@@ -20,9 +20,11 @@ import {
   ServiceCatalogSchema,
   ServiceQuoteSchema,
   OrderStatusResponseSchema,
+  DeliveryResponseSchema,
   type ServiceCatalogOutput,
   type ServiceQuoteOutput,
   type OrderStatusResponseOutput,
+  type DeliveryResponseOutput,
 } from "@ivxp/protocol";
 import { createCryptoService, formatIVXPMessage } from "../crypto/index.js";
 import { PaymentService, type NetworkType } from "../payment/index.js";
@@ -30,7 +32,12 @@ import { createHttpClient } from "../http/index.js";
 import { IVXPError } from "../errors/base.js";
 import { PartialSuccessError, ServiceUnavailableError } from "../errors/specific.js";
 import { pollWithBackoff, type PollOptions } from "../polling/index.js";
-import type { ServiceRequestParams, SubmitPaymentQuote, PaymentResult } from "./types.js";
+import type {
+  ServiceRequestParams,
+  SubmitPaymentQuote,
+  PaymentResult,
+  DownloadOptions,
+} from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Validation constants
@@ -911,8 +918,135 @@ export class IVXPClient {
   }
 
   // -------------------------------------------------------------------------
+  // Download Deliverable
+  // -------------------------------------------------------------------------
+
+  /**
+   * Download a completed deliverable from a provider.
+   *
+   * Makes a GET request to `{providerUrl}/ivxp/orders/{orderId}/deliverable`,
+   * validates the response against the DeliveryResponse Zod schema (which
+   * transforms wire-format snake_case to camelCase), and emits an
+   * 'order.delivered' event on success.
+   *
+   * Supports multiple deliverable formats (JSON, markdown, code, binary).
+   * The response is validated as a complete DeliveryResponse message per
+   * the IVXP/1.0 wire protocol.
+   *
+   * If `options.savePath` is provided, the deliverable content will be
+   * written to the specified file path (requires Node.js runtime).
+   *
+   * @param providerUrl - Base URL of the provider (e.g. "http://provider.example.com")
+   * @param orderId - The order identifier for the deliverable to download
+   * @param options - Optional download configuration (savePath)
+   * @returns Validated and typed DeliveryResponseOutput with camelCase fields
+   * @throws IVXPError with code INVALID_PROVIDER_URL if providerUrl is not a valid HTTP(S) URL
+   * @throws IVXPError with code INVALID_REQUEST_PARAMS if orderId is invalid
+   * @throws IVXPError with code INVALID_DELIVERABLE_FORMAT if response fails Zod validation
+   * @throws ServiceUnavailableError if the provider is unreachable or returns a network error
+   */
+  async downloadDeliverable(
+    providerUrl: string,
+    orderId: string,
+    options: DownloadOptions = {},
+  ): Promise<DeliveryResponseOutput> {
+    validateOrderId(orderId);
+    const normalizedUrl = validateProviderUrl(providerUrl);
+    const deliverableUrl = `${normalizedUrl}/ivxp/orders/${encodeURIComponent(orderId)}/deliverable`;
+
+    try {
+      const rawResponse = await this.httpClient.get<unknown>(deliverableUrl);
+
+      // Validate and transform wire-format JSON using Zod schema
+      const deliveryResponse = DeliveryResponseSchema.parse(rawResponse);
+
+      // Verify response orderId matches the requested orderId (security check).
+      // A malicious or misconfigured provider could return a different order's
+      // deliverable, which would be a data integrity violation.
+      if (deliveryResponse.orderId !== orderId) {
+        throw new IVXPError(
+          `Order ID mismatch: requested "${orderId}" but received "${deliveryResponse.orderId}"`,
+          "ORDER_ID_MISMATCH",
+          { requestedOrderId: orderId, receivedOrderId: deliveryResponse.orderId },
+        );
+      }
+
+      // Save to file if path provided
+      if (options.savePath) {
+        await this.saveDeliverable(deliveryResponse, options.savePath);
+      }
+
+      // Emit event on successful download
+      this.emit("order.delivered", {
+        orderId: deliveryResponse.orderId,
+        deliverableUrl,
+      });
+
+      return deliveryResponse;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new IVXPError(
+          `Invalid deliverable format from ${normalizedUrl}: ${error.issues.length} validation issue(s)`,
+          "INVALID_DELIVERABLE_FORMAT",
+          { issueCount: error.issues.length },
+          error,
+        );
+      }
+
+      if (error instanceof IVXPError) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Unknown error";
+
+      throw new ServiceUnavailableError(
+        `Failed to download deliverable from ${normalizedUrl}: ${errorMessage}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Save deliverable content to a file.
+   *
+   * Writes the deliverable content to the specified file path.
+   * Requires Node.js runtime with `fs/promises` module available.
+   *
+   * Uses dynamic import so this module remains usable in browser
+   * environments where `fs/promises` is not available (the method
+   * simply won't be called in browser contexts).
+   *
+   * @param deliveryResponse - The validated delivery response
+   * @param filePath - The file path to write the content to
+   */
+  private async saveDeliverable(
+    deliveryResponse: DeliveryResponseOutput,
+    filePath: string,
+  ): Promise<void> {
+    // Dynamic import to keep the SDK browser-compatible.
+    // Type assertion needed because @types/node is not a dependency.
+    const fsModule = "fs/promises";
+    const fs = (await import(/* @vite-ignore */ fsModule)) as {
+      writeFile: (path: string, data: string, encoding: string) => Promise<void>;
+    };
+    const content = deliveryResponse.deliverable.content;
+
+    if (typeof content === "string") {
+      await fs.writeFile(filePath, content, "utf-8");
+    } else {
+      // For objects/arrays, serialize to JSON with indentation
+      await fs.writeFile(filePath, JSON.stringify(content, null, 2), "utf-8");
+    }
+  }
 
   /**
    * Emit an SDK event with a typed payload.

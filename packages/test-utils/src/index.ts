@@ -22,6 +22,7 @@ export {
 
   // Orders
   createMockDeliveryRequest,
+  createMockDeliveryResponse,
   createMockOrder,
   createMockOrderStatusResponse,
   createMockPaymentProof,

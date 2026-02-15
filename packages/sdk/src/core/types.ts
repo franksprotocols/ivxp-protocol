@@ -114,3 +114,22 @@ export interface PaymentResult {
   /** The updated order status (typically "paid"). */
   readonly status: OrderStatus;
 }
+
+// ---------------------------------------------------------------------------
+// DownloadOptions -- Input for client.downloadDeliverable()
+// ---------------------------------------------------------------------------
+
+/**
+ * Options for downloading a deliverable from a provider.
+ */
+export interface DownloadOptions {
+  /**
+   * Optional path to save the deliverable to a file.
+   *
+   * When provided, the deliverable content will be written to this path
+   * in addition to being returned. Requires a Node.js runtime with
+   * `fs/promises` available. The file will be overwritten if it already
+   * exists.
+   */
+  readonly savePath?: string;
+}
