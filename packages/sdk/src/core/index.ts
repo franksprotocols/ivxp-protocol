@@ -37,6 +37,7 @@ export {
   createIVXPProvider,
   type IVXPProviderConfig,
   type ProviderStartResult,
+  type ServiceHandler,
 } from "./provider.js";
 
 /** Default in-memory order storage implementation. */
