@@ -25,9 +25,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@ivxp/protocol": "workspace:*"
+    "@ivxp/protocol": "workspace:*",
+    "viem": "^2.0.0"
   },
   "devDependencies": {
+    "@ivxp/test-utils": "workspace:*",
     "tsup": "^8.0.0"
   },
   "license": "MIT"

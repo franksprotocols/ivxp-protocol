@@ -1,14 +1,12 @@
 /**
- * @ivxp/sdk
+ * Crypto module exports.
  *
- * Client library for the Intelligence Value Exchange Protocol.
+ * Provides EIP-191 signature service for the IVXP SDK.
  */
-
-// Crypto module
 export {
   CryptoService,
   createCryptoService,
   formatIVXPMessage,
   type IVXPMessageParams,
   type IVXPSignedMessage,
-} from "./crypto/index.js";
+} from "./signature.js";
