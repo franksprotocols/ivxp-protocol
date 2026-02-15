@@ -43,9 +43,13 @@
 export {
   IVXPClient,
   createIVXPClient,
+  createCallbackServer,
   EventEmitter,
   type IVXPClientConfig,
   type OrderPollOptions,
+  type CallbackServerOptions,
+  type CallbackServerResult,
+  type RejectionDetails,
   type ServiceRequestParams,
   type SubmitPaymentQuote,
   type PaymentResult,

@@ -15,6 +15,9 @@
  * - {@link DownloadOptions} - Options for downloading deliverables
  * - {@link ConfirmationResult} - Result of a successful delivery confirmation
  * - {@link OrderPollOptions} - Configuration for order status polling
+ * - {@link createCallbackServer} - Factory for push delivery callback server
+ * - {@link CallbackServerOptions} - Configuration for the callback server
+ * - {@link CallbackServerResult} - Result of creating a callback server
  */
 
 /** Main IVXP client class and factory. */
@@ -24,6 +27,14 @@ export {
   type IVXPClientConfig,
   type OrderPollOptions,
 } from "./client.js";
+
+/** Callback server for push delivery reception. */
+export {
+  createCallbackServer,
+  type CallbackServerOptions,
+  type CallbackServerResult,
+  type RejectionDetails,
+} from "./callback-server.js";
 
 /** Lightweight, type-safe event emitter and SDK event types. */
 export { EventEmitter } from "./events.js";
