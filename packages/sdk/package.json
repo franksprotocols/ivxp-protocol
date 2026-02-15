@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "IVXP SDK - Client library for the Intelligence Value Exchange Protocol",
+  "description": "TypeScript SDK for IVXP Protocol - Client library for the Intelligence Value Exchange Protocol",
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,11 +13,34 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./crypto": {
+      "types": "./dist/crypto/index.d.ts",
+      "import": "./dist/crypto/index.js",
+      "require": "./dist/crypto/index.cjs"
+    },
+    "./payment": {
+      "types": "./dist/payment/index.d.ts",
+      "import": "./dist/payment/index.js",
+      "require": "./dist/payment/index.cjs"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js",
+      "require": "./dist/core/index.cjs"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "import": "./dist/errors/index.js",
+      "require": "./dist/errors/index.cjs"
     }
   },
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -31,7 +55,28 @@
   },
   "devDependencies": {
     "@ivxp/test-utils": "workspace:*",
-    "tsup": "^8.0.0"
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "keywords": [
+    "ivxp",
+    "protocol",
+    "sdk",
+    "web3",
+    "usdc",
+    "agent",
+    "base",
+    "eip-191",
+    "crypto",
+    "payment"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/franksprotocols/ivxp-protocol.git",
+    "directory": "packages/sdk"
   },
   "license": "MIT"
 }
