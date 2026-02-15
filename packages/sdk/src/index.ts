@@ -43,6 +43,9 @@ export {
   SignatureVerificationError,
   PaymentVerificationError,
   OrderNotFoundError,
+  OrderExpiredError,
   ServiceUnavailableError,
   MaxPollAttemptsError,
+  PartialSuccessError,
+  ERROR_CODES,
 } from "./errors/index.js";
