@@ -13,4 +13,8 @@ export {
   PaymentPendingError,
   PaymentFailedError,
   PaymentAmountMismatchError,
+  SignatureVerificationError,
+  PaymentVerificationError,
+  OrderNotFoundError,
+  ServiceUnavailableError,
 } from "./specific.js";

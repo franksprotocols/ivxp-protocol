@@ -16,6 +16,10 @@ import {
   PaymentPendingError,
   PaymentFailedError,
   PaymentAmountMismatchError,
+  SignatureVerificationError,
+  PaymentVerificationError,
+  OrderNotFoundError,
+  ServiceUnavailableError,
 } from "./specific.js";
 
 // ---------------------------------------------------------------------------
@@ -417,5 +421,167 @@ describe("PaymentAmountMismatchError", () => {
     expect(mismatchError).not.toBeInstanceOf(PaymentNotFoundError);
     expect(notFoundError).not.toBeInstanceOf(PaymentAmountMismatchError);
     expect(mismatchError.code).not.toBe(notFoundError.code);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SignatureVerificationError
+// ---------------------------------------------------------------------------
+
+describe("SignatureVerificationError", () => {
+  it("should be an instance of IVXPError", () => {
+    const error = new SignatureVerificationError("invalid signature");
+    expect(error).toBeInstanceOf(IVXPError);
+  });
+
+  it("should be an instance of Error", () => {
+    const error = new SignatureVerificationError("invalid signature");
+    expect(error).toBeInstanceOf(Error);
+  });
+
+  it("should have the SIGNATURE_INVALID error code", () => {
+    const error = new SignatureVerificationError("invalid");
+    expect(error.code).toBe("SIGNATURE_INVALID");
+  });
+
+  it("should have the name SignatureVerificationError", () => {
+    const error = new SignatureVerificationError("invalid");
+    expect(error.name).toBe("SignatureVerificationError");
+  });
+
+  it("should have the correct message", () => {
+    const error = new SignatureVerificationError("EIP-191 signature is invalid");
+    expect(error.message).toBe("EIP-191 signature is invalid");
+  });
+
+  it("should support error cause chain", () => {
+    const cause = new Error("crypto error");
+    const error = new SignatureVerificationError("invalid", cause);
+    expect(error.cause).toBe(cause);
+  });
+
+  it("should have undefined cause when not provided", () => {
+    const error = new SignatureVerificationError("invalid");
+    expect(error.cause).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PaymentVerificationError
+// ---------------------------------------------------------------------------
+
+describe("PaymentVerificationError", () => {
+  it("should be an instance of IVXPError", () => {
+    const error = new PaymentVerificationError("payment not verified");
+    expect(error).toBeInstanceOf(IVXPError);
+  });
+
+  it("should be an instance of Error", () => {
+    const error = new PaymentVerificationError("payment not verified");
+    expect(error).toBeInstanceOf(Error);
+  });
+
+  it("should have the PAYMENT_NOT_VERIFIED error code", () => {
+    const error = new PaymentVerificationError("not verified");
+    expect(error.code).toBe("PAYMENT_NOT_VERIFIED");
+  });
+
+  it("should have the name PaymentVerificationError", () => {
+    const error = new PaymentVerificationError("not verified");
+    expect(error.name).toBe("PaymentVerificationError");
+  });
+
+  it("should support error cause chain", () => {
+    const cause = new Error("on-chain error");
+    const error = new PaymentVerificationError("not verified", cause);
+    expect(error.cause).toBe(cause);
+  });
+
+  it("should have undefined cause when not provided", () => {
+    const error = new PaymentVerificationError("not verified");
+    expect(error.cause).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OrderNotFoundError
+// ---------------------------------------------------------------------------
+
+describe("OrderNotFoundError", () => {
+  it("should be an instance of IVXPError", () => {
+    const error = new OrderNotFoundError("not found");
+    expect(error).toBeInstanceOf(IVXPError);
+  });
+
+  it("should be an instance of Error", () => {
+    const error = new OrderNotFoundError("not found");
+    expect(error).toBeInstanceOf(Error);
+  });
+
+  it("should have the ORDER_NOT_FOUND error code", () => {
+    const error = new OrderNotFoundError("not found");
+    expect(error.code).toBe("ORDER_NOT_FOUND");
+  });
+
+  it("should have the name OrderNotFoundError", () => {
+    const error = new OrderNotFoundError("not found");
+    expect(error.name).toBe("OrderNotFoundError");
+  });
+
+  it("should support error cause chain", () => {
+    const cause = new Error("db error");
+    const error = new OrderNotFoundError("not found", cause);
+    expect(error.cause).toBe(cause);
+  });
+
+  it("should have undefined cause when not provided", () => {
+    const error = new OrderNotFoundError("not found");
+    expect(error.cause).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ServiceUnavailableError
+// ---------------------------------------------------------------------------
+
+describe("ServiceUnavailableError", () => {
+  it("should be an instance of IVXPError", () => {
+    const error = new ServiceUnavailableError("service down");
+    expect(error).toBeInstanceOf(IVXPError);
+  });
+
+  it("should be an instance of Error", () => {
+    const error = new ServiceUnavailableError("service down");
+    expect(error).toBeInstanceOf(Error);
+  });
+
+  it("should have the SERVICE_UNAVAILABLE error code", () => {
+    const error = new ServiceUnavailableError("unavailable");
+    expect(error.code).toBe("SERVICE_UNAVAILABLE");
+  });
+
+  it("should have the name ServiceUnavailableError", () => {
+    const error = new ServiceUnavailableError("unavailable");
+    expect(error.name).toBe("ServiceUnavailableError");
+  });
+
+  it("should support error cause chain", () => {
+    const cause = new Error("ECONNREFUSED");
+    const error = new ServiceUnavailableError("unavailable", cause);
+    expect(error.cause).toBe(cause);
+  });
+
+  it("should have undefined cause when not provided", () => {
+    const error = new ServiceUnavailableError("unavailable");
+    expect(error.cause).toBeUndefined();
+  });
+
+  it("should be distinguishable from SignatureVerificationError", () => {
+    const svcError = new ServiceUnavailableError("unavailable");
+    const sigError = new SignatureVerificationError("invalid");
+
+    expect(svcError).not.toBeInstanceOf(SignatureVerificationError);
+    expect(sigError).not.toBeInstanceOf(ServiceUnavailableError);
+    expect(svcError.code).not.toBe(sigError.code);
   });
 });

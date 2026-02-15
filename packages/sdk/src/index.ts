@@ -24,6 +24,9 @@ export {
   type PaymentClientOverrides,
 } from "./payment/index.js";
 
+// HTTP module
+export { HttpClient, createHttpClient, type HttpClientOptions } from "./http/index.js";
+
 // Errors
 export {
   IVXPError,
@@ -34,4 +37,8 @@ export {
   PaymentPendingError,
   PaymentFailedError,
   PaymentAmountMismatchError,
+  SignatureVerificationError,
+  PaymentVerificationError,
+  OrderNotFoundError,
+  ServiceUnavailableError,
 } from "./errors/index.js";

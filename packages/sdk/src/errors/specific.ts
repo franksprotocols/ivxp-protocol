@@ -116,3 +116,59 @@ export class PaymentAmountMismatchError extends IVXPError {
     this.name = "PaymentAmountMismatchError";
   }
 }
+
+// ---------------------------------------------------------------------------
+// HTTP Client Errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when EIP-191 signature verification fails (HTTP 401).
+ *
+ * Indicates the request signature could not be verified,
+ * typically due to an invalid or missing signature header.
+ */
+export class SignatureVerificationError extends IVXPError {
+  constructor(message: string, cause?: unknown) {
+    super(message, "SIGNATURE_INVALID", cause);
+    this.name = "SignatureVerificationError";
+  }
+}
+
+/**
+ * Thrown when payment verification fails (HTTP 402).
+ *
+ * Indicates the payment associated with the request could not
+ * be verified on-chain.
+ */
+export class PaymentVerificationError extends IVXPError {
+  constructor(message: string, cause?: unknown) {
+    super(message, "PAYMENT_NOT_VERIFIED", cause);
+    this.name = "PaymentVerificationError";
+  }
+}
+
+/**
+ * Thrown when the requested order is not found (HTTP 404).
+ *
+ * Indicates the specified order ID does not exist in the
+ * Provider's order storage.
+ */
+export class OrderNotFoundError extends IVXPError {
+  constructor(message: string, cause?: unknown) {
+    super(message, "ORDER_NOT_FOUND", cause);
+    this.name = "OrderNotFoundError";
+  }
+}
+
+/**
+ * Thrown when the requested service is unavailable (HTTP 5xx).
+ *
+ * Indicates the Provider is experiencing an internal error
+ * or is temporarily unable to process requests.
+ */
+export class ServiceUnavailableError extends IVXPError {
+  constructor(message: string, cause?: unknown) {
+    super(message, "SERVICE_UNAVAILABLE", cause);
+    this.name = "ServiceUnavailableError";
+  }
+}
