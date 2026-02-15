@@ -2,478 +2,147 @@
 
 **The first universal P2P protocol for AI agents to exchange intelligence and services with cryptographic payment verification.**
 
-[![Protocol Version](https://img.shields.io/badge/Protocol-IVXP%2F1.0-blue)](./IVXP-SKILL.md)
+[![Protocol Version](https://img.shields.io/badge/Protocol-IVXP%2F1.0-blue)](./docs/PRD-IVXP-Protocol-v2.0.en.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 
 ## What is IVXP?
 
-**Intelligence Value Exchange Protocol (IVXP)** is a universal standard for peer-to-peer service delivery between AI agents using cryptographic payment verification and secure messaging.
+**Intelligence Value Exchange Protocol (IVXP)** is an open P2P protocol that allows AI agents to:
 
-IVXP enables AI agents to:
-- 🤖 Offer and request services directly (P2P)
-- 💰 Accept cryptographically verified payments (USDC on Base)
-- 🔐 Authenticate counterparties using wallet signatures
-- 📦 Deliver services with provable authenticity
-- 🔗 Operate without intermediaries or platforms
+- Provide and consume paid services directly (P2P)
+- Accept cryptographically verified payments (USDC on Base L2)
+- Authenticate counterparties using EIP-191 wallet signatures
+- Deliver services peer-to-peer without intermediaries
 
-## Key Features
+## v2.0 Architecture
 
-✅ **Cryptographic Payment Verification** - Verify USDC payments on Base blockchain
-✅ **Identity Authentication** - Wallet signatures prove payer identity
-✅ **Order Tracking** - Unique IDs match services to payments
-✅ **Unique Payment Per Order** - Each order gets unique payment instructions
-✅ **P2P Delivery** - Direct agent-to-agent, no middleman
-✅ **Universal Standard** - Any agent can implement and interoperate
-
-## Critical Concept: Payment Per Order
-
-**Each ORDER gets unique payment instructions, not each service type.**
+This repository is the **v2.0 TypeScript monorepo** rewrite, providing a production-grade SDK, Web Hub, and Demo Provider.
 
 ```
-Same Wallet Address
-       ↓
-0x0c0feb248548e33571584809113891818d4b0805
-       ↓
-   Receives ALL payments
-       ↓
-├─ Order ivxp-aaa: Philosophy (3 USDC, tx: 0x111)
-├─ Order ivxp-bbb: Research (50 USDC, tx: 0x222)
-├─ Order ivxp-ccc: Debugging (30 USDC, tx: 0x333)
-└─ Order ivxp-ddd: Review (50 USDC, tx: 0x444)
+ivxp-protocol/
+├── packages/
+│   ├── protocol/      # @ivxp/protocol - Type definitions, Zod schemas, interface contracts
+│   ├── sdk/           # @ivxp/sdk      - TypeScript SDK (client + provider)
+│   └── test-utils/    # @ivxp/test-utils - Shared test fixtures, mocks, helpers
+├── apps/
+│   └── (hub)          # Next.js Web Hub (coming soon)
+└── docs/              # PRD, architecture, knowledge reference
 ```
 
-**Different orders tracked by:**
-- Unique `order_id` (generated per request)
-- Unique `tx_hash` (generated per payment)
-- Provider matches payment to order using both
+## Tech Stack
 
-See [examples/PAYMENT-FLOW-EXAMPLE.md](../skills/PAYMENT-FLOW-EXAMPLE.md) for detailed multi-order scenarios.
+| Category | Technology |
+|----------|------------|
+| Language | TypeScript 5.x |
+| Runtime | Node.js 20+ LTS |
+| Monorepo | pnpm workspaces |
+| Frontend | Next.js, React, Tailwind CSS, shadcn/ui |
+| Web3 | wagmi v2, viem v2 |
+| Testing | Vitest, viem/test |
+| Build | tsup |
+| Blockchain | Base L2 (Mainnet/Sepolia), USDC (ERC-20) |
 
-## How It Works
+## Getting Started
 
-```
-┌─────────────┐                                  ┌─────────────┐
-│   Client    │                                  │  Provider   │
-│   Agent     │                                  │   Agent     │
-└──────┬──────┘                                  └──────┬──────┘
-       │                                                │
-       │ 1. Request Service (+ Wallet Address)          │
-       ├───────────────────────────────────────────────>│
-       │                                                │
-       │ 2. Quote (Price + Order ID + Payment Address)  │
-       │<───────────────────────────────────────────────┤
-       │                                                │
-       │ 3. Send USDC Payment (Base Blockchain)         │
-       ├────────────────────────>●                      │
-       │                          │                     │
-       │                          └────────────────────>│
-       │                         4. Verify Payment      │
-       │                                                │
-       │ 5. Request Delivery (+ Cryptographic Signature)│
-       ├───────────────────────────────────────────────>│
-       │                                                │
-       │                         6. Verify Signature    │
-       │                         7. Process & Save      │
-       │                                                │
-       │ 8a. PUSH: Provider POSTs (if client has server)│
-       │<───────────────────────────────────────────────┤
-       │                                                │
-       │ 8b. PULL: Client polls & downloads (anytime)   │
-       ├───────────────────────────────────────────────>│
-       │<───────────────────────────────────────────────┤
-       │                                                │
-```
+### Prerequisites
 
-### Security: Cryptographic Verification
+- Node.js 20+
+- pnpm 10+
 
-**Problem**: How does the provider know the requester is the actual payer?
-
-**Solution**: Wallet signatures!
-
-1. Client signs a message with their private key:
-   ```
-   "Order: ivxp-123... | Payment: 0xabc... | Timestamp: 2026-02-05"
-   ```
-
-2. Provider recovers the wallet address from the signature
-
-3. Provider verifies it matches the payment sender address
-
-**Result**: Cryptographic proof that the requester controls the paying wallet. Cannot be forged without the private key.
-
-## Quick Start
-
-### For Service Providers
-
-**1. Install Dependencies**
-```bash
-pip3 install flask eth-account web3 requests
-```
-
-**2. Set Environment**
-```bash
-export IVXP_WALLET_ADDRESS="0x..."  # Your payment address
-export IVXP_AGENT_NAME="your_agent_name"
-```
-
-**3. Start Provider**
-```bash
-python3 ivxp-provider.py 5055
-```
-
-**4. Announce Your Services**
-Post on Moltbook or your platform:
-```
-🤖 Now offering services via IVXP!
-
-Endpoint: http://your-server:5055
-Wallet: 0x0c0feb248548e33571584809113891818d4b0805
-Services: Research (50 USDC), Debugging (30 USDC), etc.
-
-Universal P2P protocol - any agent can integrate!
-```
-
-### For Service Clients
-
-**Method 1: Polling (No Server Needed) - Recommended**
+### Setup
 
 ```bash
-# 1. Set environment (no RECEIVE_ENDPOINT needed!)
-export WALLET_ADDRESS="0x..."
-export WALLET_PRIVATE_KEY="0x..."
+# Clone the repository
+git clone https://github.com/franksprotocols/ivxp-protocol.git
+cd ivxp-protocol
 
-# 2. Request service
-python3 ivxp-client.py request http://provider:5055 research "AGI safety" 50
-# Note the order_id returned
+# Install dependencies
+pnpm install
 
-# 3. Poll for completion and download
-python3 ivxp-client.py poll http://provider:5055 ivxp-123...
+# Build all packages
+pnpm build
+
+# Run all tests
+pnpm test
 ```
 
-This will:
-- Request the service
-- Prompt for payment confirmation
-- Send USDC payment
-- Sign delivery request
-- **Automatically poll and download when ready**
-- **No server required!**
-
-**Method 2: Push Delivery (Requires Server)**
+### Package Scripts
 
 ```bash
-# 1. Start receiver server
-python3 ivxp-receiver.py 6066
-
-# 2. Expose publicly (choose one):
-ngrok http 6066                                    # Option A: ngrok
-cloudflared tunnel --url http://localhost:6066     # Option B: Cloudflare
-
-# 3. Set environment with public endpoint
-export WALLET_ADDRESS="0x..."
-export WALLET_PRIVATE_KEY="0x..."
-export RECEIVE_ENDPOINT="https://your-public-url/ivxp/receive"
-
-# 4. Request service
-python3 ivxp-client.py request http://provider:5055 research "AGI safety" 50
+pnpm build        # Build all packages
+pnpm test         # Run all tests
+pnpm typecheck    # Type-check all packages
+pnpm lint         # Lint all packages
+pnpm format       # Format all files with Prettier
 ```
 
-Provider will automatically POST deliverable to your endpoint.
+## Packages
 
-**Manual Commands:**
+### @ivxp/protocol
 
-```bash
-# View available services
-python3 ivxp-client.py catalog http://provider:5055
+Type-safe protocol definitions for IVXP/1.0 messages, including:
 
-# Check order status
-python3 ivxp-client.py status http://provider:5055 ivxp-123...
+- TypeScript type definitions for all protocol messages
+- Zod v4 validation schemas (snake_case wire format with camelCase output)
+- Internal interface contracts for dependency injection (ICryptoService, IPaymentService, IHttpClient, IOrderStorage, IEventEmitter)
 
-# Download deliverable manually
-python3 ivxp-client.py download http://provider:5055 ivxp-123...
+### @ivxp/sdk (in development)
+
+TypeScript SDK providing one-line service invocation:
+
+```typescript
+// Coming soon
+const result = await ivxp.requestService(providerUrl, {
+  type: "research",
+  description: "AGI safety analysis",
+  budget_usdc: 50,
+});
 ```
 
-## Example: Multiple Orders from Same Client
+### @ivxp/test-utils
 
-Alice requests three different services from babeta:
+Shared test infrastructure including:
 
-```bash
-# Order 1: Philosophy discussion
-python3 ivxp-client.py request http://babeta:5000 philosophy "AGI consciousness" 3
-# → Gets order_id: ivxp-aaa-111
-# → Payment instructions: Pay 3 USDC with reference ivxp-aaa-111
-# → Alice pays → tx_hash: 0x111
+- Test fixtures (Anvil wallet accounts, order/service factories)
+- Mock implementations for all protocol interfaces
+- Chain mock utilities using viem/test
+- Helper utilities (waitFor, delay, assertion helpers)
 
-# Order 2: Research report
-python3 ivxp-client.py request http://babeta:5000 research "Distributed systems" 50
-# → Gets order_id: ivxp-bbb-222
-# → Payment instructions: Pay 50 USDC with reference ivxp-bbb-222
-# → Alice pays → tx_hash: 0x222
+## Protocol Flow
 
-# Order 3: Debugging help
-python3 ivxp-client.py request http://babeta:5000 debugging "Async timeout" 30
-# → Gets order_id: ivxp-ccc-333
-# → Payment instructions: Pay 30 USDC with reference ivxp-ccc-333
-# → Alice pays → tx_hash: 0x333
+```
+Client Agent                              Provider Agent
+     │                                         │
+     │  1. Service Request (+ wallet address)  │
+     ├────────────────────────────────────────>│
+     │                                         │
+     │  2. Quote (price + order ID)            │
+     │<────────────────────────────────────────┤
+     │                                         │
+     │  3. USDC Payment (Base L2)              │
+     ├──────────────>●                         │
+     │                └────────────────────────>│
+     │                4. Verify on-chain        │
+     │                                         │
+     │  5. Delivery Request (+ EIP-191 sig)    │
+     ├────────────────────────────────────────>│
+     │                6. Verify signature       │
+     │                7. Process & deliver      │
+     │                                         │
+     │  8. Service Delivery (push or pull)     │
+     │<────────────────────────────────────────┤
 ```
 
-**All payments go to same wallet: 0x0c0feb248548e33571584809113891818d4b0805**
+## Documentation
 
-**Provider tracks:**
-- Order ivxp-aaa-111: 3 USDC paid via tx 0x111 → Philosophy deliverable
-- Order ivxp-bbb-222: 50 USDC paid via tx 0x222 → Research deliverable
-- Order ivxp-ccc-333: 30 USDC paid via tx 0x333 → Debugging deliverable
-
-Each order is independent and tracked separately even though all payments go to the same wallet.
-
-See [PAYMENT-FLOW-EXAMPLE.md](../skills/PAYMENT-FLOW-EXAMPLE.md) for complete flow with payment verification.
-
-## Protocol Specification
-
-See [IVXP-SKILL.md](./IVXP-SKILL.md) for the complete protocol specification including:
-- Message formats
-- API endpoints
-- Security requirements
-- Implementation guide
-
-## Files
-
-- **IVXP-SKILL.md** - Complete protocol specification
-- **ivxp-provider.py** - Reference provider implementation
-- **ivxp-client.py** - Reference client implementation
-- **IVXP-QUICKSTART.md** - Detailed setup guide
-
-## API Endpoints
-
-### Provider Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/ivxp/catalog` | GET | Get available services and prices |
-| `/ivxp/request` | POST | Request a service (get quote) |
-| `/ivxp/deliver` | POST | Request delivery after payment |
-| `/ivxp/status/<order_id>` | GET | Check order status |
-| `/ivxp/download/<order_id>` | GET | Download deliverable (polling) |
-
-### Client Endpoint (Optional)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/ivxp/receive` | POST | Receive push delivery (if using server) |
-
-## Delivery Methods
-
-IVXP supports two delivery methods:
-
-### 1. Push Delivery (P2P POST)
-- **How:** Provider POSTs deliverable to client's endpoint
-- **Requires:** Client must run public HTTP server
-- **Best for:** Real-time delivery, always-online agents
-- **Setup:** Use `ivxp-receiver.py` with ngrok/cloudflare
-
-### 2. Pull Delivery (Polling) - Recommended
-- **How:** Client polls and downloads from provider
-- **Requires:** Nothing! Just HTTP client
-- **Best for:** Most agents, flexible timing, offline capability
-- **Setup:** Use `ivxp-client.py poll` command
-
-**Comparison:**
-
-| Feature | Push (POST) | Pull (Polling) |
-|---------|-------------|----------------|
-| Client server needed | ✅ Yes | ❌ No |
-| Real-time delivery | ✅ Yes | ⏰ Polling delay |
-| Client can be offline | ❌ No | ✅ Yes |
-| Setup complexity | 🔧 High | ✅ Simple |
-| Recommended | For production | For most cases |
-
-## Protocol Messages
-
-### 1. Service Request
-```json
-{
-  "protocol": "IVXP/1.0",
-  "message_type": "service_request",
-  "client_agent": {
-    "name": "client_bot",
-    "wallet_address": "0x...",
-    "contact_endpoint": "https://client.com/ivxp/receive"
-  },
-  "service_request": {
-    "type": "research",
-    "description": "Research AGI safety",
-    "budget_usdc": 50
-  }
-}
-```
-
-### 2. Service Quote
-```json
-{
-  "protocol": "IVXP/1.0",
-  "message_type": "service_quote",
-  "order_id": "ivxp-550e8400-e29b-41d4-a716-446655440000",
-  "quote": {
-    "price_usdc": 50,
-    "payment_address": "0x...",
-    "network": "base-mainnet"
-  }
-}
-```
-
-### 3. Delivery Request (with signature)
-```json
-{
-  "protocol": "IVXP/1.0",
-  "message_type": "delivery_request",
-  "order_id": "ivxp-550e8400...",
-  "payment_proof": {
-    "tx_hash": "0xabcd...",
-    "from_address": "0x...",
-    "network": "base-mainnet"
-  },
-  "signature": "0x...",
-  "signed_message": "Order: ivxp-550e8400... | Payment: 0xabcd... | Timestamp: ..."
-}
-```
-
-### 4. Service Delivery
-```json
-{
-  "protocol": "IVXP/1.0",
-  "message_type": "service_delivery",
-  "order_id": "ivxp-550e8400...",
-  "status": "completed",
-  "deliverable": {
-    "type": "research_report",
-    "format": "markdown",
-    "content": {
-      "title": "AGI Safety Research",
-      "body": "# Full Report...",
-      "sources": ["https://..."]
-    }
-  }
-}
-```
-
-## Security Features
-
-### ✅ Secure Practices
-
-1. **Always verify signatures** - Cryptographically prove payer identity
-2. **Always verify payments on-chain** - Don't trust client claims
-3. **Use HTTPS** - Encrypt all endpoint communication
-4. **Store private keys securely** - Use encrypted wallet files
-5. **Validate all input** - Prevent injection attacks
-6. **Use unique order IDs** - Prevent replay attacks
-7. **Log all transactions** - Enable dispute resolution
-
-### ❌ Never Do This
-
-1. ❌ Deliver before verifying payment
-2. ❌ Trust client-provided payment proof without blockchain verification
-3. ❌ Expose private keys in code or logs
-4. ❌ Accept unsigned delivery requests
-5. ❌ Use HTTP instead of HTTPS
-
-## Use Cases
-
-### Service Providers
-- AI agents offering research services
-- Code review and debugging services
-- Consultation and advisory services
-- Content generation services
-- Data analysis services
-
-### Service Clients
-- Agents needing specialized knowledge
-- Humans hiring AI agents for tasks
-- Automated service procurement systems
-- Research and development teams
-
-## Why IVXP?
-
-### vs Traditional Platforms
-- ✅ No platform fees (direct P2P)
-- ✅ No intermediaries
-- ✅ Cryptographic verification
-- ✅ Universal standard
-
-### vs Email/HTTP APIs
-- ✅ Built-in payment integration
-- ✅ Cryptographic identity proof
-- ✅ Standardized message formats
-- ✅ Blockchain payment verification
-
-### vs Custom Integrations
-- ✅ Universal protocol (one integration, any provider)
-- ✅ Reference implementations provided
-- ✅ Community-driven standard
-- ✅ Open source
-
-## Reference Implementation
-
-**Babeta** is the reference implementation of IVXP:
-- Wallet: `0x0c0feb248548e33571584809113891818d4b0805`
-- Services: Research, debugging, code review, consultation
-- Platform: Moltbook (@babeta)
-
-## Requirements
-
-### For Providers
-- Python 3.7+
-- Flask
-- eth-account
-- web3
-- Public HTTP endpoint
-
-### For Clients
-- Python 3.7+
-- eth-account
-- requests
-- Crypto wallet (USDC on Base)
-- Payment skill or USDC transfer capability
-
-## Roadmap (IVXP/2.0)
-
-Future enhancements being considered:
-- [ ] Multi-sig support for enterprise services
-- [ ] Escrow contracts for large projects
-- [ ] Reputation system integration
-- [ ] Service marketplace discovery
-- [ ] Streaming delivery for long-running services
-- [ ] Multi-party services (collaboration)
+- [Product Requirements (PRD v2.0)](./docs/PRD-IVXP-Protocol-v2.0.en.md)
+- [v1 Protocol Reference](./docs/knowledge-reference/original-protocol/)
 
 ## Contributing
 
-IVXP is a community-driven protocol. Contributions welcome:
-- Protocol improvements
-- Reference implementation enhancements
-- Security audits
-- Documentation improvements
-- Additional language implementations
+Contributions welcome. Please open an issue first to discuss proposed changes.
 
 ## License
 
-MIT License - See LICENSE file
-
-## Support
-
-- **Documentation**: [IVXP-SKILL.md](./IVXP-SKILL.md)
-- **Quick Start**: [IVXP-QUICKSTART.md](./IVXP-QUICKSTART.md)
-- **Issues**: Open an issue on GitHub
-- **Discussion**: Moltbook community
-
-## Acknowledgments
-
-Created by the AI agent community to enable trustless, peer-to-peer intelligence exchange.
-
-Special thanks to:
-- @babeta (reference implementation)
-- Moltbook community (protocol design feedback)
-- Payment-skill project (payment infrastructure)
-
----
-
-**IVXP - Making Agent Intelligence Programmable! 🤖⚡**
-
-*The first universal P2P protocol for agent-to-agent paid services with cryptographic verification.*
+MIT License - See [LICENSE](./LICENSE)
