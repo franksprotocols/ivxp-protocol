@@ -309,3 +309,113 @@ export class PartialSuccessError extends IVXPError {
     this.name = "PartialSuccessError";
   }
 }
+
+// ---------------------------------------------------------------------------
+// Budget Error
+// ---------------------------------------------------------------------------
+
+/**
+ * Typed quote info exposed by BudgetExceededError for programmatic access.
+ *
+ * Contains the price and order ID from the quote that exceeded the budget,
+ * allowing callers to inspect the quote without casting.
+ */
+export interface BudgetExceededQuoteInfo {
+  /** The order identifier from the quote. */
+  readonly orderId: string;
+  /** The quoted price in USDC that exceeded the budget. */
+  readonly priceUsdc: number;
+}
+
+/**
+ * Thrown when a service quote price exceeds the configured budget limit.
+ *
+ * This error is thrown BEFORE any on-chain transaction is initiated,
+ * ensuring no USDC is spent when the budget is exceeded. The quote
+ * details are attached for diagnostic purposes.
+ */
+export class BudgetExceededError extends IVXPError {
+  /** Typed quote info for programmatic access. */
+  public readonly quoteInfo: BudgetExceededQuoteInfo;
+
+  constructor(
+    message: string,
+    quoteInfo: BudgetExceededQuoteInfo,
+    public readonly budgetUsdc: number,
+    cause?: unknown,
+  ) {
+    if (
+      typeof quoteInfo.priceUsdc !== "number" ||
+      !Number.isFinite(quoteInfo.priceUsdc) ||
+      quoteInfo.priceUsdc <= 0
+    ) {
+      throw new IVXPError(
+        "BudgetExceededError: priceUsdc must be a positive finite number",
+        "INVALID_ERROR_PARAMS",
+        { priceUsdc: quoteInfo.priceUsdc },
+      );
+    }
+    if (typeof quoteInfo.orderId !== "string" || quoteInfo.orderId.length === 0) {
+      throw new IVXPError(
+        "BudgetExceededError: orderId must be a non-empty string",
+        "INVALID_ERROR_PARAMS",
+        { orderId: quoteInfo.orderId },
+      );
+    }
+
+    super(
+      message,
+      "BUDGET_EXCEEDED",
+      { orderId: quoteInfo.orderId, priceUsdc: quoteInfo.priceUsdc, budgetUsdc },
+      cause,
+    );
+    this.name = "BudgetExceededError";
+    this.quoteInfo = quoteInfo;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Timeout Error
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when the requestService flow exceeds the configured timeout.
+ *
+ * Provides partial state for recovery -- if the payment was already
+ * submitted, the txHash is included so the caller can resume or
+ * verify the transaction manually.
+ */
+export class TimeoutError extends IVXPError {
+  constructor(
+    message: string,
+    public readonly step: string,
+    public readonly partialState: Record<string, unknown> = {},
+    cause?: unknown,
+  ) {
+    super(message, "TIMEOUT", { step, ...partialState }, cause);
+    this.name = "TimeoutError";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Provider Error
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when a provider is unreachable or returns an unexpected error
+ * during the requestService flow.
+ *
+ * Provides the step at which the error occurred and the provider URL
+ * for diagnostic context.
+ */
+export class ProviderError extends IVXPError {
+  constructor(
+    message: string,
+    public readonly providerUrl: string,
+    public readonly step: string,
+    cause?: unknown,
+  ) {
+    super(message, "PROVIDER_ERROR", { providerUrl, step }, cause);
+    this.name = "ProviderError";
+  }
+}

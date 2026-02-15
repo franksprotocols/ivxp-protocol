@@ -89,10 +89,7 @@ function validateOptions(
     );
   }
   if (maxDelay <= 0) {
-    throw new IVXPError(
-      `maxDelay must be greater than 0, got ${maxDelay}`,
-      "INVALID_POLL_OPTIONS",
-    );
+    throw new IVXPError(`maxDelay must be greater than 0, got ${maxDelay}`, "INVALID_POLL_OPTIONS");
   }
   if (maxAttempts <= 0) {
     throw new IVXPError(
@@ -165,11 +162,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
  * @param maxDelay - Maximum delay cap in milliseconds
  * @returns The base delay (before jitter) for the given attempt
  */
-function computeBaseDelay(
-  attempt: number,
-  initialDelay: number,
-  maxDelay: number,
-): number {
+function computeBaseDelay(attempt: number, initialDelay: number, maxDelay: number): number {
   return Math.min(initialDelay * Math.pow(2, attempt), maxDelay);
 }
 
@@ -238,6 +231,12 @@ export async function pollWithBackoff<T>(
     const result = await fn();
     if (result !== null) {
       return result;
+    }
+
+    // Check abort signal after fn() completes to minimize race window
+    // where the signal fires during fn() execution.
+    if (signal?.aborted) {
+      throw new Error("Polling aborted");
     }
 
     // Only sleep between attempts, not after the last failed attempt

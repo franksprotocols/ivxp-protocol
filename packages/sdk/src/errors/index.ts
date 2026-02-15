@@ -21,6 +21,10 @@ export {
   ServiceUnavailableError,
   MaxPollAttemptsError,
   PartialSuccessError,
+  BudgetExceededError,
+  TimeoutError,
+  ProviderError,
+  type BudgetExceededQuoteInfo,
 } from "./specific.js";
 
 /**
@@ -44,4 +48,7 @@ export const ERROR_CODES = {
   SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
   MAX_POLL_ATTEMPTS: "MAX_POLL_ATTEMPTS",
   PARTIAL_SUCCESS: "PARTIAL_SUCCESS",
+  BUDGET_EXCEEDED: "BUDGET_EXCEEDED",
+  TIMEOUT: "TIMEOUT",
+  PROVIDER_ERROR: "PROVIDER_ERROR",
 } as const;

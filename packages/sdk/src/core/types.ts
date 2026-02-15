@@ -23,7 +23,13 @@
  * - `client_agent.wallet_address` (from crypto service)
  */
 
-import type { DeliveryFormat, OrderStatus } from "@ivxp/protocol";
+import type {
+  DeliveryFormat,
+  OrderStatus,
+  ServiceQuoteOutput,
+  DeliveryResponseOutput,
+} from "@ivxp/protocol";
+import type { OrderPollOptions } from "./client.js";
 
 // ---------------------------------------------------------------------------
 // ConfirmationResult -- Return type for client.confirmDelivery()
@@ -163,4 +169,95 @@ export interface DownloadOptions {
    * exists.
    */
   readonly savePath?: string;
+}
+
+// ---------------------------------------------------------------------------
+// RequestServiceParams -- Input for client.requestService()
+// ---------------------------------------------------------------------------
+
+/**
+ * Parameters for the one-line requestService convenience method.
+ *
+ * Orchestrates the complete flow: quote -> pay -> poll -> download -> confirm.
+ * Supports progress callbacks for UI feedback and budget/timeout guards.
+ */
+export interface RequestServiceParams {
+  /** Provider URL (http or https). */
+  readonly providerUrl: string;
+
+  /** Service type to request (must match a catalog entry). */
+  readonly serviceType: string;
+
+  /** Description of what you need. */
+  readonly description: string;
+
+  /**
+   * Maximum budget in USDC.
+   * If the quote price exceeds this, BudgetExceededError is thrown
+   * before any on-chain transaction.
+   */
+  readonly budgetUsdc: number;
+
+  /** Optional delivery format preference. */
+  readonly deliveryFormat?: DeliveryFormat;
+
+  /**
+   * Timeout in milliseconds for the entire flow.
+   * Defaults to 120_000 (2 minutes).
+   */
+  readonly timeoutMs?: number;
+
+  /**
+   * Whether to auto-confirm after delivery.
+   * Defaults to true. Set to false for manual review before confirming.
+   */
+  readonly autoConfirm?: boolean;
+
+  /** Polling options for waiting on delivery. */
+  readonly pollOptions?: Omit<OrderPollOptions, "targetStatuses">;
+
+  /** Called when a quote is received from the provider. */
+  readonly onQuote?: (quote: ServiceQuoteOutput) => void;
+
+  /** Called when on-chain payment is submitted. */
+  readonly onPayment?: (result: PaymentResult) => void;
+
+  /** Called when the order is delivered. */
+  readonly onDelivered?: (delivery: DeliveryResponseOutput) => void;
+
+  /** Called when the delivery is confirmed. */
+  readonly onConfirmed?: (result: ConfirmationResult) => void;
+}
+
+// ---------------------------------------------------------------------------
+// RequestServiceResult -- Return type for client.requestService()
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of a successful one-line requestService call.
+ *
+ * Contains the complete order outcome including the deliverable content,
+ * payment transaction hash, and confirmation status.
+ */
+export interface RequestServiceResult {
+  /** The order identifier. */
+  readonly orderId: string;
+
+  /**
+   * Terminal status of the order.
+   * 'confirmed' when autoConfirm is true, 'delivered' when false.
+   */
+  readonly status: "confirmed" | "delivered";
+
+  /** The downloaded deliverable response. */
+  readonly deliverable: DeliveryResponseOutput;
+
+  /** The original service quote from the provider. */
+  readonly quote: ServiceQuoteOutput;
+
+  /** The on-chain payment transaction hash. */
+  readonly paymentTxHash: `0x${string}`;
+
+  /** ISO 8601 timestamp of confirmation (only set when autoConfirm is true). */
+  readonly confirmedAt?: string;
 }
