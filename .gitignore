@@ -78,6 +78,10 @@ Thumbs.db
 *.swp
 *.swo
 
+# Order data (may contain sensitive info)
+*orders*.json
+ivxp-orders.json
+
 # ----------------------------------------
 # Claude / AI agents
 # ----------------------------------------
@@ -92,6 +96,8 @@ Thumbs.db
 # Project-specific ignores
 # ----------------------------------------
 PRD-IVXP-Protocol-v2.0.cn.md
+
+# BMAD
 _bmad/*
 _bmad/
 _bmad-output/*
