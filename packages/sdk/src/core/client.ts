@@ -19,14 +19,17 @@ import {
   PROTOCOL_VERSION,
   ServiceCatalogSchema,
   ServiceQuoteSchema,
+  OrderStatusResponseSchema,
   type ServiceCatalogOutput,
   type ServiceQuoteOutput,
+  type OrderStatusResponseOutput,
 } from "@ivxp/protocol";
 import { createCryptoService, formatIVXPMessage } from "../crypto/index.js";
 import { PaymentService, type NetworkType } from "../payment/index.js";
 import { createHttpClient } from "../http/index.js";
 import { IVXPError } from "../errors/base.js";
 import { PartialSuccessError, ServiceUnavailableError } from "../errors/specific.js";
+import { pollWithBackoff, type PollOptions } from "../polling/index.js";
 import type { ServiceRequestParams, SubmitPaymentQuote, PaymentResult } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -156,12 +159,15 @@ function validateRequestParams(params: ServiceRequestParams): void {
 }
 
 /**
- * Validate submitPayment parameters at runtime.
+ * Validate an orderId for order status and polling methods.
  *
- * Checks orderId and quote fields for emptiness and domain constraints.
- * Called at the start of submitPayment() to fail fast before on-chain ops.
+ * Rejects empty strings and strings containing pipe characters.
+ * Matches the same validation pattern used in submitPayment.
+ *
+ * @param orderId - The order ID to validate
+ * @throws IVXPError with code INVALID_REQUEST_PARAMS if the orderId is invalid
  */
-function validateSubmitPaymentParams(orderId: string, quote: SubmitPaymentQuote): void {
+function validateOrderId(orderId: string): void {
   if (!orderId || orderId.trim().length === 0) {
     throw new IVXPError(
       "Invalid request params: orderId must be a non-empty string",
@@ -170,9 +176,6 @@ function validateSubmitPaymentParams(orderId: string, quote: SubmitPaymentQuote)
     );
   }
 
-  // Reject pipe characters early so formatIVXPMessage does not throw
-  // after the on-chain payment has already been sent (which would cause
-  // a PartialSuccessError for a preventable validation issue).
   if (orderId.includes("|")) {
     throw new IVXPError(
       "Invalid request params: orderId must not contain pipe character (|)",
@@ -180,6 +183,18 @@ function validateSubmitPaymentParams(orderId: string, quote: SubmitPaymentQuote)
       { field: "orderId" },
     );
   }
+}
+
+/**
+ * Validate submitPayment parameters at runtime.
+ *
+ * Checks orderId and quote fields for emptiness and domain constraints.
+ * Called at the start of submitPayment() to fail fast before on-chain ops.
+ *
+ * Delegates orderId validation to `validateOrderId` to avoid duplication.
+ */
+function validateSubmitPaymentParams(orderId: string, quote: SubmitPaymentQuote): void {
+  validateOrderId(orderId);
 
   if (
     typeof quote.priceUsdc !== "number" ||
@@ -307,6 +322,17 @@ export interface IVXPClientConfig {
 
   /** Optional: Custom payment service for testing. */
   readonly paymentService?: IPaymentService;
+}
+
+/**
+ * Configuration options for order polling methods.
+ *
+ * Extends the base PollOptions with an optional `targetStatuses` array
+ * that determines which order statuses terminate the polling loop.
+ */
+export interface OrderPollOptions extends PollOptions {
+  /** Order statuses that terminate polling. Defaults to ['delivered', 'delivery_failed']. */
+  readonly targetStatuses?: readonly string[];
 }
 
 /**
@@ -738,6 +764,150 @@ export class IVXPClient {
       txHash,
       status: "paid",
     };
+  }
+
+  // -------------------------------------------------------------------------
+  // Order Status
+  // -------------------------------------------------------------------------
+
+  /**
+   * Fetch the current status of an order from a provider.
+   *
+   * Makes a GET request to `{providerUrl}/ivxp/orders/{orderId}`, validates
+   * the response against the OrderStatusResponse Zod schema (which transforms
+   * wire-format snake_case to camelCase).
+   *
+   * @param providerUrl - Base URL of the provider (e.g. "http://provider.example.com")
+   * @param orderId - The order identifier to check
+   * @returns Validated and typed OrderStatusResponseOutput with camelCase fields
+   * @throws IVXPError with code INVALID_PROVIDER_URL if providerUrl is not a valid HTTP(S) URL
+   * @throws IVXPError with code INVALID_REQUEST_PARAMS if orderId is invalid
+   * @throws IVXPError with code INVALID_ORDER_STATUS_FORMAT if response fails Zod validation
+   * @throws ServiceUnavailableError if the provider is unreachable or returns a network error
+   */
+  async getOrderStatus(providerUrl: string, orderId: string): Promise<OrderStatusResponseOutput> {
+    validateOrderId(orderId);
+    const normalizedUrl = validateProviderUrl(providerUrl);
+    const statusUrl = `${normalizedUrl}/ivxp/orders/${encodeURIComponent(orderId)}`;
+
+    try {
+      const rawResponse = await this.httpClient.get<unknown>(statusUrl);
+
+      // Validate and transform wire-format JSON using Zod schema
+      const orderStatus = OrderStatusResponseSchema.parse(rawResponse);
+
+      return orderStatus;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new IVXPError(
+          `Invalid order status format from ${normalizedUrl}: ${error.issues.length} validation issue(s)`,
+          "INVALID_ORDER_STATUS_FORMAT",
+          { issueCount: error.issues.length },
+          error,
+        );
+      }
+
+      if (error instanceof IVXPError) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Unknown error";
+
+      throw new ServiceUnavailableError(
+        `Failed to fetch order status from ${normalizedUrl}: ${errorMessage}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Poll Order Until
+  // -------------------------------------------------------------------------
+
+  /**
+   * Poll an order's status until it reaches one of the target statuses.
+   *
+   * Uses exponential backoff with jitter between attempts. Emits
+   * 'order.status_changed' events when the status changes between polls.
+   *
+   * @param providerUrl - Base URL of the provider
+   * @param orderId - The order identifier to poll
+   * @param options - Polling configuration (extends PollOptions with targetStatuses)
+   * @returns The final order status when a target status is reached
+   * @throws MaxPollAttemptsError if max attempts are exceeded
+   * @throws Error if the abort signal fires
+   */
+  async pollOrderUntil(
+    providerUrl: string,
+    orderId: string,
+    options: OrderPollOptions = {},
+  ): Promise<OrderStatusResponseOutput> {
+    const {
+      targetStatuses = ["delivered", "delivery_failed"],
+      initialDelay,
+      maxDelay,
+      maxAttempts,
+      jitter,
+      signal,
+    } = options;
+
+    // Track previous status for change detection.
+    // This is local mutable state within the closure -- acceptable per spec.
+    let previousStatus: string | null = null;
+
+    return pollWithBackoff(
+      async () => {
+        const orderStatus = await this.getOrderStatus(providerUrl, orderId);
+
+        // Emit status change event if status differs from previous
+        if (orderStatus.status !== previousStatus) {
+          this.emit("order.status_changed", {
+            orderId: orderStatus.orderId,
+            previousStatus,
+            newStatus: orderStatus.status,
+          });
+          previousStatus = orderStatus.status;
+        }
+
+        // Return the order if target status is reached, null to continue polling
+        if (targetStatuses.includes(orderStatus.status)) {
+          return orderStatus;
+        }
+
+        return null;
+      },
+      { initialDelay, maxDelay, maxAttempts, jitter, signal },
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Wait For Delivery (convenience)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Convenience method to poll until an order is delivered or fails.
+   *
+   * Equivalent to `pollOrderUntil` with targetStatuses ['delivered', 'delivery_failed'].
+   *
+   * @param providerUrl - Base URL of the provider
+   * @param orderId - The order identifier to poll
+   * @param options - Polling configuration (PollOptions only, targetStatuses is preset)
+   * @returns The final order status when delivered or delivery failed
+   */
+  async waitForDelivery(
+    providerUrl: string,
+    orderId: string,
+    options: Omit<OrderPollOptions, "targetStatuses"> = {},
+  ): Promise<OrderStatusResponseOutput> {
+    return this.pollOrderUntil(providerUrl, orderId, {
+      ...options,
+      targetStatuses: ["delivered", "delivery_failed"],
+    });
   }
 
   // -------------------------------------------------------------------------
