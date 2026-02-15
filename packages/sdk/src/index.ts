@@ -27,6 +27,9 @@ export {
 // HTTP module
 export { HttpClient, createHttpClient, type HttpClientOptions } from "./http/index.js";
 
+// Polling module
+export { pollWithBackoff, pollOrderStatus, type PollOptions } from "./polling/index.js";
+
 // Errors
 export {
   IVXPError,
@@ -41,4 +44,5 @@ export {
   PaymentVerificationError,
   OrderNotFoundError,
   ServiceUnavailableError,
+  MaxPollAttemptsError,
 } from "./errors/index.js";
