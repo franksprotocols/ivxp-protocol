@@ -23,7 +23,7 @@ CHECKPOINT="$PROJECT_DIR/.claude/workflow-checkpoint.json"
 
 MAX_BUDGET_PER_STORY=15
 COOLDOWN_SECONDS=10
-PERMISSION_MODE="default"
+PERMISSION_MODE="bypassPermissions"
 
 # ─── Defaults ────────────────────────────────────────────────────────────────
 EPIC_FILTER=""
@@ -33,6 +33,7 @@ DRY_RUN=false
 RESUME_STORY=""
 RESUME_PHASE=""
 SKIP_ON_FAILURE=false
+INTERACTIVE=false
 VERBOSE=false
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
@@ -53,9 +54,10 @@ Options:
   --epic N              Only run stories from epic N
   --start-from ID       Start from story ID (e.g., 3-7)
   --max-stories N       Stop after N stories (0 = unlimited)
-  --max-budget N        Max USD per story (default: 8)
+  --max-budget N        Max USD per story (default: 15)
   --cooldown N          Seconds between stories (default: 10)
   --skip-on-failure     Skip failed stories instead of stopping
+  --interactive         Require confirmation before starting (default: auto-start)
   --resume ID           Resume a specific failed story
   --phase N             Phase to resume from (use with --resume)
   --dry-run             List stories without executing
@@ -73,6 +75,7 @@ while [[ $# -gt 0 ]]; do
     --max-budget)   MAX_BUDGET_PER_STORY="$2"; shift 2 ;;
     --cooldown)     COOLDOWN_SECONDS="$2"; shift 2 ;;
     --skip-on-failure) SKIP_ON_FAILURE=true; shift ;;
+    --interactive)  INTERACTIVE=true; shift ;;
     --resume)       RESUME_STORY="$2"; shift 2 ;;
     --phase)        RESUME_PHASE="$2"; shift 2 ;;
     --dry-run)      DRY_RUN=true; shift ;;
@@ -296,12 +299,16 @@ main() {
     exit 0
   fi
 
-  # Confirm
-  echo -en "${YELLOW}Start batch development of ${#stories[@]} stories? [y/N] ${NC}"
-  read -r confirm
-  if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    log INFO "Aborted."
-    exit 0
+  # Confirm (only in interactive mode)
+  if [[ "$INTERACTIVE" == true ]]; then
+    echo -en "${YELLOW}Start batch development of ${#stories[@]} stories? [y/N] ${NC}"
+    read -r confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+      log INFO "Aborted."
+      exit 0
+    fi
+  else
+    log INFO "Auto-starting (use --interactive to confirm first)"
   fi
 
   # Setup
