@@ -43,6 +43,16 @@ export {
 /** Default in-memory order storage implementation. */
 export { InMemoryOrderStore } from "./in-memory-order-store.js";
 
+/** Content hashing utility. */
+export { computeContentHash } from "./content-hash.js";
+
+/** Deliverable storage types and default implementation. */
+export {
+  InMemoryDeliverableStore,
+  type IDeliverableStore,
+  type StoredDeliverable,
+} from "./deliverable-store.js";
+
 /** Callback server for push delivery reception. */
 export {
   createCallbackServer,

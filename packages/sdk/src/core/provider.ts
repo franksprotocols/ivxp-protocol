@@ -32,6 +32,12 @@ import { createCryptoService } from "../crypto/index.js";
 import { PaymentService, type NetworkType } from "../payment/index.js";
 import { IVXPError } from "../errors/base.js";
 import { InMemoryOrderStore } from "./in-memory-order-store.js";
+import { computeContentHash } from "./content-hash.js";
+import {
+  InMemoryDeliverableStore,
+  type IDeliverableStore,
+  type StoredDeliverable,
+} from "./deliverable-store.js";
 
 // ---------------------------------------------------------------------------
 // UUID generation (Node.js 20+ built-in)
@@ -160,7 +166,7 @@ export interface ProviderStartResult {
 export type ServiceHandler = (
   order: StoredOrder,
   params?: Record<string, unknown>,
-) => Promise<{ content: string | Buffer; content_type: string }>;
+) => Promise<{ content: string | Uint8Array; content_type: string }>;
 
 /**
  * Configuration for creating an IVXPProvider instance.
@@ -213,6 +219,24 @@ export interface IVXPProviderConfig {
    * succeeds but no processing is triggered.
    */
   readonly serviceHandlers?: ReadonlyMap<string, ServiceHandler>;
+
+  /**
+   * Optional: Custom deliverable storage backend.
+   *
+   * Defaults to InMemoryDeliverableStore. Inject a custom IDeliverableStore
+   * implementation for persistent storage.
+   */
+  readonly deliverableStore?: IDeliverableStore;
+
+  /**
+   * Optional: Allow push delivery to private/localhost URLs.
+   *
+   * **WARNING**: Only use in development or testing. In production, private
+   * IPs and localhost are blocked to prevent SSRF attacks.
+   *
+   * @default false
+   */
+  readonly allowPrivateDeliveryUrls?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -307,6 +331,8 @@ export class IVXPProvider {
   private readonly cryptoService: ICryptoService;
   private readonly paymentService: IPaymentService;
   private readonly orderStore: IOrderStorage;
+  private readonly deliverableStore: IDeliverableStore;
+  private readonly allowPrivateDeliveryUrls: boolean;
   private readonly services: readonly ServiceDefinition[];
   private readonly port: number;
   private readonly host: string;
@@ -366,6 +392,8 @@ export class IVXPProvider {
       });
 
     this.orderStore = config.orderStore ?? new InMemoryOrderStore();
+    this.deliverableStore = config.deliverableStore ?? new InMemoryDeliverableStore();
+    this.allowPrivateDeliveryUrls = config.allowPrivateDeliveryUrls ?? false;
 
     // Initialize service handlers from config (defensive copy)
     this.serviceHandlers = config.serviceHandlers ? new Map(config.serviceHandlers) : new Map();
@@ -583,6 +611,16 @@ export class IVXPProvider {
    */
   async getOrder(orderId: string): Promise<StoredOrder | null> {
     return this.orderStore.get(orderId);
+  }
+
+  /**
+   * Retrieve a deliverable by order ID.
+   *
+   * @param orderId - The order identifier to look up
+   * @returns The stored deliverable if found, or undefined
+   */
+  getDeliverable(orderId: string): StoredDeliverable | undefined {
+    return this.deliverableStore.get(orderId);
   }
 
   // -------------------------------------------------------------------------
@@ -1019,14 +1057,75 @@ export class IVXPProvider {
    *
    * Fire-and-forget: the delivery acceptance response is returned
    * immediately while processing continues in the background.
-   * If the handler throws, the order status transitions to
-   * "delivery_failed" and the error is logged.
+   *
+   * Pipeline:
+   * 1. Transition order to "processing" status
+   * 2. Run the service handler
+   * 3. Compute SHA-256 content hash and store the deliverable
+   * 4. If delivery_endpoint exists, attempt push delivery (POST)
+   * 5. Transition to "delivered" on success, "delivery_failed" on push failure
+   *
+   * If the handler throws, the order transitions to "delivery_failed"
+   * and the error is logged. No deliverable is stored in this case.
    */
   private processOrderAsync(order: StoredOrder, handler: ServiceHandler): void {
-    handler(order).catch(async (error: unknown) => {
+    this.processOrder(order, handler).catch((error: unknown) => {
+      console.error(
+        `Order processing error for ${order.orderId}:`,
+        error instanceof Error ? error.message : error,
+      );
+    });
+  }
+
+  /**
+   * Execute the full order processing pipeline.
+   *
+   * @param order - The order in "paid" status
+   * @param handler - The service handler to invoke
+   */
+  private async processOrder(order: StoredOrder, handler: ServiceHandler): Promise<void> {
+    // Step 1: Transition to "processing"
+    const processingOrder = await this.orderStore.update(order.orderId, {
+      status: "processing",
+    });
+
+    try {
+      // Step 2: Run service handler
+      const result = await handler(processingOrder);
+
+      // Step 3: Compute content hash and store deliverable
+      const contentHash = await computeContentHash(result.content);
+      const deliverable: StoredDeliverable = {
+        orderId: order.orderId,
+        content: result.content,
+        contentType: result.content_type,
+        contentHash,
+        createdAt: new Date().toISOString(),
+      };
+      this.deliverableStore.set(order.orderId, deliverable);
+
+      // Update order with content hash
+      await this.orderStore.update(order.orderId, { contentHash });
+
+      // Step 4: Attempt push delivery if delivery_endpoint exists
+      if (processingOrder.deliveryEndpoint) {
+        try {
+          await this.pushDeliverable(processingOrder.deliveryEndpoint, deliverable);
+          // Step 5a: Push succeeded -> "delivered"
+          await this.orderStore.update(order.orderId, { status: "delivered" });
+        } catch {
+          // Step 5b: Push failed -> "delivery_failed" (deliverable still stored)
+          await this.orderStore.update(order.orderId, { status: "delivery_failed" });
+        }
+      } else {
+        // Pull mode: mark as "delivered" immediately
+        await this.orderStore.update(order.orderId, { status: "delivered" });
+      }
+    } catch (handlerError: unknown) {
+      // Handler threw: transition to "delivery_failed"
       console.error(
         `Service handler error for order ${order.orderId}:`,
-        error instanceof Error ? error.message : error,
+        handlerError instanceof Error ? handlerError.message : handlerError,
       );
 
       try {
@@ -1037,8 +1136,153 @@ export class IVXPProvider {
           updateError instanceof Error ? updateError.message : updateError,
         );
       }
+    }
+  }
+
+  /**
+   * Push a deliverable to the client's delivery endpoint via HTTP POST.
+   *
+   * Validates the delivery URL before making the request to prevent
+   * SSRF attacks (only HTTP/HTTPS schemes allowed, private IPs blocked).
+   *
+   * @param deliveryEndpoint - The URL to POST the deliverable to
+   * @param deliverable - The deliverable to send
+   * @throws IVXPError if the URL is invalid or uses a blocked scheme
+   * @throws Error if the push fails (network error or non-2xx response)
+   */
+  private async pushDeliverable(
+    deliveryEndpoint: string,
+    deliverable: StoredDeliverable,
+  ): Promise<void> {
+    validateDeliveryUrl(deliveryEndpoint, this.allowPrivateDeliveryUrls);
+
+    const body =
+      deliverable.content instanceof Uint8Array
+        ? {
+            order_id: deliverable.orderId,
+            content: uint8ArrayToBase64(deliverable.content),
+            content_encoding: "base64",
+            content_type: deliverable.contentType,
+            content_hash: deliverable.contentHash,
+          }
+        : {
+            order_id: deliverable.orderId,
+            content: deliverable.content,
+            content_type: deliverable.contentType,
+            content_hash: deliverable.contentHash,
+          };
+
+    const response = await fetch(deliveryEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Push delivery failed: ${response.status} ${response.statusText}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// URL validation for push delivery (SSRF prevention)
+// ---------------------------------------------------------------------------
+
+/**
+ * IPv4 patterns considered private/internal per RFC 1918 and RFC 5735.
+ *
+ * Blocks loopback (127.x), link-local (169.254.x), and private ranges
+ * (10.x, 172.16-31.x, 192.168.x) to prevent SSRF attacks.
+ */
+const PRIVATE_IPV4_PATTERNS = [
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^0\./,
+] as const;
+
+/**
+ * Validate that a delivery URL is safe for outbound HTTP requests.
+ *
+ * Checks:
+ * - URL is syntactically valid
+ * - Scheme is http: or https:
+ * - Hostname is not localhost or a private IPv4 address
+ *
+ * @param url - The URL to validate
+ * @param allowPrivate - If true, skip private IP / localhost checks
+ * @throws IVXPError if the URL is invalid or targets a blocked destination
+ */
+function validateDeliveryUrl(url: string, allowPrivate = false): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new IVXPError(`Invalid delivery URL: ${url}`, "INVALID_DELIVERY_URL", { url });
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new IVXPError(
+      `Unsupported delivery URL scheme: ${parsed.protocol}`,
+      "INVALID_DELIVERY_URL",
+      { url, protocol: parsed.protocol },
+    );
+  }
+
+  if (allowPrivate) {
+    return;
+  }
+
+  const hostname = parsed.hostname;
+
+  if (hostname === "localhost" || hostname === "[::1]") {
+    throw new IVXPError("Delivery URL must not target localhost", "INVALID_DELIVERY_URL", {
+      url,
+      hostname,
     });
   }
+
+  for (const pattern of PRIVATE_IPV4_PATTERNS) {
+    if (pattern.test(hostname)) {
+      throw new IVXPError(
+        "Delivery URL must not target private/internal networks",
+        "INVALID_DELIVERY_URL",
+        { url, hostname },
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Binary content encoding utility
+// ---------------------------------------------------------------------------
+
+/**
+ * Encode a Uint8Array as a base64 string for JSON transport.
+ *
+ * Uses Buffer.from().toString("base64") at runtime but avoids Buffer
+ * in the type signature for cross-platform compatibility.
+ */
+function uint8ArrayToBase64(data: Uint8Array): string {
+  // Buffer is available at runtime in Node.js and is a Uint8Array subclass.
+  // Cast through unknown to avoid @types/node dependency in DTS build.
+  const g = globalThis as Record<string, unknown>;
+  const BufferCtor = g["Buffer"] as
+    | { from: (data: Uint8Array) => { toString: (encoding: string) => string } }
+    | undefined;
+
+  if (BufferCtor) {
+    return BufferCtor.from(data).toString("base64");
+  }
+
+  // Fallback for non-Node environments (unlikely in provider context)
+  let binary = "";
+  for (let i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i]);
+  }
+  return globalThis.btoa(binary);
 }
 
 // ---------------------------------------------------------------------------

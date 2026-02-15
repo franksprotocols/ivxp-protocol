@@ -97,7 +97,7 @@ export const DeliveryFormatSchema = z.enum(["markdown", "json", "code"]);
  */
 export const ISOTimestampSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/, {
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/, {
     error: "Invalid ISO 8601 timestamp",
   })
   .refine((str) => !isNaN(Date.parse(str)), { message: "Invalid date value" });
@@ -128,6 +128,7 @@ export const IVXPMessageTypeSchema = z.enum([
 export const OrderStatusSchema = z.enum([
   "quoted",
   "paid",
+  "processing",
   "delivered",
   "delivery_failed",
   "confirmed",

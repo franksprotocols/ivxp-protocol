@@ -22,7 +22,8 @@ import type {
  * Order lifecycle states as defined by the IVXP/1.0 state machine.
  *
  * - `quoted`          : Quote issued, awaiting payment.
- * - `paid`            : Payment verified, service processing.
+ * - `paid`            : Payment verified, awaiting processing.
+ * - `processing`      : Service handler is actively processing the order.
  * - `delivered`       : P2P push delivery succeeded.
  * - `delivery_failed` : P2P push failed; deliverable is still downloadable.
  * - `confirmed`       : (Optional) Client signed confirmation of receipt.
@@ -30,6 +31,7 @@ import type {
 export type OrderStatus =
   | "quoted"
   | "paid"
+  | "processing"
   | "delivered"
   | "delivery_failed"
   | "confirmed";
@@ -40,6 +42,7 @@ export type OrderStatus =
 export const ORDER_STATUSES = [
   "quoted",
   "paid",
+  "processing",
   "delivered",
   "delivery_failed",
   "confirmed",
@@ -206,7 +209,7 @@ export interface OrderStatusResponse {
    * Current order status.
    * Note: `confirmed` is excluded from status query per IVXP/1.0 reference.
    */
-  readonly status: "quoted" | "paid" | "delivered" | "delivery_failed";
+  readonly status: "quoted" | "paid" | "processing" | "delivered" | "delivery_failed";
 
   /** Order creation timestamp (ISO 8601). */
   readonly created_at: ISOTimestamp;

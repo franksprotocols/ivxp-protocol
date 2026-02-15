@@ -103,10 +103,11 @@ describe("Order types", () => {
     it("should include all valid statuses in ORDER_STATUSES", () => {
       expect(ORDER_STATUSES).toContain("quoted");
       expect(ORDER_STATUSES).toContain("paid");
+      expect(ORDER_STATUSES).toContain("processing");
       expect(ORDER_STATUSES).toContain("delivered");
       expect(ORDER_STATUSES).toContain("delivery_failed");
       expect(ORDER_STATUSES).toContain("confirmed");
-      expect(ORDER_STATUSES).toHaveLength(5);
+      expect(ORDER_STATUSES).toHaveLength(6);
     });
 
     it("ORDER_STATUSES should be a readonly tuple", () => {
@@ -664,9 +665,16 @@ describe("Edge cases", () => {
   });
 
   describe("ORDER_STATUSES completeness", () => {
-    it("should have exactly 5 entries matching the state machine", () => {
-      const expected = ["quoted", "paid", "delivered", "delivery_failed", "confirmed"];
-      expect(ORDER_STATUSES).toHaveLength(5);
+    it("should have exactly 6 entries matching the state machine", () => {
+      const expected = [
+        "quoted",
+        "paid",
+        "processing",
+        "delivered",
+        "delivery_failed",
+        "confirmed",
+      ];
+      expect(ORDER_STATUSES).toHaveLength(6);
       for (const status of expected) {
         expect(ORDER_STATUSES).toContain(status);
       }

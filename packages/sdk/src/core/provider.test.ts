@@ -1675,7 +1675,7 @@ describe("IVXPProvider - Delivery Endpoint", () => {
       expect(handlerFn).toHaveBeenCalledOnce();
       const callArgs = handlerFn.mock.calls[0];
       expect(callArgs[0].orderId).toBe(orderId);
-      expect(callArgs[0].status).toBe("paid");
+      expect(callArgs[0].status).toBe("processing");
     });
 
     it("should reject delivery when payment verification fails", async () => {
