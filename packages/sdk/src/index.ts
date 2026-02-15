@@ -31,7 +31,12 @@ export { HttpClient, createHttpClient, type HttpClientOptions } from "./http/ind
 export { pollWithBackoff, pollOrderStatus, type PollOptions } from "./polling/index.js";
 
 // Core module
-export { IVXPClient, createIVXPClient, type IVXPClientConfig } from "./core/index.js";
+export {
+  IVXPClient,
+  createIVXPClient,
+  type IVXPClientConfig,
+  type ServiceRequestParams,
+} from "./core/index.js";
 
 // Errors
 export {
