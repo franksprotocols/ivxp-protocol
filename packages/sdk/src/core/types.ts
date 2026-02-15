@@ -26,6 +26,37 @@
 import type { DeliveryFormat, OrderStatus } from "@ivxp/protocol";
 
 // ---------------------------------------------------------------------------
+// ConfirmationResult -- Return type for client.confirmDelivery()
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of a successful delivery confirmation.
+ *
+ * Returned when the signed confirmation is accepted by the provider
+ * and the order transitions to the 'confirmed' terminal state.
+ */
+export interface ConfirmationResult {
+  /** The order identifier. */
+  readonly orderId: string;
+
+  /** The terminal order status. Always 'confirmed'. */
+  readonly status: "confirmed";
+
+  /**
+   * ISO 8601 timestamp when the order was confirmed.
+   *
+   * On a fresh confirmation, this is the provider's authoritative timestamp.
+   * On an idempotent retry (ORDER_ALREADY_CONFIRMED), this is the local
+   * timestamp of the retry call. Use `getOrderStatus()` to obtain the
+   * provider's original confirmation timestamp in that case.
+   */
+  readonly confirmedAt: string;
+
+  /** The EIP-191 signature of the confirmation message. */
+  readonly signature: `0x${string}`;
+}
+
+// ---------------------------------------------------------------------------
 // ServiceRequestParams -- Input for client.requestQuote()
 // ---------------------------------------------------------------------------
 

@@ -52,6 +52,13 @@ export type SDKEvent =
         readonly previousStatus: string | null;
         readonly newStatus: string;
       };
+    }
+  | {
+      readonly type: "order.confirmed";
+      readonly payload: {
+        readonly orderId: string;
+        readonly confirmedAt: string;
+      };
     };
 
 /**
