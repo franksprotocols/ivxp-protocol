@@ -23,7 +23,7 @@
  * - `client_agent.wallet_address` (from crypto service)
  */
 
-import type { DeliveryFormat } from "@ivxp/protocol";
+import type { DeliveryFormat, OrderStatus } from "@ivxp/protocol";
 
 // ---------------------------------------------------------------------------
 // ServiceRequestParams -- Input for client.requestQuote()
@@ -75,4 +75,42 @@ export interface ServiceRequestParams {
    * Maps to wire-format field `client_agent.contact_endpoint`.
    */
   readonly contactEndpoint?: string;
+}
+
+// ---------------------------------------------------------------------------
+// SubmitPaymentQuote -- Input for client.submitPayment()
+// ---------------------------------------------------------------------------
+
+/**
+ * Quote details required for submitting a payment.
+ *
+ * Contains the minimum information needed to send USDC to a provider
+ * as part of the payment flow.
+ */
+export interface SubmitPaymentQuote {
+  /** The quoted price in USDC (as a number, e.g. 10 or 8.5). */
+  readonly priceUsdc: number;
+
+  /** The provider's wallet address to receive payment. */
+  readonly paymentAddress: `0x${string}`;
+}
+
+// ---------------------------------------------------------------------------
+// PaymentResult -- Return type for client.submitPayment()
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of a successful payment submission.
+ *
+ * Returned when both the USDC transfer and provider notification succeed.
+ */
+export interface PaymentResult {
+  /** The order identifier. */
+  readonly orderId: string;
+
+  /** The on-chain transaction hash. */
+  readonly txHash: `0x${string}`;
+
+  /** The updated order status (typically "paid"). */
+  readonly status: OrderStatus;
 }

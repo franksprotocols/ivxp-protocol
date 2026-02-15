@@ -5,4 +5,4 @@
  */
 export { IVXPClient, createIVXPClient, type IVXPClientConfig } from "./client.js";
 
-export type { ServiceRequestParams } from "./types.js";
+export type { ServiceRequestParams, SubmitPaymentQuote, PaymentResult } from "./types.js";
