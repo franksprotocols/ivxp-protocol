@@ -17,14 +17,37 @@
 
 import type {
   ICryptoService,
+  IOrderStorage,
   IPaymentService,
   ServiceCatalog,
   ServiceDefinition,
+  ServiceQuote,
+  ServiceRequest,
+  StoredOrder,
 } from "@ivxp/protocol";
 import { PROTOCOL_VERSION } from "@ivxp/protocol";
 import { createCryptoService } from "../crypto/index.js";
 import { PaymentService, type NetworkType } from "../payment/index.js";
 import { IVXPError } from "../errors/base.js";
+import { InMemoryOrderStore } from "./in-memory-order-store.js";
+
+// ---------------------------------------------------------------------------
+// UUID generation (Node.js 20+ built-in)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a random UUID v4 using the platform's built-in crypto API.
+ *
+ * Uses `globalThis.crypto.randomUUID()` which is available in:
+ * - Node.js 19+ (via Web Crypto API)
+ * - All modern browsers
+ *
+ * Falls back to a timestamp-based generator if unavailable (should never
+ * happen in the supported Node.js 20+ runtime).
+ */
+function randomUUID(): string {
+  return globalThis.crypto.randomUUID();
+}
 
 // ---------------------------------------------------------------------------
 // Validation constants
@@ -54,6 +77,24 @@ const MAX_PORT = 65535;
 /** The catalog endpoint path. */
 const CATALOG_PATH = "/ivxp/catalog";
 
+/** The quote request endpoint path. */
+const REQUEST_PATH = "/ivxp/request";
+
+/** USDC decimal places for formatting price strings. */
+const USDC_DECIMAL_PLACES = 6;
+
+/** Maximum price in USDC to avoid floating-point precision loss with toFixed(). */
+const MAX_PRICE_USDC = 1_000_000;
+
+/** Maximum estimated delivery hours (1 year) to prevent overflow. */
+const MAX_DELIVERY_HOURS = 8760;
+
+/** Regex for a valid 0x-prefixed 20-byte hex address (42 chars total). */
+const HEX_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+
+/** Valid network identifiers for order storage. */
+const VALID_NETWORKS: ReadonlySet<string> = new Set(["base-mainnet", "base-sepolia"]);
+
 // ---------------------------------------------------------------------------
 // Lightweight types for Node.js HTTP APIs
 //
@@ -65,6 +106,7 @@ const CATALOG_PATH = "/ivxp/catalog";
 interface IncomingMsg {
   readonly method?: string;
   readonly url?: string;
+  on(event: string, listener: (data: unknown) => void): void;
 }
 
 /** Minimal ServerResponse shape (subset of node:http.ServerResponse). */
@@ -130,6 +172,14 @@ export interface IVXPProviderConfig {
 
   /** Optional: Custom payment service for testing. */
   readonly paymentService?: IPaymentService;
+
+  /**
+   * Optional: Custom order storage backend.
+   *
+   * Defaults to InMemoryOrderStore. Inject a custom IOrderStorage
+   * implementation for persistent storage (e.g. SQLite, PostgreSQL).
+   */
+  readonly orderStore?: IOrderStorage;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +223,26 @@ function validateConfig(config: IVXPProviderConfig): void {
   }
 }
 
+/**
+ * Validate that an injected order store implements all required IOrderStorage methods.
+ *
+ * @param store - The order storage to validate
+ * @throws IVXPError with code INVALID_PROVIDER_CONFIG if the store is missing methods
+ */
+function validateOrderStore(store: IOrderStorage): void {
+  const requiredMethods = ["create", "get", "update", "list", "delete"] as const;
+
+  for (const method of requiredMethods) {
+    if (typeof (store as unknown as Record<string, unknown>)[method] !== "function") {
+      throw new IVXPError(
+        `Invalid order store: missing required method '${method}'`,
+        "INVALID_PROVIDER_CONFIG",
+        { field: "orderStore", missingMethod: method },
+      );
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // IVXPProvider
 // ---------------------------------------------------------------------------
@@ -203,6 +273,7 @@ function validateConfig(config: IVXPProviderConfig): void {
 export class IVXPProvider {
   private readonly cryptoService: ICryptoService;
   private readonly paymentService: IPaymentService;
+  private readonly orderStore: IOrderStorage;
   private readonly services: readonly ServiceDefinition[];
   private readonly port: number;
   private readonly host: string;
@@ -251,6 +322,13 @@ export class IVXPProvider {
         privateKey: config.privateKey,
         network: this.network,
       });
+
+    this.orderStore = config.orderStore ?? new InMemoryOrderStore();
+
+    // Validate injected orderStore implements required interface (#6)
+    if (config.orderStore) {
+      validateOrderStore(config.orderStore);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -343,6 +421,126 @@ export class IVXPProvider {
   }
 
   // -------------------------------------------------------------------------
+  // Quote endpoint
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle a service request and generate a quote.
+   *
+   * Validates that the requested service exists in the catalog, generates
+   * a unique order ID, persists the order to storage, and returns a
+   * ServiceQuote with pricing and payment information.
+   *
+   * @param request - The incoming ServiceRequest (wire format)
+   * @returns A ServiceQuote with order ID, pricing, and payment details
+   * @throws IVXPError with code SERVICE_NOT_FOUND if the service type is unknown
+   */
+  async handleQuoteRequest(request: ServiceRequest): Promise<ServiceQuote> {
+    // Validate service type is a non-empty string (#2)
+    const serviceType = request.service_request?.type;
+    if (!serviceType || typeof serviceType !== "string" || serviceType.trim().length === 0) {
+      throw new IVXPError(
+        "Invalid request: service_request.type must be a non-empty string",
+        "INVALID_REQUEST",
+        { field: "service_request.type" },
+      );
+    }
+
+    // Validate client wallet address format (#2)
+    const clientAddress = request.client_agent?.wallet_address;
+    if (!clientAddress || !HEX_ADDRESS_REGEX.test(clientAddress)) {
+      throw new IVXPError(
+        "Invalid request: client_agent.wallet_address must be a valid 0x-prefixed hex address",
+        "INVALID_REQUEST",
+        { field: "client_agent.wallet_address" },
+      );
+    }
+
+    const service = this.services.find((s) => s.type === serviceType);
+
+    if (!service) {
+      throw new IVXPError(`Unknown service: ${serviceType}`, "SERVICE_NOT_FOUND", {
+        service: serviceType,
+      });
+    }
+
+    // Validate price is within safe range for toFixed() (#4)
+    if (service.base_price_usdc < 0 || service.base_price_usdc > MAX_PRICE_USDC) {
+      throw new IVXPError(
+        `Service price out of range: ${service.base_price_usdc} USDC. Must be between 0 and ${MAX_PRICE_USDC}`,
+        "INVALID_PROVIDER_CONFIG",
+        { field: "base_price_usdc", value: service.base_price_usdc },
+      );
+    }
+
+    // Validate estimated delivery hours is within safe range (#5)
+    if (
+      service.estimated_delivery_hours <= 0 ||
+      service.estimated_delivery_hours > MAX_DELIVERY_HOURS
+    ) {
+      throw new IVXPError(
+        `Estimated delivery hours out of range: ${service.estimated_delivery_hours}. Must be between 1 and ${MAX_DELIVERY_HOURS}`,
+        "INVALID_PROVIDER_CONFIG",
+        { field: "estimated_delivery_hours", value: service.estimated_delivery_hours },
+      );
+    }
+
+    // Validate network before storing (#9)
+    if (!VALID_NETWORKS.has(this.network)) {
+      throw new IVXPError(
+        `Invalid network: ${this.network}. Must be one of: ${[...VALID_NETWORKS].join(", ")}`,
+        "INVALID_PROVIDER_CONFIG",
+        { field: "network", value: this.network },
+      );
+    }
+
+    const walletAddress = await this.cryptoService.getAddress();
+    const orderId = `ivxp-${randomUUID()}`;
+    const now = new Date();
+
+    // Persist order with "quoted" status
+    await this.orderStore.create({
+      orderId,
+      status: "quoted",
+      clientAddress: request.client_agent.wallet_address,
+      serviceType,
+      priceUsdc: service.base_price_usdc.toFixed(USDC_DECIMAL_PLACES),
+      paymentAddress: walletAddress,
+      network: this.network,
+    });
+
+    // Build the wire-format ServiceQuote response
+    return {
+      protocol: PROTOCOL_VERSION,
+      message_type: "service_quote",
+      timestamp: now.toISOString(),
+      order_id: orderId,
+      provider_agent: {
+        name: this.providerName,
+        wallet_address: walletAddress,
+      },
+      quote: {
+        price_usdc: service.base_price_usdc,
+        estimated_delivery: new Date(
+          now.getTime() + service.estimated_delivery_hours * 3_600_000,
+        ).toISOString(),
+        payment_address: walletAddress,
+        network: this.network,
+      },
+    };
+  }
+
+  /**
+   * Retrieve an order by its ID.
+   *
+   * @param orderId - The order identifier to look up
+   * @returns The stored order if found, or null
+   */
+  async getOrder(orderId: string): Promise<StoredOrder | null> {
+    return this.orderStore.get(orderId);
+  }
+
+  // -------------------------------------------------------------------------
   // Server lifecycle
   // -------------------------------------------------------------------------
 
@@ -428,8 +626,11 @@ export class IVXPProvider {
   /**
    * Handle an incoming HTTP request.
    *
-   * Routes GET /ivxp/catalog to the catalog endpoint.
-   * Returns 404 for unknown paths and 405 for non-GET methods
+   * Routes:
+   * - GET  /ivxp/catalog  -> Service catalog
+   * - POST /ivxp/request  -> Quote generation
+   *
+   * Returns 404 for unknown paths and 405 for incorrect methods
    * on known paths.
    *
    * Normalizes the URL before matching: strips query parameters
@@ -458,10 +659,110 @@ export class IVXPProvider {
       return;
     }
 
+    // Route: POST /ivxp/request
+    if (normalizedPath === REQUEST_PATH) {
+      if (method !== "POST") {
+        res.writeHead(405, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Method not allowed" }));
+        return;
+      }
+
+      await this.handleQuoteRoute(req, res);
+      return;
+    }
+
     // Unknown route
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Not found" }));
   }
+
+  /**
+   * Handle the POST /ivxp/request route.
+   *
+   * Reads the request body, parses it as JSON, validates basic
+   * structure, and delegates to `handleQuoteRequest()`.
+   */
+  private async handleQuoteRoute(req: IncomingMsg, res: ServerRes): Promise<void> {
+    // Read and parse body
+    let body: unknown;
+    try {
+      const rawBody = await readRequestBody(req);
+      body = JSON.parse(rawBody);
+    } catch {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid JSON body" }));
+      return;
+    }
+
+    // Validate minimal structure
+    if (
+      !body ||
+      typeof body !== "object" ||
+      !("service_request" in body) ||
+      !("client_agent" in body)
+    ) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Missing required fields: service_request, client_agent" }));
+      return;
+    }
+
+    try {
+      const quote = await this.handleQuoteRequest(body as ServiceRequest);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(quote));
+    } catch (error: unknown) {
+      if (error instanceof IVXPError) {
+        // Map known error codes to HTTP status codes
+        if (error.code === "SERVICE_NOT_FOUND") {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: error.message }));
+          return;
+        }
+
+        // Validation errors return 400 with the error message (no internal details)
+        if (error.code === "INVALID_REQUEST") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: error.message }));
+          return;
+        }
+
+        // All other IVXPError types: return sanitized 400 without leaking details
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid request" }));
+        return;
+      }
+      throw error;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Request body reader
+// ---------------------------------------------------------------------------
+
+/**
+ * Read the full request body from an IncomingMessage as a string.
+ *
+ * Collects data chunks and concatenates them once the stream ends.
+ * Returns an empty string if the request has no body.
+ *
+ * Avoids `Buffer` type references to maintain @types/node independence.
+ * Instead, treats chunks as opaque values and uses the TextDecoder API
+ * (available in Node.js 20+) for string conversion.
+ */
+function readRequestBody(req: IncomingMsg): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk: unknown) => {
+      body += String(chunk);
+    });
+    req.on("end", () => {
+      resolve(body);
+    });
+    req.on("error", (err: unknown) => {
+      reject(err);
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------
