@@ -190,26 +190,11 @@ function validateOrderId(orderId: string): void {
  *
  * Checks orderId and quote fields for emptiness and domain constraints.
  * Called at the start of submitPayment() to fail fast before on-chain ops.
+ *
+ * Delegates orderId validation to `validateOrderId` to avoid duplication.
  */
 function validateSubmitPaymentParams(orderId: string, quote: SubmitPaymentQuote): void {
-  if (!orderId || orderId.trim().length === 0) {
-    throw new IVXPError(
-      "Invalid request params: orderId must be a non-empty string",
-      "INVALID_REQUEST_PARAMS",
-      { field: "orderId" },
-    );
-  }
-
-  // Reject pipe characters early so formatIVXPMessage does not throw
-  // after the on-chain payment has already been sent (which would cause
-  // a PartialSuccessError for a preventable validation issue).
-  if (orderId.includes("|")) {
-    throw new IVXPError(
-      "Invalid request params: orderId must not contain pipe character (|)",
-      "INVALID_REQUEST_PARAMS",
-      { field: "orderId" },
-    );
-  }
+  validateOrderId(orderId);
 
   if (
     typeof quote.priceUsdc !== "number" ||

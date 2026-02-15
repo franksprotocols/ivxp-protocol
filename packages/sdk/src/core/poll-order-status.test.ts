@@ -42,9 +42,7 @@ const DEFAULT_ORDER_ID = "ivxp-00000001-0000-0000-000000000000";
 const DEFAULT_PROVIDER_URL = "http://provider.test";
 
 /** Create a fully mocked client for order status tests. */
-function createMockedClient(opts?: {
-  mockHttp?: MockHttpClient;
-}): {
+function createMockedClient(opts?: { mockHttp?: MockHttpClient }): {
   client: IVXPClient;
   mockHttp: MockHttpClient;
 } {
@@ -239,9 +237,9 @@ describe("IVXPClient.getOrderStatus()", () => {
       });
       const { client } = createMockedClient({ mockHttp });
 
-      await expect(
-        client.getOrderStatus(DEFAULT_PROVIDER_URL, DEFAULT_ORDER_ID),
-      ).rejects.toThrow(ServiceUnavailableError);
+      await expect(client.getOrderStatus(DEFAULT_PROVIDER_URL, DEFAULT_ORDER_ID)).rejects.toThrow(
+        ServiceUnavailableError,
+      );
     });
 
     it("should re-throw IVXPError subclasses without wrapping", async () => {
@@ -316,7 +314,7 @@ describe("IVXPClient.pollOrderUntil()", () => {
       expect(callCount).toBe(3);
     });
 
-    it("should use default target statuses (delivered, delivery_failed, confirmed)", async () => {
+    it("should use default target statuses and stop on 'delivered'", async () => {
       const wireResponse = createMockOrderStatusResponse("delivered", {
         order_id: DEFAULT_ORDER_ID,
       });
@@ -333,7 +331,7 @@ describe("IVXPClient.pollOrderUntil()", () => {
       expect(result.status).toBe("delivered");
     });
 
-    it("should stop polling on delivery_failed status", async () => {
+    it("should use default target statuses and stop on 'delivery_failed'", async () => {
       const wireResponse = createMockOrderStatusResponse("delivery_failed", {
         order_id: DEFAULT_ORDER_ID,
       });
@@ -348,6 +346,7 @@ describe("IVXPClient.pollOrderUntil()", () => {
       });
 
       expect(result.status).toBe("delivery_failed");
+      expect(mockHttp.getGetCallCount()).toBe(1);
     });
 
     it("should return immediately if first poll matches target status", async () => {

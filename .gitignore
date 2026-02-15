@@ -64,6 +64,9 @@ logs/
 npm-debug.log*
 pnpm-debug.log*
 
+# Batch dev logs
+scripts/logs/
+
 # ----------------------------------------
 # OS files
 # ----------------------------------------
