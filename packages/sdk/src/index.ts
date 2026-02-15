@@ -11,4 +11,6 @@ export {
   formatIVXPMessage,
   type IVXPMessageParams,
   type IVXPSignedMessage,
+  type IVXPVerifyParams,
+  type IVXPVerificationResult,
 } from "./crypto/index.js";

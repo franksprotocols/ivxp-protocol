@@ -9,7 +9,12 @@ import { describe, expect, it } from "vitest";
 import { verifyMessage } from "viem";
 import { TEST_ACCOUNTS } from "@ivxp/test-utils";
 import type { ICryptoService } from "@ivxp/protocol";
-import { CryptoService, createCryptoService, formatIVXPMessage } from "./signature.js";
+import {
+  CryptoService,
+  createCryptoService,
+  formatIVXPMessage,
+  type IVXPVerificationResult,
+} from "./signature.js";
 
 // ---------------------------------------------------------------------------
 // Test data
@@ -32,21 +37,15 @@ describe("CryptoService", () => {
     });
 
     it("should throw for an invalid hex private key", () => {
-      expect(() => new CryptoService("0xinvalid" as `0x${string}`)).toThrow(
-        "Invalid private key",
-      );
+      expect(() => new CryptoService("0xinvalid" as `0x${string}`)).toThrow("Invalid private key");
     });
 
     it("should throw for an empty string", () => {
-      expect(() => new CryptoService("" as `0x${string}`)).toThrow(
-        "Invalid private key",
-      );
+      expect(() => new CryptoService("" as `0x${string}`)).toThrow("Invalid private key");
     });
 
     it("should throw for a key that is too short", () => {
-      expect(() => new CryptoService("0xabc" as `0x${string}`)).toThrow(
-        "Invalid private key",
-      );
+      expect(() => new CryptoService("0xabc" as `0x${string}`)).toThrow("Invalid private key");
     });
 
     it("should throw for a key that is too long", () => {
@@ -251,54 +250,110 @@ describe("CryptoService", () => {
       expect(isValid).toBe(true);
     });
 
-    it("should throw for non-string message", async () => {
+    // AC #2: Case-insensitive address comparison
+    it("should verify with all-lowercase expected address", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const signature = await service.sign(TEST_MESSAGE);
+      const lowerAddress = CLIENT_ACCOUNT.address.toLowerCase() as `0x${string}`;
+      const isValid = await service.verify(TEST_MESSAGE, signature, lowerAddress);
+      expect(isValid).toBe(true);
+    });
+
+    it("should verify with all-uppercase expected address (hex part)", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const signature = await service.sign(TEST_MESSAGE);
+      const upperAddress = ("0x" + CLIENT_ACCOUNT.address.slice(2).toUpperCase()) as `0x${string}`;
+      const isValid = await service.verify(TEST_MESSAGE, signature, upperAddress);
+      expect(isValid).toBe(true);
+    });
+
+    it("should verify with checksummed (mixed-case) expected address", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const signature = await service.sign(TEST_MESSAGE);
+      const isValid = await service.verify(
+        TEST_MESSAGE,
+        signature,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(true);
+    });
+
+    // AC #3: Invalid signatures return false (not throw)
+    it("should return false for malformed signature (not throw)", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const isValid = await service.verify(
+        TEST_MESSAGE,
+        "0xshort" as `0x${string}`,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(false);
+    });
+
+    it("should return false for null signature (not throw)", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const isValid = await service.verify(
+        TEST_MESSAGE,
+        null as unknown as `0x${string}`,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(false);
+    });
+
+    it("should return false for undefined signature (not throw)", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const isValid = await service.verify(
+        TEST_MESSAGE,
+        undefined as unknown as `0x${string}`,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(false);
+    });
+
+    it("should return false for empty string signature (not throw)", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const isValid = await service.verify(
+        TEST_MESSAGE,
+        "" as `0x${string}`,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(false);
+    });
+
+    it("should return false for malformed address (not throw)", async () => {
       const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
       const sig = await service.sign(TEST_MESSAGE);
-      await expect(
-        service.verify(
-          123 as unknown as string,
-          sig,
-          CLIENT_ACCOUNT.address as `0x${string}`,
-        ),
-      ).rejects.toThrow("Invalid message: must be a string");
+      const isValid = await service.verify(TEST_MESSAGE, sig, "0xshort" as `0x${string}`);
+      expect(isValid).toBe(false);
     });
 
-    it("should throw for malformed signature", async () => {
-      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
-      await expect(
-        service.verify(
-          TEST_MESSAGE,
-          "0xshort" as `0x${string}`,
-          CLIENT_ACCOUNT.address as `0x${string}`,
-        ),
-      ).rejects.toThrow("Invalid signature");
-    });
-
-    it("should throw for null signature", async () => {
-      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
-      await expect(
-        service.verify(
-          TEST_MESSAGE,
-          null as unknown as `0x${string}`,
-          CLIENT_ACCOUNT.address as `0x${string}`,
-        ),
-      ).rejects.toThrow("Invalid signature");
-    });
-
-    it("should throw for malformed address", async () => {
+    it("should return false for null address (not throw)", async () => {
       const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
       const sig = await service.sign(TEST_MESSAGE);
-      await expect(
-        service.verify(TEST_MESSAGE, sig, "0xshort" as `0x${string}`),
-      ).rejects.toThrow("Invalid address");
+      const isValid = await service.verify(TEST_MESSAGE, sig, null as unknown as `0x${string}`);
+      expect(isValid).toBe(false);
     });
 
-    it("should throw for null address", async () => {
+    it("should return false for non-string message (not throw)", async () => {
       const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
       const sig = await service.sign(TEST_MESSAGE);
-      await expect(
-        service.verify(TEST_MESSAGE, sig, null as unknown as `0x${string}`),
-      ).rejects.toThrow("Invalid address");
+      const isValid = await service.verify(
+        123 as unknown as string,
+        sig,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(false);
+    });
+
+    it("should return false for a cryptographically invalid but well-formed signature", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      // 130 hex chars (65 bytes) but not a valid signature for this message
+      const fakeSignature = `0x${"ab".repeat(65)}` as `0x${string}`;
+      const isValid = await service.verify(
+        TEST_MESSAGE,
+        fakeSignature,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(false);
     });
   });
 
@@ -367,23 +422,23 @@ describe("CryptoService", () => {
 
     it("should throw for empty orderId", async () => {
       const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
-      await expect(
-        service.signIVXPMessage({ orderId: "", txHash, timestamp }),
-      ).rejects.toThrow("Invalid orderId: must be a non-empty string");
+      await expect(service.signIVXPMessage({ orderId: "", txHash, timestamp })).rejects.toThrow(
+        "Invalid orderId: must be a non-empty string",
+      );
     });
 
     it("should throw for whitespace-only orderId", async () => {
       const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
-      await expect(
-        service.signIVXPMessage({ orderId: "   ", txHash, timestamp }),
-      ).rejects.toThrow("Invalid orderId: must be a non-empty string");
+      await expect(service.signIVXPMessage({ orderId: "   ", txHash, timestamp })).rejects.toThrow(
+        "Invalid orderId: must be a non-empty string",
+      );
     });
 
     it("should throw for empty txHash", async () => {
       const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
-      await expect(
-        service.signIVXPMessage({ orderId, txHash: "", timestamp }),
-      ).rejects.toThrow("Invalid txHash: must be a non-empty string");
+      await expect(service.signIVXPMessage({ orderId, txHash: "", timestamp })).rejects.toThrow(
+        "Invalid txHash: must be a non-empty string",
+      );
     });
 
     it("should throw for invalid timestamp format", async () => {
@@ -395,17 +450,222 @@ describe("CryptoService", () => {
   });
 
   // -------------------------------------------------------------------------
+  // verifyIVXPMessage
+  // -------------------------------------------------------------------------
+
+  describe("verifyIVXPMessage", () => {
+    const orderId = "ivxp-550e8400-e29b-41d4-a716-446655440000";
+    const txHash = "0xabcd1234567890abcd1234567890abcd1234567890abcd1234567890abcd1234";
+    const timestamp = "2026-02-05T12:30:00Z";
+
+    it("should verify a valid IVXP signed message and extract fields", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const { message, signature } = await service.signIVXPMessage({
+        orderId,
+        txHash,
+        timestamp,
+      });
+
+      const result: IVXPVerificationResult = await service.verifyIVXPMessage({
+        signedMessage: message,
+        signature,
+        expectedAddress: CLIENT_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.orderId).toBe(orderId);
+        expect(result.txHash).toBe(txHash);
+      }
+    });
+
+    it("should return valid: false for wrong signer address", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const { message, signature } = await service.signIVXPMessage({
+        orderId,
+        txHash,
+        timestamp,
+      });
+
+      const result = await service.verifyIVXPMessage({
+        signedMessage: message,
+        signature,
+        expectedAddress: PROVIDER_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect("orderId" in result).toBe(false);
+        expect("txHash" in result).toBe(false);
+      }
+    });
+
+    it("should return valid: false for invalid signature", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const message = formatIVXPMessage({ orderId, txHash, timestamp });
+
+      const result = await service.verifyIVXPMessage({
+        signedMessage: message,
+        signature: "0xbad" as `0x${string}`,
+        expectedAddress: CLIENT_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(false);
+    });
+
+    it("should return valid: false for non-IVXP format message", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const nonIvxpMessage = "This is not an IVXP message";
+      const signature = await service.sign(nonIvxpMessage);
+
+      const result = await service.verifyIVXPMessage({
+        signedMessage: nonIvxpMessage,
+        signature,
+        expectedAddress: CLIENT_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect("orderId" in result).toBe(false);
+        expect("txHash" in result).toBe(false);
+      }
+    });
+
+    it("should verify with case-insensitive address", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const { message, signature } = await service.signIVXPMessage({
+        orderId,
+        txHash,
+        timestamp,
+      });
+
+      const lowerAddress = CLIENT_ACCOUNT.address.toLowerCase() as `0x${string}`;
+      const result = await service.verifyIVXPMessage({
+        signedMessage: message,
+        signature,
+        expectedAddress: lowerAddress,
+      });
+
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.orderId).toBe(orderId);
+        expect(result.txHash).toBe(txHash);
+      }
+    });
+
+    it("should handle tampered message content", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const { signature } = await service.signIVXPMessage({
+        orderId,
+        txHash,
+        timestamp,
+      });
+
+      // Create a different IVXP message with different orderId
+      const tamperedMessage = formatIVXPMessage({
+        orderId: "ivxp-tampered-id",
+        txHash,
+        timestamp,
+      });
+
+      const result = await service.verifyIVXPMessage({
+        signedMessage: tamperedMessage,
+        signature,
+        expectedAddress: CLIENT_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(false);
+    });
+
+    // Fix #4: Signature from a completely different IVXP message (cross-message replay)
+    it("should return valid: false when signature is from a different IVXP message", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+
+      // Sign one IVXP message
+      const { signature: signatureA } = await service.signIVXPMessage({
+        orderId: "ivxp-order-A",
+        txHash: "0xaaaa1234567890abcd1234567890abcd1234567890abcd1234567890abcd1234",
+        timestamp,
+      });
+
+      // Create a different well-formed IVXP message
+      const messageB = formatIVXPMessage({
+        orderId: "ivxp-order-B",
+        txHash: "0xbbbb1234567890abcd1234567890abcd1234567890abcd1234567890abcd1234",
+        timestamp,
+      });
+
+      // Attempt to verify messageB with signatureA (cross-message replay)
+      const result = await service.verifyIVXPMessage({
+        signedMessage: messageB,
+        signature: signatureA,
+        expectedAddress: CLIENT_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(false);
+    });
+
+    // Fix #5: Missing Payment field edge case
+    it("should return valid: false for message missing Payment field", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const malformedMessage = "Order: ivxp-123 | Timestamp: 2026-01-01T00:00:00Z";
+      const signature = await service.sign(malformedMessage);
+
+      const result = await service.verifyIVXPMessage({
+        signedMessage: malformedMessage,
+        signature,
+        expectedAddress: CLIENT_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(false);
+    });
+
+    // Fix #5: Verify extraction trims whitespace properly
+    it("should trim extracted orderId and txHash", async () => {
+      const service = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const { message, signature } = await service.signIVXPMessage({
+        orderId,
+        txHash,
+        timestamp,
+      });
+
+      const result = await service.verifyIVXPMessage({
+        signedMessage: message,
+        signature,
+        expectedAddress: CLIENT_ACCOUNT.address as `0x${string}`,
+      });
+
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        // Verify the extracted values contain no leading/trailing whitespace
+        expect(result.orderId).toBe(result.orderId.trim());
+        expect(result.txHash).toBe(result.txHash.trim());
+        expect(result.orderId).toBe(orderId);
+        expect(result.txHash).toBe(txHash);
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // ICryptoService interface compliance
   // -------------------------------------------------------------------------
 
   describe("ICryptoService compliance", () => {
     it("should satisfy the ICryptoService interface", () => {
-      const service: ICryptoService = new CryptoService(
-        CLIENT_ACCOUNT.privateKey as `0x${string}`,
-      );
+      const service: ICryptoService = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
       expect(service.sign).toBeTypeOf("function");
       expect(service.verify).toBeTypeOf("function");
       expect(service.getAddress).toBeTypeOf("function");
+    });
+
+    it("should return false (not throw) for invalid signature through ICryptoService interface", async () => {
+      const service: ICryptoService = new CryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
+      const isValid = await service.verify(
+        TEST_MESSAGE,
+        "0xbadbadbad" as `0x${string}`,
+        CLIENT_ACCOUNT.address as `0x${string}`,
+      );
+      expect(isValid).toBe(false);
     });
   });
 });
@@ -433,15 +693,15 @@ describe("formatIVXPMessage", () => {
   });
 
   it("should throw for empty orderId", () => {
-    expect(() =>
-      formatIVXPMessage({ orderId: "", txHash: "0xabc" }),
-    ).toThrow("Invalid orderId: must be a non-empty string");
+    expect(() => formatIVXPMessage({ orderId: "", txHash: "0xabc" })).toThrow(
+      "Invalid orderId: must be a non-empty string",
+    );
   });
 
   it("should throw for empty txHash", () => {
-    expect(() =>
-      formatIVXPMessage({ orderId: "ivxp-123", txHash: "" }),
-    ).toThrow("Invalid txHash: must be a non-empty string");
+    expect(() => formatIVXPMessage({ orderId: "ivxp-123", txHash: "" })).toThrow(
+      "Invalid txHash: must be a non-empty string",
+    );
   });
 
   it("should throw for invalid timestamp format", () => {
@@ -471,6 +731,19 @@ describe("formatIVXPMessage", () => {
     });
     expect(message).toContain("Timestamp: 2026-01-01T08:00:00+08:00");
   });
+
+  // Fix #3: Pipe injection prevention
+  it("should throw for orderId containing pipe character", () => {
+    expect(() => formatIVXPMessage({ orderId: "ivxp-123|injected", txHash: "0xabc" })).toThrow(
+      "must not contain pipe character",
+    );
+  });
+
+  it("should throw for txHash containing pipe character", () => {
+    expect(() => formatIVXPMessage({ orderId: "ivxp-123", txHash: "0xabc|injected" })).toThrow(
+      "must not contain pipe character",
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -479,9 +752,7 @@ describe("formatIVXPMessage", () => {
 
 describe("createCryptoService", () => {
   it("should create a service that implements ICryptoService", async () => {
-    const service: ICryptoService = createCryptoService(
-      CLIENT_ACCOUNT.privateKey as `0x${string}`,
-    );
+    const service: ICryptoService = createCryptoService(CLIENT_ACCOUNT.privateKey as `0x${string}`);
     expect(service.sign).toBeTypeOf("function");
     expect(service.verify).toBeTypeOf("function");
     expect(service.getAddress).toBeTypeOf("function");
@@ -506,8 +777,6 @@ describe("createCryptoService", () => {
   });
 
   it("should throw for an invalid private key", () => {
-    expect(() => createCryptoService("0xbad" as `0x${string}`)).toThrow(
-      "Invalid private key",
-    );
+    expect(() => createCryptoService("0xbad" as `0x${string}`)).toThrow("Invalid private key");
   });
 });

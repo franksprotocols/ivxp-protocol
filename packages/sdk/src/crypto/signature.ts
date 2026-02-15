@@ -11,7 +11,7 @@
  * - Factory function for convenient instantiation
  */
 
-import { verifyMessage } from "viem";
+import { recoverMessageAddress } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import type { ICryptoService } from "@ivxp/protocol";
 
@@ -22,7 +22,12 @@ import type { ICryptoService } from "@ivxp/protocol";
 /** Regex for a valid 0x-prefixed 32-byte hex private key (66 chars total). */
 const PRIVATE_KEY_REGEX = /^0x[0-9a-fA-F]{64}$/;
 
-/** Regex for a valid 0x-prefixed 65-byte hex signature (132 chars total). */
+/**
+ * Regex for a valid 0x-prefixed 65-byte hex signature (132 chars total).
+ *
+ * EIP-191 signatures are 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte).
+ * In hex: 130 characters + "0x" prefix = 132 characters total.
+ */
 const HEX_SIGNATURE_REGEX = /^0x[0-9a-fA-F]{130}$/;
 
 /** Regex for a valid 0x-prefixed 20-byte hex address (42 chars total). */
@@ -33,8 +38,7 @@ const HEX_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
  * Supports formats like: 2026-02-05T12:30:00Z, 2026-02-05T12:30:00.000Z,
  * 2026-02-05T12:30:00+00:00
  */
-const ISO_8601_REGEX =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+const ISO_8601_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
 // ---------------------------------------------------------------------------
 // IVXP message format
@@ -63,25 +67,51 @@ export interface IVXPSignedMessage {
 }
 
 /**
+ * Parameters for verifying an IVXP protocol message.
+ */
+export interface IVXPVerifyParams {
+  /** The signed IVXP-formatted message string. */
+  readonly signedMessage: string;
+  /** The EIP-191 signature to verify. */
+  readonly signature: `0x${string}`;
+  /** The expected signer's wallet address. */
+  readonly expectedAddress: `0x${string}`;
+}
+
+/**
+ * Result from verifying an IVXP protocol message.
+ *
+ * Uses a discriminated union: when `valid` is true, `orderId` and `txHash`
+ * are guaranteed to be present. When `valid` is false, they are absent.
+ */
+export type IVXPVerificationResult =
+  | { readonly valid: false }
+  | { readonly valid: true; readonly orderId: string; readonly txHash: string };
+
+/**
  * Format an IVXP/1.0 protocol message.
  *
  * Format: "Order: {order_id} | Payment: {tx_hash} | Timestamp: {ISO8601}"
  *
  * @param params - The message parameters
  * @returns The formatted message string
- * @throws If orderId or txHash is empty, or if timestamp is invalid ISO 8601
+ * @throws If orderId or txHash is empty, contains pipe characters, or if timestamp is invalid ISO 8601
  */
 export function formatIVXPMessage(params: IVXPMessageParams): string {
   if (!params.orderId || params.orderId.trim().length === 0) {
     throw new Error("Invalid orderId: must be a non-empty string");
   }
+  if (params.orderId.includes("|")) {
+    throw new Error("Invalid orderId: must not contain pipe character (|)");
+  }
   if (!params.txHash || params.txHash.trim().length === 0) {
     throw new Error("Invalid txHash: must be a non-empty string");
   }
+  if (params.txHash.includes("|")) {
+    throw new Error("Invalid txHash: must not contain pipe character (|)");
+  }
   if (params.timestamp !== undefined && !ISO_8601_REGEX.test(params.timestamp)) {
-    throw new Error(
-      "Invalid timestamp: must be ISO 8601 format (e.g. 2026-02-05T12:30:00Z)",
-    );
+    throw new Error("Invalid timestamp: must be ISO 8601 format (e.g. 2026-02-05T12:30:00Z)");
   }
 
   const timestamp = params.timestamp ?? new Date().toISOString();
@@ -137,52 +167,49 @@ export class CryptoService implements ICryptoService {
   /**
    * Verify that a signature was produced by the expected address.
    *
-   * Uses viem's verifyMessage to recover the signer address from the
-   * signature and compare it against the expected address.
+   * Uses viem's recoverMessageAddress to recover the signer address from the
+   * signature, then compares it case-insensitively against the expected address.
    *
-   * Returns false for signature mismatches. Rethrows unexpected errors
-   * (type errors, null references, etc.) that indicate programming mistakes.
+   * Returns false for any invalid input (malformed signatures, addresses,
+   * non-string messages). Never throws for verification failures.
    *
    * @param message - The original plaintext message
    * @param signature - The hex-encoded signature to verify (65 bytes)
    * @param expectedAddress - The expected signer's wallet address (20 bytes)
-   * @returns true if the recovered address matches expectedAddress
-   * @throws If inputs are malformed or an unexpected error occurs
+   * @returns true if the recovered address matches expectedAddress (case-insensitive)
    */
   async verify(
     message: string,
     signature: `0x${string}`,
     expectedAddress: `0x${string}`,
   ): Promise<boolean> {
-    if (typeof message !== "string") {
-      throw new Error("Invalid message: must be a string");
-    }
-    if (!signature || !HEX_SIGNATURE_REGEX.test(signature)) {
-      throw new Error(
-        "Invalid signature: must be a 0x-prefixed 130-character hex string (65 bytes)",
-      );
-    }
-    if (!expectedAddress || !HEX_ADDRESS_REGEX.test(expectedAddress)) {
-      throw new Error(
-        "Invalid address: must be a 0x-prefixed 40-character hex string (20 bytes)",
-      );
-    }
-
     try {
-      return await verifyMessage({
-        address: expectedAddress,
+      // Validate inputs -- return false instead of throwing.
+      // Note: empty strings ARE valid EIP-191 messages (sign() supports them),
+      // so we only reject non-string types here, not empty strings.
+      if (typeof message !== "string") {
+        return false;
+      }
+      if (!signature || !HEX_SIGNATURE_REGEX.test(signature)) {
+        return false;
+      }
+      if (!expectedAddress || !HEX_ADDRESS_REGEX.test(expectedAddress)) {
+        return false;
+      }
+
+      const recoveredAddress = await recoverMessageAddress({
         message,
         signature,
       });
-    } catch (error: unknown) {
-      // Signature recovery failures from viem are expected when a
-      // signature is cryptographically invalid for the given message.
-      // These manifest as errors during ecrecover. Return false.
-      if (error instanceof Error && error.message.includes("Signature")) {
-        return false;
-      }
-      // Rethrow unexpected errors (programming mistakes, null refs, etc.)
-      throw error;
+
+      // Case-insensitive comparison (AC #2)
+      return recoveredAddress.toLowerCase() === expectedAddress.toLowerCase();
+    } catch {
+      // Intentionally no logging here. As an SDK library, verify() must not
+      // produce side effects (e.g. console.warn). Callers who need debug
+      // visibility should wrap this method and log at their own level.
+      // Any error during recovery means the signature is invalid.
+      return false;
     }
   }
 
@@ -211,6 +238,42 @@ export class CryptoService implements ICryptoService {
     const message = formatIVXPMessage(params);
     const signature = await this.sign(message);
     return { message, signature };
+  }
+
+  /**
+   * Verify an IVXP/1.0 protocol-formatted signed message.
+   *
+   * Convenience method that verifies the signature and parses the IVXP
+   * message format to extract orderId and txHash.
+   *
+   * Returns { valid: false } if the signature is invalid, the signer
+   * does not match, or the message is not in IVXP format.
+   *
+   * @param params - The verification parameters
+   * @returns Verification result with extracted orderId and txHash when valid
+   */
+  async verifyIVXPMessage(params: IVXPVerifyParams): Promise<IVXPVerificationResult> {
+    const INVALID_RESULT = { valid: false } as const;
+
+    const valid = await this.verify(params.signedMessage, params.signature, params.expectedAddress);
+
+    if (!valid) {
+      return INVALID_RESULT;
+    }
+
+    // Parse IVXP message format: "Order: {orderId} | Payment: {txHash} | Timestamp: {ts}"
+    // Capture groups: [1] = orderId (text before first pipe), [2] = txHash (text before second pipe)
+    const match = params.signedMessage.match(/^Order: ([^|]+) \| Payment: ([^|]+) \| Timestamp:/);
+
+    if (!match) {
+      return INVALID_RESULT;
+    }
+
+    return {
+      valid: true,
+      orderId: match[1].trim(),
+      txHash: match[2].trim(),
+    };
   }
 }
 
