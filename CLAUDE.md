@@ -95,7 +95,7 @@ Use agents PROACTIVELY without waiting for user prompt:
 | Build fails | **build-error-resolver** |
 | Before commit | **security-reviewer** |
 
-**Git Workflow**: All agents MUST follow `.claude/rules/git-workflow.md` - conventional commits, English only, no Co-Authored-By.
+**Git Workflow**: All git/GitHub operations MUST check `.claude/rules/git-workflow.md` for conventions before executing.
 
 ## Quick Commands
 
