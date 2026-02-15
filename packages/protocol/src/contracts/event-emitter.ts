@@ -16,6 +16,10 @@
  */
 export type SDKEvent =
   | {
+      readonly type: "catalog.received";
+      readonly payload: { readonly provider: string; readonly servicesCount: number };
+    }
+  | {
       readonly type: "order.quoted";
       readonly payload: { readonly orderId: string; readonly priceUsdc: string };
     }

@@ -124,6 +124,14 @@ export class MockPaymentService implements IPaymentService {
     return this.balances.get(key) ?? this.config.defaultBalance ?? DEFAULT_BALANCE;
   }
 
+  async getTransactionStatus(_txHash: `0x${string}`): Promise<{
+    readonly status: "pending" | "success" | "reverted" | "not_found";
+    readonly confirmations?: number;
+    readonly blockNumber?: bigint;
+  }> {
+    return { status: "success", confirmations: 1, blockNumber: BigInt(1) };
+  }
+
   // -----------------------------------------------------------------------
   // Test helpers
   // -----------------------------------------------------------------------
