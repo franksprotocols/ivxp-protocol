@@ -34,6 +34,7 @@ export { pollWithBackoff, pollOrderStatus, type PollOptions } from "./polling/in
 export {
   IVXPClient,
   createIVXPClient,
+  EventEmitter,
   type IVXPClientConfig,
   type OrderPollOptions,
   type ServiceRequestParams,
@@ -41,6 +42,10 @@ export {
   type PaymentResult,
   type DownloadOptions,
   type ConfirmationResult,
+  type SDKEvent,
+  type SDKEventMap,
+  type SDKEventName,
+  type SDKEventPayload,
 } from "./core/index.js";
 
 // Errors

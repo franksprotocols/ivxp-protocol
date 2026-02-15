@@ -500,7 +500,7 @@ describe("IVXPClient.downloadDeliverable()", () => {
       const mockHttp = new MockHttpClient({ defaultGetResponse: wireResponse });
       const { client } = createMockedClient({ mockHttp });
 
-      const receivedEvents: Array<{ orderId: string; deliverableUrl: string }> = [];
+      const receivedEvents: Array<{ orderId: string; format: string }> = [];
       client.on("order.delivered", (payload) => {
         receivedEvents.push(payload);
       });
@@ -509,7 +509,7 @@ describe("IVXPClient.downloadDeliverable()", () => {
 
       expect(receivedEvents).toHaveLength(1);
       expect(receivedEvents[0].orderId).toBe(DEFAULT_ORDER_ID);
-      expect(receivedEvents[0].deliverableUrl).toBe(EXPECTED_DELIVERABLE_URL);
+      expect(receivedEvents[0].format).toBe("json");
     });
 
     it("should not emit event on download failure", async () => {

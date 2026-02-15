@@ -50,9 +50,7 @@ function createMockCryptoService(): ICryptoService {
   };
 }
 
-function createMockStoredOrder(
-  overrides: Partial<StoredOrder> = {},
-): StoredOrder {
+function createMockStoredOrder(overrides: Partial<StoredOrder> = {}): StoredOrder {
   const status: OrderStatus = "quoted";
   return {
     orderId: "ivxp-550e8400-e29b-41d4-a716-446655440000",
@@ -76,9 +74,7 @@ function createMockOrderStorage(): IOrderStorage & {
   return {
     _orders: orders,
     create: vi.fn(
-      async (
-        order: Omit<StoredOrder, "createdAt" | "updatedAt">,
-      ): Promise<StoredOrder> => {
+      async (order: Omit<StoredOrder, "createdAt" | "updatedAt">): Promise<StoredOrder> => {
         const now = new Date().toISOString();
         const stored: StoredOrder = {
           ...order,
@@ -92,47 +88,34 @@ function createMockOrderStorage(): IOrderStorage & {
     get: vi.fn(async (orderId: string): Promise<StoredOrder | null> => {
       return orders.get(orderId) ?? null;
     }),
-    update: vi.fn(
-      async (
-        orderId: string,
-        updates: OrderUpdates,
-      ): Promise<StoredOrder> => {
-        const existing = orders.get(orderId);
-        if (!existing) {
-          throw new Error(`Order ${orderId} not found`);
-        }
-        const updated: StoredOrder = {
-          ...existing,
-          ...updates,
-          updatedAt: new Date().toISOString(),
-        };
-        orders.set(orderId, updated);
-        return updated;
-      },
-    ),
-    list: vi.fn(
-      async (
-        filters?: OrderFilters,
-      ): Promise<readonly StoredOrder[]> => {
-        let results = Array.from(orders.values());
-        if (filters?.status) {
-          results = results.filter((o) => o.status === filters.status);
-        }
-        if (filters?.clientAddress) {
-          results = results.filter(
-            (o) => o.clientAddress === filters.clientAddress,
-          );
-        }
-        if (filters?.serviceType) {
-          results = results.filter(
-            (o) => o.serviceType === filters.serviceType,
-          );
-        }
-        const offset = filters?.offset ?? 0;
-        const limit = filters?.limit ?? results.length;
-        return results.slice(offset, offset + limit);
-      },
-    ),
+    update: vi.fn(async (orderId: string, updates: OrderUpdates): Promise<StoredOrder> => {
+      const existing = orders.get(orderId);
+      if (!existing) {
+        throw new Error(`Order ${orderId} not found`);
+      }
+      const updated: StoredOrder = {
+        ...existing,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+      orders.set(orderId, updated);
+      return updated;
+    }),
+    list: vi.fn(async (filters?: OrderFilters): Promise<readonly StoredOrder[]> => {
+      let results = Array.from(orders.values());
+      if (filters?.status) {
+        results = results.filter((o) => o.status === filters.status);
+      }
+      if (filters?.clientAddress) {
+        results = results.filter((o) => o.clientAddress === filters.clientAddress);
+      }
+      if (filters?.serviceType) {
+        results = results.filter((o) => o.serviceType === filters.serviceType);
+      }
+      const offset = filters?.offset ?? 0;
+      const limit = filters?.limit ?? results.length;
+      return results.slice(offset, offset + limit);
+    }),
     delete: vi.fn(async (orderId: string): Promise<void> => {
       orders.delete(orderId);
     }),
@@ -146,27 +129,18 @@ function createMockEventEmitter(): IEventEmitter & {
 
   return {
     _handlers: handlers,
-    on<T extends SDKEvent["type"]>(
-      event: T,
-      handler: (payload: SDKEventMap[T]) => void,
-    ): void {
+    on<T extends SDKEvent["type"]>(event: T, handler: (payload: SDKEventMap[T]) => void): void {
       const list = handlers.get(event) ?? [];
       handlers.set(event, [...list, handler as (payload: unknown) => void]);
     },
-    off<T extends SDKEvent["type"]>(
-      event: T,
-      handler: (payload: SDKEventMap[T]) => void,
-    ): void {
+    off<T extends SDKEvent["type"]>(event: T, handler: (payload: SDKEventMap[T]) => void): void {
       const list = handlers.get(event) ?? [];
       handlers.set(
         event,
         list.filter((h) => h !== handler),
       );
     },
-    emit<T extends SDKEvent["type"]>(
-      event: T,
-      payload: SDKEventMap[T],
-    ): void {
+    emit<T extends SDKEvent["type"]>(event: T, payload: SDKEventMap[T]): void {
       const list = handlers.get(event) ?? [];
       for (const handler of list) {
         handler(payload);
@@ -186,11 +160,7 @@ function createMockHttpClient(): IHttpClient & {
       lastOptions.options = options;
       return {} as T;
     },
-    async post<T>(
-      _url: string,
-      _body: JsonSerializable,
-      options?: RequestOptions,
-    ): Promise<T> {
+    async post<T>(_url: string, _body: JsonSerializable, options?: RequestOptions): Promise<T> {
       lastOptions.options = options;
       return {} as T;
     },
@@ -205,23 +175,17 @@ describe("ICryptoService", () => {
   it("should define sign method that returns a Promise<hex>", () => {
     expectTypeOf<ICryptoService["sign"]>().toBeFunction();
     expectTypeOf<ICryptoService["sign"]>().parameter(0).toBeString();
-    expectTypeOf<ICryptoService["sign"]>().returns.toEqualTypeOf<
-      Promise<`0x${string}`>
-    >();
+    expectTypeOf<ICryptoService["sign"]>().returns.toEqualTypeOf<Promise<`0x${string}`>>();
   });
 
   it("should define verify method with message, signature, and address params", () => {
     expectTypeOf<ICryptoService["verify"]>().toBeFunction();
-    expectTypeOf<ICryptoService["verify"]>().returns.toEqualTypeOf<
-      Promise<boolean>
-    >();
+    expectTypeOf<ICryptoService["verify"]>().returns.toEqualTypeOf<Promise<boolean>>();
   });
 
   it("should define async getAddress method returning Promise<hex>", () => {
     expectTypeOf<ICryptoService["getAddress"]>().toBeFunction();
-    expectTypeOf<ICryptoService["getAddress"]>().returns.toEqualTypeOf<
-      Promise<`0x${string}`>
-    >();
+    expectTypeOf<ICryptoService["getAddress"]>().returns.toEqualTypeOf<Promise<`0x${string}`>>();
   });
 
   // AC#4: Dependency injection + runtime behavior
@@ -234,11 +198,7 @@ describe("ICryptoService", () => {
 
   it("should support DI and verify checks arguments correctly", async () => {
     const mock = createMockCryptoService();
-    const result = await mock.verify(
-      "test",
-      "0xsig",
-      "0xaddr",
-    );
+    const result = await mock.verify("test", "0xsig", "0xaddr");
     expect(result).toBe(true);
     expect(mock.verify).toHaveBeenCalledWith("test", "0xsig", "0xaddr");
   });
@@ -258,23 +218,17 @@ describe("ICryptoService", () => {
 describe("IPaymentService", () => {
   it("should define send method returning tx hash", () => {
     expectTypeOf<IPaymentService["send"]>().toBeFunction();
-    expectTypeOf<IPaymentService["send"]>().returns.toEqualTypeOf<
-      Promise<`0x${string}`>
-    >();
+    expectTypeOf<IPaymentService["send"]>().returns.toEqualTypeOf<Promise<`0x${string}`>>();
   });
 
   it("should define verify method with txHash and expected details", () => {
     expectTypeOf<IPaymentService["verify"]>().toBeFunction();
-    expectTypeOf<IPaymentService["verify"]>().returns.toEqualTypeOf<
-      Promise<boolean>
-    >();
+    expectTypeOf<IPaymentService["verify"]>().returns.toEqualTypeOf<Promise<boolean>>();
   });
 
   it("should define getBalance method returning USDC balance as string", () => {
     expectTypeOf<IPaymentService["getBalance"]>().toBeFunction();
-    expectTypeOf<IPaymentService["getBalance"]>().returns.toEqualTypeOf<
-      Promise<string>
-    >();
+    expectTypeOf<IPaymentService["getBalance"]>().returns.toEqualTypeOf<Promise<string>>();
   });
 
   // AC#4: DI + runtime behavior
@@ -366,9 +320,7 @@ describe("IHttpClient", () => {
     await mock.get<unknown>("/api/data", opts);
 
     expect(mock._lastOptions.options).toEqual(opts);
-    expect(mock._lastOptions.options?.headers?.Authorization).toBe(
-      "Bearer token",
-    );
+    expect(mock._lastOptions.options?.headers?.Authorization).toBe("Bearer token");
     expect(mock._lastOptions.options?.timeout).toBe(5000);
   });
 
@@ -394,11 +346,7 @@ describe("IHttpClient", () => {
       async get<T>(_url: string, _options?: RequestOptions): Promise<T> {
         return { data: "test" } as T;
       },
-      async post<T>(
-        _url: string,
-        _body: JsonSerializable,
-        _options?: RequestOptions,
-      ): Promise<T> {
+      async post<T>(_url: string, _body: JsonSerializable, _options?: RequestOptions): Promise<T> {
         return {} as T;
       },
     };
@@ -429,15 +377,9 @@ describe("IEventEmitter", () => {
   it("SDKEvent should include all required event types", () => {
     type OrderQuoted = Extract<SDKEvent, { readonly type: "order.quoted" }>;
     type OrderPaid = Extract<SDKEvent, { readonly type: "order.paid" }>;
-    type OrderDelivered = Extract<
-      SDKEvent,
-      { readonly type: "order.delivered" }
-    >;
+    type OrderDelivered = Extract<SDKEvent, { readonly type: "order.delivered" }>;
     type PaymentSent = Extract<SDKEvent, { readonly type: "payment.sent" }>;
-    type PaymentConfirmed = Extract<
-      SDKEvent,
-      { readonly type: "payment.confirmed" }
-    >;
+    type PaymentConfirmed = Extract<SDKEvent, { readonly type: "payment.confirmed" }>;
 
     expectTypeOf<OrderQuoted>().not.toBeNever();
     expectTypeOf<OrderPaid>().not.toBeNever();
@@ -454,9 +396,11 @@ describe("IEventEmitter", () => {
     expectTypeOf<SDKEventMap>().toHaveProperty("payment.confirmed");
   });
 
-  it("payment.confirmed blockNumber should be number, not bigint", () => {
+  it("payment.confirmed blockNumber should be optional bigint", () => {
     type ConfirmedPayload = SDKEventMap["payment.confirmed"];
-    expectTypeOf<ConfirmedPayload["blockNumber"]>().toBeNumber();
+    expectTypeOf<ConfirmedPayload>().toHaveProperty("blockNumber");
+    // blockNumber is optional bigint (bigint | undefined)
+    expectTypeOf<ConfirmedPayload["blockNumber"]>().toEqualTypeOf<bigint | undefined>();
   });
 
   // AC#4: DI + runtime behavior -- emit calls handlers
@@ -521,19 +465,19 @@ describe("IEventEmitter", () => {
     expect(paidHandler).not.toHaveBeenCalled();
   });
 
-  it("should pass correct payload for payment.confirmed with number blockNumber", () => {
+  it("should pass correct payload for payment.confirmed with optional bigint blockNumber", () => {
     const emitter = createMockEventEmitter();
     const handler = vi.fn();
 
     emitter.on("payment.confirmed", handler);
     emitter.emit("payment.confirmed", {
       txHash: "0xconfirmed",
-      blockNumber: 12345678,
+      blockNumber: 12345678n,
     });
 
     expect(handler).toHaveBeenCalledWith({
       txHash: "0xconfirmed",
-      blockNumber: 12345678,
+      blockNumber: 12345678n,
     });
   });
 });
@@ -760,37 +704,27 @@ describe("Complete method signatures", () => {
     it("sign should accept string and return Promise<hex>", () => {
       type SignFn = ICryptoService["sign"];
       expectTypeOf<Parameters<SignFn>>().toEqualTypeOf<[string]>();
-      expectTypeOf<ReturnType<SignFn>>().toEqualTypeOf<
-        Promise<`0x${string}`>
-      >();
+      expectTypeOf<ReturnType<SignFn>>().toEqualTypeOf<Promise<`0x${string}`>>();
     });
 
     it("verify should accept message, signature, address and return Promise<boolean>", () => {
       type VerifyFn = ICryptoService["verify"];
-      expectTypeOf<Parameters<VerifyFn>>().toEqualTypeOf<
-        [string, `0x${string}`, `0x${string}`]
-      >();
+      expectTypeOf<Parameters<VerifyFn>>().toEqualTypeOf<[string, `0x${string}`, `0x${string}`]>();
       expectTypeOf<ReturnType<VerifyFn>>().toEqualTypeOf<Promise<boolean>>();
     });
 
     it("getAddress should accept no args and return Promise<hex>", () => {
       type GetAddrFn = ICryptoService["getAddress"];
       expectTypeOf<Parameters<GetAddrFn>>().toEqualTypeOf<[]>();
-      expectTypeOf<ReturnType<GetAddrFn>>().toEqualTypeOf<
-        Promise<`0x${string}`>
-      >();
+      expectTypeOf<ReturnType<GetAddrFn>>().toEqualTypeOf<Promise<`0x${string}`>>();
     });
   });
 
   describe("IPaymentService methods", () => {
     it("send should accept address and amount, return Promise<hex>", () => {
       type SendFn = IPaymentService["send"];
-      expectTypeOf<Parameters<SendFn>>().toEqualTypeOf<
-        [`0x${string}`, string]
-      >();
-      expectTypeOf<ReturnType<SendFn>>().toEqualTypeOf<
-        Promise<`0x${string}`>
-      >();
+      expectTypeOf<Parameters<SendFn>>().toEqualTypeOf<[`0x${string}`, string]>();
+      expectTypeOf<ReturnType<SendFn>>().toEqualTypeOf<Promise<`0x${string}`>>();
     });
 
     it("getBalance should accept address and return Promise<string>", () => {
@@ -832,12 +766,8 @@ describe("Edge cases", () => {
   it("OrderUpdates should not allow immutable field changes", () => {
     // Verify orderId, clientAddress, etc. are NOT in OrderUpdates
     type HasOrderId = "orderId" extends keyof OrderUpdates ? true : false;
-    type HasClientAddress = "clientAddress" extends keyof OrderUpdates
-      ? true
-      : false;
-    type HasServiceType = "serviceType" extends keyof OrderUpdates
-      ? true
-      : false;
+    type HasClientAddress = "clientAddress" extends keyof OrderUpdates ? true : false;
+    type HasServiceType = "serviceType" extends keyof OrderUpdates ? true : false;
     type HasPriceUsdc = "priceUsdc" extends keyof OrderUpdates ? true : false;
     type HasCreatedAt = "createdAt" extends keyof OrderUpdates ? true : false;
 
