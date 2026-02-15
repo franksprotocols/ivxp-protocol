@@ -36,6 +36,8 @@ export {
   createIVXPClient,
   type IVXPClientConfig,
   type ServiceRequestParams,
+  type SubmitPaymentQuote,
+  type PaymentResult,
 } from "./core/index.js";
 
 // Errors

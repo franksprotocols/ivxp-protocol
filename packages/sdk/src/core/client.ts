@@ -4,15 +4,6 @@
  * Provides a unified entry point for interacting with the IVXP protocol.
  * Internally initializes CryptoService, PaymentService, and HttpClient,
  * with dependency injection support for testing.
- *
- * Features:
- * - One-line construction with just a private key
- * - Default network: Base Sepolia
- * - Internal service initialization (crypto, payment, HTTP)
- * - Dependency injection for all services
- * - Factory function with input validation
- * - Type-safe event emission for SDK lifecycle events
- * - Service catalog fetching with Zod validation
  */
 
 import { z } from "zod";
@@ -31,12 +22,12 @@ import {
   type ServiceCatalogOutput,
   type ServiceQuoteOutput,
 } from "@ivxp/protocol";
-import { createCryptoService } from "../crypto/index.js";
+import { createCryptoService, formatIVXPMessage } from "../crypto/index.js";
 import { PaymentService, type NetworkType } from "../payment/index.js";
 import { createHttpClient } from "../http/index.js";
 import { IVXPError } from "../errors/base.js";
-import { ServiceUnavailableError } from "../errors/specific.js";
-import type { ServiceRequestParams } from "./types.js";
+import { PartialSuccessError, ServiceUnavailableError } from "../errors/specific.js";
+import type { ServiceRequestParams, SubmitPaymentQuote, PaymentResult } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Validation constants
@@ -44,6 +35,12 @@ import type { ServiceRequestParams } from "./types.js";
 
 /** Regex for a valid 0x-prefixed 32-byte hex private key (66 chars total). */
 const PRIVATE_KEY_REGEX = /^0x[0-9a-fA-F]{64}$/;
+
+/** Regex for a valid 0x-prefixed 20-byte hex address (42 chars total). */
+const HEX_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+
+/** The Ethereum zero address (20 zero bytes). */
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 /** Allowed URL protocols for provider URLs. */
 const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
@@ -158,6 +155,61 @@ function validateRequestParams(params: ServiceRequestParams): void {
   }
 }
 
+/**
+ * Validate submitPayment parameters at runtime.
+ *
+ * Checks orderId and quote fields for emptiness and domain constraints.
+ * Called at the start of submitPayment() to fail fast before on-chain ops.
+ */
+function validateSubmitPaymentParams(orderId: string, quote: SubmitPaymentQuote): void {
+  if (!orderId || orderId.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid request params: orderId must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "orderId" },
+    );
+  }
+
+  // Reject pipe characters early so formatIVXPMessage does not throw
+  // after the on-chain payment has already been sent (which would cause
+  // a PartialSuccessError for a preventable validation issue).
+  if (orderId.includes("|")) {
+    throw new IVXPError(
+      "Invalid request params: orderId must not contain pipe character (|)",
+      "INVALID_REQUEST_PARAMS",
+      { field: "orderId" },
+    );
+  }
+
+  if (
+    typeof quote.priceUsdc !== "number" ||
+    !Number.isFinite(quote.priceUsdc) ||
+    quote.priceUsdc <= 0
+  ) {
+    throw new IVXPError(
+      "Invalid request params: priceUsdc must be a positive finite number",
+      "INVALID_REQUEST_PARAMS",
+      { field: "priceUsdc", value: quote.priceUsdc },
+    );
+  }
+
+  if (!quote.paymentAddress || !HEX_ADDRESS_REGEX.test(quote.paymentAddress)) {
+    throw new IVXPError(
+      "Invalid request params: paymentAddress must be a valid 0x-prefixed 40-character hex address",
+      "INVALID_REQUEST_PARAMS",
+      { field: "paymentAddress", value: quote.paymentAddress },
+    );
+  }
+
+  if (quote.paymentAddress === ZERO_ADDRESS) {
+    throw new IVXPError(
+      "Invalid request params: paymentAddress must not be the zero address",
+      "INVALID_REQUEST_PARAMS",
+      { field: "paymentAddress", value: quote.paymentAddress },
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Wire-format types (for requestQuote body construction)
 // ---------------------------------------------------------------------------
@@ -195,6 +247,43 @@ interface WireFormatServiceRequestMessage {
   readonly client_agent: WireFormatClientAgent;
   readonly service_request: WireFormatServiceRequest;
 }
+
+// ---------------------------------------------------------------------------
+// Wire-format types (for submitPayment body construction)
+// ---------------------------------------------------------------------------
+
+/**
+ * Wire-format payment details. Matches story spec: { tx_hash, amount_usdc, network }.
+ */
+interface WireFormatPayment {
+  readonly tx_hash: string;
+  readonly amount_usdc: string;
+  readonly network: string;
+}
+
+/**
+ * Wire-format signature details. Matches story spec: { message, sig, signer }.
+ */
+interface WireFormatSignature {
+  readonly message: string;
+  readonly sig: string;
+  readonly signer: string;
+}
+
+/**
+ * Wire-format payment proof message for POST /ivxp/orders/{orderId}/payment.
+ */
+interface WireFormatPaymentProofMessage {
+  readonly protocol: string;
+  readonly message_type: "payment_proof";
+  readonly timestamp: string;
+  readonly order_id: string;
+  readonly payment: WireFormatPayment;
+  readonly signature: WireFormatSignature;
+}
+
+/** USDC decimal precision for amount formatting. */
+const USDC_DECIMAL_PLACES = 6;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -242,18 +331,9 @@ type EventHandler<T extends SDKEvent["type"]> = (payload: SDKEventMap[T]) => voi
  * internally by default but can be overridden via dependency injection
  * for testing.
  *
- * Implements a lightweight type-safe event emitter for SDK lifecycle
- * events (catalog.received, order.*, payment.*).
- *
  * @example
  * ```typescript
- * import { createIVXPClient } from "@ivxp/sdk";
- *
- * const client = createIVXPClient({
- *   privateKey: "0x...",
- * });
- *
- * const address = await client.getAddress();
+ * const client = createIVXPClient({ privateKey: "0x..." });
  * const catalog = await client.getCatalog("http://provider.example.com");
  * ```
  */
@@ -567,6 +647,100 @@ export class IVXPClient {
   }
 
   // -------------------------------------------------------------------------
+  // Submit Payment
+  // -------------------------------------------------------------------------
+
+  /**
+   * Submit payment for a quoted order and notify the provider.
+   *
+   * Sends USDC on-chain, creates an EIP-191 signed payment proof
+   * (IVXP/1.0 message format), and posts the proof to the provider's
+   * payment endpoint at `/ivxp/orders/{orderId}/payment`. Emits
+   * 'payment.sent' after tx success and 'order.paid' after provider
+   * notification.
+   *
+   * If the on-chain payment succeeds but provider notification fails,
+   * throws a PartialSuccessError containing the txHash for recovery.
+   *
+   * @param providerUrl - Base URL of the provider (e.g. "http://provider.example.com")
+   * @param orderId - The order identifier from a previous requestQuote() call
+   * @param quote - Quote details with priceUsdc and paymentAddress
+   * @returns PaymentResult with orderId, txHash, and updated status
+   * @throws IVXPError with code INVALID_PROVIDER_URL if providerUrl is not a valid HTTP(S) URL
+   * @throws IVXPError with code INVALID_REQUEST_PARAMS if orderId or quote fields are invalid
+   * @throws PartialSuccessError if payment tx succeeds but provider notification fails
+   * @throws Error if the on-chain payment fails (pre-notification)
+   */
+  async submitPayment(
+    providerUrl: string,
+    orderId: string,
+    quote: SubmitPaymentQuote,
+  ): Promise<PaymentResult> {
+    // 1. Validate inputs (fail fast before any side effects)
+    validateSubmitPaymentParams(orderId, quote);
+    const normalizedUrl = validateProviderUrl(providerUrl);
+    const paymentUrl = `${normalizedUrl}/ivxp/orders/${encodeURIComponent(orderId)}/payment`;
+
+    // 2. Send USDC payment on-chain
+    // toFixed(6) is safe here: USDC amounts in quotes are typically small
+    // numbers (< 1M) where IEEE 754 double precision is exact to 6 decimals.
+    // The upstream validation ensures priceUsdc is a finite positive number.
+    const amountStr = quote.priceUsdc.toFixed(USDC_DECIMAL_PLACES);
+    const txHash = await this.paymentService.send(quote.paymentAddress, amountStr);
+
+    // 3. Emit 'payment.sent' event after successful on-chain tx
+    this.emit("payment.sent", { txHash });
+
+    // 4. Sign IVXP payment proof message
+    const timestamp = new Date().toISOString();
+    const walletAddress = await this.getAddress();
+    const message = formatIVXPMessage({ orderId, txHash, timestamp });
+    const signature = await this.cryptoService.sign(message);
+
+    // 5. Build wire-format payment proof (story spec format)
+    const paymentProof: WireFormatPaymentProofMessage = {
+      protocol: PROTOCOL_VERSION,
+      message_type: "payment_proof",
+      timestamp,
+      order_id: orderId,
+      payment: {
+        tx_hash: txHash,
+        amount_usdc: amountStr,
+        network: this.network,
+      },
+      signature: {
+        message,
+        sig: signature,
+        signer: walletAddress,
+      },
+    };
+
+    // 6. Notify provider (POST payment proof)
+    try {
+      await this.httpClient.post<unknown>(paymentUrl, paymentProof as unknown as JsonSerializable);
+    } catch (notificationError) {
+      // Payment succeeded but notification failed -- partial success
+      const cause = notificationError instanceof Error ? notificationError : undefined;
+      throw new PartialSuccessError(
+        "Payment sent but provider notification failed",
+        txHash,
+        true,
+        cause,
+      );
+    }
+
+    // 7. Emit 'order.paid' event after successful notification
+    this.emit("order.paid", { orderId, txHash });
+
+    // 8. Return payment result
+    return {
+      orderId,
+      txHash,
+      status: "paid",
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
 
@@ -608,29 +782,6 @@ export class IVXPClient {
  * @param config - Client configuration
  * @returns A configured IVXPClient instance
  * @throws If the private key format is invalid
- *
- * @example
- * ```typescript
- * import { createIVXPClient } from "@ivxp/sdk";
- *
- * // Minimal usage
- * const client = createIVXPClient({
- *   privateKey: "0x...",
- * });
- *
- * // With custom network
- * const mainnetClient = createIVXPClient({
- *   privateKey: "0x...",
- *   network: "base-mainnet",
- * });
- *
- * // With dependency injection for testing
- * const testClient = createIVXPClient({
- *   privateKey: "0x...",
- *   cryptoService: mockCrypto,
- *   paymentService: mockPayment,
- * });
- * ```
  */
 export function createIVXPClient(config: IVXPClientConfig): IVXPClient {
   if (!config.privateKey) {
