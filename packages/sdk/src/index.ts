@@ -30,6 +30,9 @@ export { HttpClient, createHttpClient, type HttpClientOptions } from "./http/ind
 // Polling module
 export { pollWithBackoff, pollOrderStatus, type PollOptions } from "./polling/index.js";
 
+// Core module
+export { IVXPClient, createIVXPClient, type IVXPClientConfig } from "./core/index.js";
+
 // Errors
 export {
   IVXPError,
