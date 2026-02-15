@@ -74,4 +74,20 @@ export interface IPaymentService {
    *          must format the raw on-chain value (6 decimals) into this format.
    */
   getBalance(address: `0x${string}`): Promise<string>;
+
+  /**
+   * Get the status of a transaction on-chain.
+   *
+   * Provides transaction status information including confirmation count.
+   * Useful for checking whether a payment has been confirmed before
+   * calling verify().
+   *
+   * @param txHash - Transaction hash to check
+   * @returns Transaction status object with status, blockNumber, and confirmations
+   */
+  getTransactionStatus(txHash: `0x${string}`): Promise<{
+    readonly status: "pending" | "success" | "reverted" | "not_found";
+    readonly confirmations?: number;
+    readonly blockNumber?: bigint;
+  }>;
 }

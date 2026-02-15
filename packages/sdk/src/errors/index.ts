@@ -9,4 +9,8 @@ export {
   InsufficientBalanceError,
   TransactionError,
   TransactionSubmissionError,
+  PaymentNotFoundError,
+  PaymentPendingError,
+  PaymentFailedError,
+  PaymentAmountMismatchError,
 } from "./specific.js";
