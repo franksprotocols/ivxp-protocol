@@ -40,6 +40,7 @@ export {
   type SubmitPaymentQuote,
   type PaymentResult,
   type DownloadOptions,
+  type ConfirmationResult,
 } from "./core/index.js";
 
 // Errors

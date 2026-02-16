@@ -37,6 +37,7 @@ import type {
   SubmitPaymentQuote,
   PaymentResult,
   DownloadOptions,
+  ConfirmationResult,
 } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -308,6 +309,46 @@ interface WireFormatPaymentProofMessage {
 const USDC_DECIMAL_PLACES = 6;
 
 // ---------------------------------------------------------------------------
+// Wire-format types (for confirmDelivery body construction)
+// ---------------------------------------------------------------------------
+
+/**
+ * Wire-format confirmation details.
+ * Matches the IVXP/1.0 wire protocol for delivery_confirmation messages.
+ */
+interface WireFormatConfirmation {
+  readonly message: string;
+  readonly signature: string;
+  readonly signer: string;
+}
+
+/**
+ * Wire-format delivery confirmation message for POST /ivxp/orders/{orderId}/confirm.
+ */
+interface WireFormatDeliveryConfirmationMessage {
+  readonly protocol: string;
+  readonly message_type: "delivery_confirmation";
+  readonly timestamp: string;
+  readonly order_id: string;
+  readonly confirmation: WireFormatConfirmation;
+}
+
+/**
+ * Zod schema for the provider's confirmation response.
+ *
+ * Validates the `confirmed_at` field as a valid ISO 8601 timestamp
+ * and `status` as the literal string "confirmed".
+ */
+const ConfirmationResponseSchema = z.object({
+  status: z.literal("confirmed"),
+  confirmed_at: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/, {
+      message: "Invalid ISO 8601 timestamp in confirmed_at",
+    }),
+});
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -345,12 +386,16 @@ export interface OrderPollOptions extends PollOptions {
 /**
  * Type alias for event handler functions.
  *
- * Uses the union base type `SDKEvent["type"]` rather than a specific
- * event literal `T` to allow storing handlers for different event types
- * in the same Map value array. This is safe because emit() is generic
- * and only calls handlers registered for the matching event type.
+ * Uses `unknown` as the payload type for the internal handler storage.
+ * Type safety is enforced at the public API boundary: `on<T>()` accepts
+ * a handler with the correctly-typed payload via `SDKEventMap[T]`, and
+ * `emit<T>()` passes the correctly-typed payload to each handler.
+ *
+ * The cast in `on()` from `(payload: SDKEventMap[T]) => void` to
+ * `EventHandler` is safe because `emit()` only invokes handlers
+ * registered for the matching event type key.
  */
-type EventHandler<T extends SDKEvent["type"]> = (payload: SDKEventMap[T]) => void;
+type EventHandler = (payload: unknown) => void;
 
 // ---------------------------------------------------------------------------
 // IVXPClient
@@ -380,7 +425,7 @@ export class IVXPClient {
    * Event handler registry. Maps event type strings to arrays of handlers.
    * Uses Map for O(1) lookup by event type.
    */
-  private readonly eventHandlers = new Map<string, Array<EventHandler<SDKEvent["type"]>>>();
+  private readonly eventHandlers = new Map<string, EventHandler[]>();
 
   /**
    * Create a new IVXPClient instance.
@@ -485,7 +530,7 @@ export class IVXPClient {
    */
   on<T extends SDKEvent["type"]>(event: T, handler: (payload: SDKEventMap[T]) => void): void {
     const handlers = this.eventHandlers.get(event) ?? [];
-    this.eventHandlers.set(event, [...handlers, handler as EventHandler<SDKEvent["type"]>]);
+    this.eventHandlers.set(event, [...handlers, handler as EventHandler]);
   }
 
   /**
@@ -1006,6 +1051,121 @@ export class IVXPClient {
 
       throw new ServiceUnavailableError(
         `Failed to download deliverable from ${normalizedUrl}: ${errorMessage}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Confirm Delivery
+  // -------------------------------------------------------------------------
+
+  /**
+   * Confirm delivery and finalize the order.
+   *
+   * Creates an EIP-191 signed confirmation message and sends it to the
+   * provider's confirmation endpoint at `/ivxp/orders/{orderId}/confirm`.
+   * On success, the order transitions to the terminal 'confirmed' state.
+   *
+   * If the provider reports the order is already confirmed
+   * (ORDER_ALREADY_CONFIRMED), the method returns success rather than
+   * throwing -- idempotent confirmation is by design. In this case,
+   * `confirmedAt` will be the local timestamp of this call rather than
+   * the original confirmation timestamp from the provider, since the
+   * error response does not carry the original timestamp. Use
+   * `getOrderStatus()` if you need the authoritative confirmation time.
+   *
+   * Emits 'order.confirmed' event on successful confirmation.
+   *
+   * @param providerUrl - Base URL of the provider (e.g. "http://provider.example.com")
+   * @param orderId - The order identifier to confirm
+   * @returns ConfirmationResult with orderId, status, confirmedAt, and signature
+   * @throws IVXPError with code INVALID_PROVIDER_URL if providerUrl is not a valid HTTP(S) URL
+   * @throws IVXPError with code INVALID_REQUEST_PARAMS if orderId is invalid
+   * @throws IVXPError with code ORDER_NOT_DELIVERED if the order is not in 'delivered' state
+   * @throws ServiceUnavailableError if the provider is unreachable or returns a network error
+   */
+  async confirmDelivery(providerUrl: string, orderId: string): Promise<ConfirmationResult> {
+    // 1. Validate inputs (fail fast before any side effects)
+    validateOrderId(orderId);
+    const normalizedUrl = validateProviderUrl(providerUrl);
+    const confirmUrl = `${normalizedUrl}/ivxp/orders/${encodeURIComponent(orderId)}/confirm`;
+
+    // 2. Build and sign confirmation message
+    const timestamp = new Date().toISOString();
+    const confirmationMessage = `Confirm delivery: ${orderId} | Timestamp: ${timestamp}`;
+    const signature = await this.cryptoService.sign(confirmationMessage);
+    const walletAddress = await this.getAddress();
+
+    // 3. Build wire-format confirmation
+    const confirmation: WireFormatDeliveryConfirmationMessage = {
+      protocol: PROTOCOL_VERSION,
+      message_type: "delivery_confirmation",
+      timestamp,
+      order_id: orderId,
+      confirmation: {
+        message: confirmationMessage,
+        signature,
+        signer: walletAddress,
+      },
+    };
+
+    // 4. Send confirmation to provider
+    try {
+      const rawResponse = await this.httpClient.post<unknown>(
+        confirmUrl,
+        confirmation as unknown as JsonSerializable,
+      );
+
+      // 5. Validate provider response
+      const response = ConfirmationResponseSchema.parse(rawResponse);
+
+      // 6. Emit 'order.confirmed' event
+      this.emit("order.confirmed", {
+        orderId,
+        confirmedAt: response.confirmed_at,
+      });
+
+      // 7. Return confirmation result
+      return {
+        orderId,
+        status: "confirmed" as const,
+        confirmedAt: response.confirmed_at,
+        signature,
+      };
+    } catch (error) {
+      // Already confirmed is idempotent -- return success
+      if (error instanceof IVXPError && error.code === "ORDER_ALREADY_CONFIRMED") {
+        return {
+          orderId,
+          status: "confirmed" as const,
+          confirmedAt: timestamp,
+          signature,
+        };
+      }
+
+      if (error instanceof z.ZodError) {
+        throw new IVXPError(
+          `Invalid confirmation response from ${normalizedUrl}: ${error.issues.length} validation issue(s)`,
+          "INVALID_CONFIRMATION_FORMAT",
+          { issueCount: error.issues.length },
+          error,
+        );
+      }
+
+      if (error instanceof IVXPError) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Unknown error";
+
+      throw new ServiceUnavailableError(
+        `Failed to confirm delivery at ${normalizedUrl}: ${errorMessage}`,
         error instanceof Error ? error : undefined,
       );
     }
