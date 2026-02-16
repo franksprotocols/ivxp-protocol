@@ -43,9 +43,13 @@
 export {
   IVXPClient,
   createIVXPClient,
+  IVXPProvider,
+  createIVXPProvider,
   createCallbackServer,
   EventEmitter,
   type IVXPClientConfig,
+  type IVXPProviderConfig,
+  type ProviderStartResult,
   type OrderPollOptions,
   type CallbackServerOptions,
   type CallbackServerResult,

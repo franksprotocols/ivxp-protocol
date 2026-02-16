@@ -1,14 +1,17 @@
 /**
  * Core module exports.
  *
- * Provides the main IVXPClient class, factory function, EventEmitter,
- * and SDK-specific types for interacting with the IVXP protocol.
+ * Provides the main IVXPClient class, IVXPProvider class, factory functions,
+ * EventEmitter, and SDK-specific types for interacting with the IVXP protocol.
  *
  * Key exports:
  * - {@link IVXPClient} - Main client class for all IVXP operations
  * - {@link createIVXPClient} - Factory function with input validation
+ * - {@link IVXPProvider} - Main provider class for hosting IVXP services
+ * - {@link createIVXPProvider} - Factory function for provider construction
  * - {@link EventEmitter} - Lightweight, type-safe event emitter
  * - {@link IVXPClientConfig} - Configuration for client construction
+ * - {@link IVXPProviderConfig} - Configuration for provider construction
  * - {@link ServiceRequestParams} - Parameters for requesting a service quote
  * - {@link SubmitPaymentQuote} - Quote details for payment submission
  * - {@link PaymentResult} - Result of a successful payment
@@ -27,6 +30,14 @@ export {
   type IVXPClientConfig,
   type OrderPollOptions,
 } from "./client.js";
+
+/** Main IVXP provider class and factory. */
+export {
+  IVXPProvider,
+  createIVXPProvider,
+  type IVXPProviderConfig,
+  type ProviderStartResult,
+} from "./provider.js";
 
 /** Callback server for push delivery reception. */
 export {
