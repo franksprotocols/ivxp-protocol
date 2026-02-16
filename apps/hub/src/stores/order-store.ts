@@ -1,7 +1,21 @@
 import { create } from "zustand";
 import type { Address } from "viem";
 
-export type OrderStatus = "quoted" | "paying" | "paid" | "delivered" | "failed";
+export type OrderStatus =
+  | "quoted"
+  | "paying"
+  | "paid"
+  | "processing"
+  | "delivered"
+  | "failed"
+  | "delivery_failed";
+
+/** Terminal states where polling should stop. */
+export const TERMINAL_STATUSES: readonly OrderStatus[] = [
+  "delivered",
+  "failed",
+  "delivery_failed",
+] as const;
 
 export interface Order {
   readonly orderId: string;
@@ -10,8 +24,10 @@ export interface Order {
   readonly providerAddress: Address;
   readonly status: OrderStatus;
   readonly createdAt: Date;
+  readonly updatedAt?: Date;
   readonly txHash?: `0x${string}`;
   readonly blockNumber?: bigint;
+  readonly errorMessage?: string;
 }
 
 interface OrderStoreState {
@@ -46,22 +62,25 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
 
   updateOrderStatus: (orderId: string, status: OrderStatus) => {
     set((state) => ({
-      orders: state.orders.map((o) => (o.orderId === orderId ? { ...o, status } : o)),
+      orders: state.orders.map((o) =>
+        o.orderId === orderId ? { ...o, status, updatedAt: new Date() } : o,
+      ),
     }));
   },
 
   updateOrderPayment: (orderId, payment) => {
     set((state) => ({
-      orders: state.orders.map((o) =>
-        o.orderId === orderId
-          ? {
-              ...o,
-              ...(payment.txHash !== undefined ? { txHash: payment.txHash } : {}),
-              ...(payment.blockNumber !== undefined ? { blockNumber: payment.blockNumber } : {}),
-              ...(payment.status !== undefined ? { status: payment.status } : {}),
-            }
-          : o,
-      ),
+      orders: state.orders.map((o) => {
+        if (o.orderId !== orderId) return o;
+
+        return {
+          ...o,
+          ...(payment.txHash !== undefined ? { txHash: payment.txHash } : {}),
+          ...(payment.blockNumber !== undefined ? { blockNumber: payment.blockNumber } : {}),
+          ...(payment.status !== undefined ? { status: payment.status } : {}),
+          updatedAt: new Date(),
+        };
+      }),
     }));
   },
 
