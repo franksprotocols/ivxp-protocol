@@ -2,35 +2,44 @@
  * @ivxp/sdk
  *
  * Client library for the Intelligence Value Exchange Protocol.
+ *
+ * @example
+ * ```typescript
+ * // One-line convenience method (most common)
+ * import { createIVXPClient } from '@ivxp/sdk';
+ *
+ * const client = createIVXPClient({
+ *   privateKey: '0x...',
+ *   network: 'base-sepolia',
+ * });
+ *
+ * const result = await client.requestService({
+ *   providerUrl: 'https://provider.example.com',
+ *   serviceType: 'market-analysis',
+ *   description: 'Analyze USDC/ETH trading pair',
+ *   budgetUsdc: 10,
+ * });
+ *
+ * console.log(result.deliverable);
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Subpath imports for advanced usage
+ * import { CryptoService, createCryptoService } from '@ivxp/sdk/crypto';
+ * import { PaymentService } from '@ivxp/sdk/payment';
+ * import { IVXPClient } from '@ivxp/sdk/core';
+ * import { IVXPError } from '@ivxp/sdk/errors';
+ *
+ * // Type-only imports (zero runtime cost)
+ * import type { RequestServiceParams, SDKEventMap } from '@ivxp/sdk';
+ * ```
  */
 
-// Crypto module
-export {
-  CryptoService,
-  createCryptoService,
-  formatIVXPMessage,
-  type IVXPMessageParams,
-  type IVXPSignedMessage,
-  type IVXPVerifyParams,
-  type IVXPVerificationResult,
-} from "./crypto/index.js";
+// ---------------------------------------------------------------------------
+// Core module (most common usage)
+// ---------------------------------------------------------------------------
 
-// Payment module
-export {
-  PaymentService,
-  createPaymentService,
-  type NetworkType,
-  type PaymentServiceConfig,
-  type PaymentClientOverrides,
-} from "./payment/index.js";
-
-// HTTP module
-export { HttpClient, createHttpClient, type HttpClientOptions } from "./http/index.js";
-
-// Polling module
-export { pollWithBackoff, pollOrderStatus, type PollOptions } from "./polling/index.js";
-
-// Core module
 export {
   IVXPClient,
   createIVXPClient,
@@ -50,7 +59,48 @@ export {
   type SDKEventPayload,
 } from "./core/index.js";
 
-// Errors
+// ---------------------------------------------------------------------------
+// Crypto module
+// ---------------------------------------------------------------------------
+
+export {
+  CryptoService,
+  createCryptoService,
+  formatIVXPMessage,
+  type IVXPMessageParams,
+  type IVXPSignedMessage,
+  type IVXPVerifyParams,
+  type IVXPVerificationResult,
+} from "./crypto/index.js";
+
+// ---------------------------------------------------------------------------
+// Payment module
+// ---------------------------------------------------------------------------
+
+export {
+  PaymentService,
+  createPaymentService,
+  type NetworkType,
+  type PaymentServiceConfig,
+  type PaymentClientOverrides,
+} from "./payment/index.js";
+
+// ---------------------------------------------------------------------------
+// HTTP module
+// ---------------------------------------------------------------------------
+
+export { HttpClient, createHttpClient, type HttpClientOptions } from "./http/index.js";
+
+// ---------------------------------------------------------------------------
+// Polling module
+// ---------------------------------------------------------------------------
+
+export { pollWithBackoff, pollOrderStatus, type PollOptions } from "./polling/index.js";
+
+// ---------------------------------------------------------------------------
+// Error classes
+// ---------------------------------------------------------------------------
+
 export {
   IVXPError,
   InsufficientBalanceError,
@@ -73,3 +123,36 @@ export {
   ERROR_CODES,
   type BudgetExceededQuoteInfo,
 } from "./errors/index.js";
+
+// ---------------------------------------------------------------------------
+// Protocol re-exports (convenience for SDK users)
+//
+// Value exports: Runtime constants needed by consumers to configure the SDK
+// or perform protocol-level checks (e.g. compare order statuses, reference
+// contract addresses).
+//
+// Type exports: TypeScript interfaces only -- erased at runtime. These
+// give consumers access to protocol type definitions without requiring a
+// direct dependency on @ivxp/protocol.
+// ---------------------------------------------------------------------------
+
+/** Runtime constants from the protocol package. */
+export {
+  PROTOCOL_VERSION,
+  ORDER_STATUSES,
+  USDC_CONTRACT_ADDRESSES,
+  USDC_DECIMALS,
+} from "@ivxp/protocol";
+
+/** Protocol type definitions (erased at runtime, zero bundle cost). */
+export type {
+  ServiceCatalog,
+  ServiceQuote,
+  OrderStatus,
+  Deliverable,
+  DeliveryFormat,
+  ServiceCatalogOutput,
+  ServiceQuoteOutput,
+  OrderStatusResponseOutput,
+  DeliveryResponseOutput,
+} from "@ivxp/protocol";
