@@ -32,6 +32,8 @@ export interface Order {
 
 interface OrderStoreState {
   readonly orders: readonly Order[];
+  readonly isLoading: boolean;
+  readonly error: string | null;
 }
 
 interface OrderStoreActions {
@@ -46,6 +48,8 @@ interface OrderStoreActions {
     },
   ) => void;
   readonly getOrder: (orderId: string) => Order | undefined;
+  readonly getOrdersByWallet: (walletAddress: Address) => readonly Order[];
+  readonly fetchOrders: (walletAddress: Address) => Promise<void>;
   readonly clearOrders: () => void;
 }
 
@@ -53,6 +57,8 @@ type OrderStore = OrderStoreState & OrderStoreActions;
 
 export const useOrderStore = create<OrderStore>((set, get) => ({
   orders: [],
+  isLoading: false,
+  error: null,
 
   addOrder: (order: Order) => {
     set((state) => ({
@@ -88,7 +94,28 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
     return get().orders.find((o) => o.orderId === orderId);
   },
 
+  getOrdersByWallet: (walletAddress: Address) => {
+    // TODO: Filter by walletAddress when provider API integration is added.
+    // Currently all orders in the store belong to the connected wallet.
+    return get()
+      .orders.slice()
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  },
+
+  fetchOrders: async (walletAddress: Address) => {
+    set({ isLoading: true, error: null });
+    try {
+      // TODO: Call Provider APIs to fetch orders by walletAddress.
+      // For now, return the locally cached orders (sorted newest first).
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      set({ isLoading: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to fetch orders";
+      set({ isLoading: false, error: message });
+    }
+  },
+
   clearOrders: () => {
-    set({ orders: [] });
+    set({ orders: [], isLoading: false, error: null });
   },
 }));
