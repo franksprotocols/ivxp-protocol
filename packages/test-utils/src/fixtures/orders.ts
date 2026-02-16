@@ -7,6 +7,7 @@
 
 import type {
   DeliveryRequest,
+  DeliveryResponse,
   HexAddress,
   HexHash,
   HexSignature,
@@ -189,5 +190,36 @@ export const createMockOrderStatusResponse = (
   created_at: new Date().toISOString(),
   service_type: "code_review",
   price_usdc: 10,
+  ...overrides,
+});
+
+// ---------------------------------------------------------------------------
+// DeliveryResponse factory
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a mock DeliveryResponse (wire-format) with optional overrides.
+ *
+ * Produces a valid wire-format response matching the DeliveryResponseSchema.
+ * Content defaults to a JSON object, but can be overridden for markdown,
+ * code, or other formats.
+ */
+export const createMockDeliveryResponse = (
+  overrides?: Partial<DeliveryResponse>,
+): DeliveryResponse => ({
+  protocol: "IVXP/1.0",
+  message_type: "service_delivery",
+  timestamp: new Date().toISOString(),
+  order_id: generateOrderId(),
+  status: "completed",
+  provider_agent: {
+    name: "TestProvider",
+    wallet_address: TEST_ACCOUNTS.provider.address,
+  },
+  deliverable: {
+    type: "code_review_result",
+    format: "json",
+    content: { issues: [], score: 9.5, summary: "Code looks great!" },
+  },
   ...overrides,
 });

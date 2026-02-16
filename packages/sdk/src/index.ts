@@ -39,6 +39,7 @@ export {
   type ServiceRequestParams,
   type SubmitPaymentQuote,
   type PaymentResult,
+  type DownloadOptions,
 } from "./core/index.js";
 
 // Errors

@@ -10,4 +10,9 @@ export {
   type OrderPollOptions,
 } from "./client.js";
 
-export type { ServiceRequestParams, SubmitPaymentQuote, PaymentResult } from "./types.js";
+export type {
+  ServiceRequestParams,
+  SubmitPaymentQuote,
+  PaymentResult,
+  DownloadOptions,
+} from "./types.js";
