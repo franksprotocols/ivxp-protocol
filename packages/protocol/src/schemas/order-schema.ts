@@ -35,9 +35,7 @@ const ProviderAgentWireSchema = z.object({
 });
 
 /** Transform wire-format provider agent to camelCase. */
-function transformProviderAgent(
-  data: z.output<typeof ProviderAgentWireSchema>,
-) {
+function transformProviderAgent(data: z.output<typeof ProviderAgentWireSchema>) {
   return {
     name: data.name,
     walletAddress: data.wallet_address,
@@ -48,8 +46,7 @@ function transformProviderAgent(
 /**
  * Schema for provider agent with snake_case -> camelCase transform.
  */
-export const ProviderAgentSchema =
-  ProviderAgentWireSchema.transform(transformProviderAgent);
+export const ProviderAgentSchema = ProviderAgentWireSchema.transform(transformProviderAgent);
 
 // ---------------------------------------------------------------------------
 // QuoteDetails (nested within ServiceQuote)
@@ -67,9 +64,7 @@ const QuoteDetailsWireSchema = z.object({
 });
 
 /** Transform wire-format quote details to camelCase. */
-function transformQuoteDetails(
-  data: z.output<typeof QuoteDetailsWireSchema>,
-) {
+function transformQuoteDetails(data: z.output<typeof QuoteDetailsWireSchema>) {
   return {
     priceUsdc: data.price_usdc,
     estimatedDelivery: data.estimated_delivery,
@@ -82,8 +77,7 @@ function transformQuoteDetails(
 /**
  * Schema for quote details with snake_case -> camelCase transform.
  */
-export const QuoteDetailsSchema =
-  QuoteDetailsWireSchema.transform(transformQuoteDetails);
+export const QuoteDetailsSchema = QuoteDetailsWireSchema.transform(transformQuoteDetails);
 
 // ---------------------------------------------------------------------------
 // QuoteTerms (optional within ServiceQuote)
@@ -110,8 +104,7 @@ function transformQuoteTerms(data: z.output<typeof QuoteTermsWireSchema>) {
 /**
  * Schema for quote terms with snake_case -> camelCase transform.
  */
-export const QuoteTermsSchema =
-  QuoteTermsWireSchema.transform(transformQuoteTerms);
+export const QuoteTermsSchema = QuoteTermsWireSchema.transform(transformQuoteTerms);
 
 // ---------------------------------------------------------------------------
 // ServiceQuote - Response from POST /ivxp/request
@@ -139,17 +132,15 @@ const ServiceQuoteWireSchema = z.object({
  * Reuses transformProviderAgent, transformQuoteDetails, and
  * transformQuoteTerms to avoid duplicating transform logic.
  */
-export const ServiceQuoteSchema = ServiceQuoteWireSchema.transform(
-  (data) => ({
-    protocol: data.protocol,
-    messageType: data.message_type,
-    timestamp: data.timestamp,
-    orderId: data.order_id,
-    providerAgent: transformProviderAgent(data.provider_agent),
-    quote: transformQuoteDetails(data.quote),
-    terms: data.terms ? transformQuoteTerms(data.terms) : undefined,
-  }),
-);
+export const ServiceQuoteSchema = ServiceQuoteWireSchema.transform((data) => ({
+  protocol: data.protocol,
+  messageType: data.message_type,
+  timestamp: data.timestamp,
+  orderId: data.order_id,
+  providerAgent: transformProviderAgent(data.provider_agent),
+  quote: transformQuoteDetails(data.quote),
+  terms: data.terms ? transformQuoteTerms(data.terms) : undefined,
+}));
 
 // ---------------------------------------------------------------------------
 // PaymentProof (nested within DeliveryRequest)
@@ -168,9 +159,7 @@ const PaymentProofWireSchema = z.object({
 });
 
 /** Transform wire-format payment proof to camelCase. */
-function transformPaymentProof(
-  data: z.output<typeof PaymentProofWireSchema>,
-) {
+function transformPaymentProof(data: z.output<typeof PaymentProofWireSchema>) {
   return {
     txHash: data.tx_hash,
     fromAddress: data.from_address,
@@ -184,8 +173,7 @@ function transformPaymentProof(
 /**
  * Schema for payment proof with snake_case -> camelCase transform.
  */
-export const PaymentProofSchema =
-  PaymentProofWireSchema.transform(transformPaymentProof);
+export const PaymentProofSchema = PaymentProofWireSchema.transform(transformPaymentProof);
 
 // ---------------------------------------------------------------------------
 // DeliveryRequest - POST /ivxp/deliver body
@@ -213,18 +201,16 @@ const DeliveryRequestWireSchema = z.object({
  *
  * Reuses transformPaymentProof to avoid duplicating transform logic.
  */
-export const DeliveryRequestSchema = DeliveryRequestWireSchema.transform(
-  (data) => ({
-    protocol: data.protocol,
-    messageType: data.message_type,
-    timestamp: data.timestamp,
-    orderId: data.order_id,
-    paymentProof: transformPaymentProof(data.payment_proof),
-    deliveryEndpoint: data.delivery_endpoint,
-    signature: data.signature,
-    signedMessage: data.signed_message,
-  }),
-);
+export const DeliveryRequestSchema = DeliveryRequestWireSchema.transform((data) => ({
+  protocol: data.protocol,
+  messageType: data.message_type,
+  timestamp: data.timestamp,
+  orderId: data.order_id,
+  paymentProof: transformPaymentProof(data.payment_proof),
+  deliveryEndpoint: data.delivery_endpoint,
+  signature: data.signature,
+  signedMessage: data.signed_message,
+}));
 
 // ---------------------------------------------------------------------------
 // OrderStatusResponse - GET /ivxp/status/{order_id} response
@@ -235,7 +221,7 @@ export const DeliveryRequestSchema = DeliveryRequestWireSchema.transform(
  */
 const OrderStatusResponseWireSchema = z.object({
   order_id: z.string().min(1),
-  status: z.enum(["quoted", "paid", "delivered", "delivery_failed"]),
+  status: z.enum(["quoted", "paid", "processing", "delivered", "delivery_failed"]),
   created_at: ISOTimestampSchema,
   service_type: z.string().min(1),
   price_usdc: z.number().nonnegative(),
@@ -244,14 +230,13 @@ const OrderStatusResponseWireSchema = z.object({
 /**
  * Schema for OrderStatusResponse with snake_case -> camelCase transform.
  */
-export const OrderStatusResponseSchema =
-  OrderStatusResponseWireSchema.transform((data) => ({
-    orderId: data.order_id,
-    status: data.status,
-    createdAt: data.created_at,
-    serviceType: data.service_type,
-    priceUsdc: data.price_usdc,
-  }));
+export const OrderStatusResponseSchema = OrderStatusResponseWireSchema.transform((data) => ({
+  orderId: data.order_id,
+  status: data.status,
+  createdAt: data.created_at,
+  serviceType: data.service_type,
+  priceUsdc: data.price_usdc,
+}));
 
 // ---------------------------------------------------------------------------
 // Type Exports
@@ -264,9 +249,7 @@ export type ServiceQuoteOutput = z.infer<typeof ServiceQuoteSchema>;
 export type DeliveryRequestOutput = z.infer<typeof DeliveryRequestSchema>;
 
 /** Inferred type from OrderStatusResponseSchema output. */
-export type OrderStatusResponseOutput = z.infer<
-  typeof OrderStatusResponseSchema
->;
+export type OrderStatusResponseOutput = z.infer<typeof OrderStatusResponseSchema>;
 
 /** Inferred type from PaymentProofSchema output. */
 export type PaymentProofOutput = z.infer<typeof PaymentProofSchema>;

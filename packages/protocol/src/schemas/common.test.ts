@@ -232,6 +232,16 @@ describe("ISOTimestampSchema", () => {
     // Month 99 does not exist -- regex matches, but Date.parse returns NaN
     expect(() => ISOTimestampSchema.parse("2026-99-05T12:00:00Z")).toThrow();
   });
+
+  it("should accept up to 9 millisecond digits (nanosecond precision)", () => {
+    expect(ISOTimestampSchema.parse("2026-02-05T12:00:00.123456789Z")).toBe(
+      "2026-02-05T12:00:00.123456789Z",
+    );
+  });
+
+  it("should reject more than 9 millisecond digits", () => {
+    expect(() => ISOTimestampSchema.parse("2026-02-05T12:00:00.1234567890Z")).toThrow();
+  });
 });
 
 // ============================================================================
@@ -265,7 +275,14 @@ describe("IVXPMessageTypeSchema", () => {
 // ============================================================================
 
 describe("OrderStatusSchema", () => {
-  const validStatuses = ["quoted", "paid", "delivered", "delivery_failed", "confirmed"] as const;
+  const validStatuses = [
+    "quoted",
+    "paid",
+    "processing",
+    "delivered",
+    "delivery_failed",
+    "confirmed",
+  ] as const;
 
   for (const status of validStatuses) {
     it(`should accept '${status}'`, () => {

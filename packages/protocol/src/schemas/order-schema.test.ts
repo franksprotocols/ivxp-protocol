@@ -364,7 +364,7 @@ describe("OrderStatusResponseSchema", () => {
   });
 
   it("should accept all valid status values except confirmed", () => {
-    const statuses = ["quoted", "paid", "delivered", "delivery_failed"] as const;
+    const statuses = ["quoted", "paid", "processing", "delivered", "delivery_failed"] as const;
 
     for (const status of statuses) {
       const result = OrderStatusResponseSchema.parse({
