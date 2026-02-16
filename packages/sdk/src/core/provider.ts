@@ -21,6 +21,7 @@ import type {
   ICryptoService,
   IOrderStorage,
   IPaymentService,
+  OrderStatus,
   ServiceCatalog,
   ServiceDefinition,
   ServiceQuote,
@@ -91,6 +92,15 @@ const REQUEST_PATH = "/ivxp/request";
 /** The delivery endpoint path. */
 const DELIVER_PATH = "/ivxp/deliver";
 
+/** The status endpoint path prefix (followed by /{order_id}). */
+const STATUS_PATH_PREFIX = "/ivxp/status/";
+
+/** The download endpoint path prefix (followed by /{order_id}). */
+const DOWNLOAD_PATH_PREFIX = "/ivxp/download/";
+
+/** Required prefix for all IVXP order identifiers. */
+const ORDER_ID_PREFIX = "ivxp-";
+
 /** USDC decimal places for formatting price strings. */
 const USDC_DECIMAL_PLACES = 6;
 
@@ -150,6 +160,50 @@ export interface ProviderStartResult {
 
   /** The host the server is bound to. */
   readonly host: string;
+}
+
+/**
+ * Response from the status endpoint (GET /ivxp/status/{order_id}).
+ *
+ * Returns the current lifecycle status of an order along with
+ * basic metadata. If the order has a deliverable, the content_hash
+ * is included for client verification before downloading.
+ */
+export interface OrderStatusResponse {
+  /** Order identifier. */
+  readonly order_id: string;
+
+  /** Current order lifecycle status. */
+  readonly status: OrderStatus;
+
+  /** Service type requested. */
+  readonly service: string;
+
+  /** Order creation timestamp (ISO 8601). */
+  readonly created_at: string;
+
+  /** SHA-256 content hash (present only when deliverable is available). */
+  readonly content_hash?: string;
+}
+
+/**
+ * Response from the download endpoint (GET /ivxp/download/{order_id}).
+ *
+ * Returns the deliverable content with its MIME type and SHA-256
+ * content hash for integrity verification by the client.
+ */
+export interface DownloadResponse {
+  /** Order identifier. */
+  readonly order_id: string;
+
+  /** Deliverable content (string or binary). */
+  readonly content: string | Uint8Array;
+
+  /** MIME content type (e.g. "text/plain", "application/json"). */
+  readonly content_type: string;
+
+  /** SHA-256 hex-encoded hash of the content. */
+  readonly content_hash: string;
 }
 
 /**
@@ -624,6 +678,89 @@ export class IVXPProvider {
   }
 
   // -------------------------------------------------------------------------
+  // Status endpoint
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle a status request for an order.
+   *
+   * Looks up the order by ID and returns its current lifecycle status.
+   * If a deliverable exists, includes the content_hash for client
+   * verification before downloading.
+   *
+   * @param orderId - The order identifier to look up
+   * @returns An OrderStatusResponse with current status and metadata
+   * @throws IVXPError with code ORDER_NOT_FOUND if the order does not exist
+   */
+  async handleStatusRequest(orderId: string): Promise<OrderStatusResponse> {
+    if (!orderId || !orderId.startsWith(ORDER_ID_PREFIX)) {
+      throw new IVXPError(`Invalid order ID format: ${orderId}`, "INVALID_REQUEST", { orderId });
+    }
+
+    const order = await this.orderStore.get(orderId);
+    if (!order) {
+      throw new IVXPError(`Order not found: ${orderId}`, "ORDER_NOT_FOUND", {
+        orderId,
+      });
+    }
+
+    const deliverable = this.deliverableStore.get(orderId);
+
+    return {
+      order_id: order.orderId,
+      status: order.status,
+      service: order.serviceType,
+      created_at: order.createdAt,
+      content_hash: deliverable?.contentHash,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // Download endpoint
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle a download request for a deliverable.
+   *
+   * Looks up the order and its deliverable. Returns the content with
+   * MIME type and SHA-256 hash for integrity verification.
+   *
+   * Supports both "delivered" and "delivery_failed" orders: even if
+   * push delivery failed, the deliverable is still downloadable via pull.
+   *
+   * @param orderId - The order identifier to download
+   * @returns A DownloadResponse with content, content_type, and content_hash
+   * @throws IVXPError with code ORDER_NOT_FOUND if the order does not exist
+   * @throws IVXPError with code DELIVERABLE_NOT_READY if no deliverable is stored
+   */
+  async handleDownloadRequest(orderId: string): Promise<DownloadResponse> {
+    if (!orderId || !orderId.startsWith(ORDER_ID_PREFIX)) {
+      throw new IVXPError(`Invalid order ID format: ${orderId}`, "INVALID_REQUEST", { orderId });
+    }
+
+    const order = await this.orderStore.get(orderId);
+    if (!order) {
+      throw new IVXPError(`Order not found: ${orderId}`, "ORDER_NOT_FOUND", {
+        orderId,
+      });
+    }
+
+    const deliverable = this.deliverableStore.get(orderId);
+    if (!deliverable) {
+      throw new IVXPError(`Deliverable not ready for order: ${orderId}`, "DELIVERABLE_NOT_READY", {
+        orderId,
+      });
+    }
+
+    return {
+      order_id: order.orderId,
+      content: deliverable.content,
+      content_type: deliverable.contentType,
+      content_hash: deliverable.contentHash,
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // Service handler registry
   // -------------------------------------------------------------------------
 
@@ -841,9 +978,11 @@ export class IVXPProvider {
    * Handle an incoming HTTP request.
    *
    * Routes:
-   * - GET  /ivxp/catalog  -> Service catalog
-   * - POST /ivxp/request  -> Quote generation
-   * - POST /ivxp/deliver  -> Delivery acceptance
+   * - GET  /ivxp/catalog            -> Service catalog
+   * - POST /ivxp/request            -> Quote generation
+   * - POST /ivxp/deliver            -> Delivery acceptance
+   * - GET  /ivxp/status/{order_id}  -> Order status
+   * - GET  /ivxp/download/{order_id} -> Deliverable download
    *
    * Returns 404 for unknown paths and 405 for incorrect methods
    * on known paths.
@@ -895,6 +1034,30 @@ export class IVXPProvider {
       }
 
       await this.handleDeliverRoute(req, res);
+      return;
+    }
+
+    // Route: GET /ivxp/status/{order_id}
+    if (normalizedPath.startsWith(STATUS_PATH_PREFIX)) {
+      if (method !== "GET") {
+        res.writeHead(405, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Method not allowed" }));
+        return;
+      }
+
+      await this.handleStatusRoute(normalizedPath, res);
+      return;
+    }
+
+    // Route: GET /ivxp/download/{order_id}
+    if (normalizedPath.startsWith(DOWNLOAD_PATH_PREFIX)) {
+      if (method !== "GET") {
+        res.writeHead(405, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Method not allowed" }));
+        return;
+      }
+
+      await this.handleDownloadRoute(normalizedPath, res);
       return;
     }
 
@@ -1048,6 +1211,78 @@ export class IVXPProvider {
         return;
       }
 
+      throw error;
+    }
+  }
+
+  /**
+   * Handle the GET /ivxp/status/{order_id} route.
+   *
+   * Extracts the order ID from the URL path, delegates to
+   * `handleStatusRequest()`, and returns the status as JSON.
+   */
+  private async handleStatusRoute(normalizedPath: string, res: ServerRes): Promise<void> {
+    const rawOrderId = normalizedPath.slice(STATUS_PATH_PREFIX.length);
+    const orderId = decodeURIComponent(rawOrderId).trim();
+
+    if (!orderId || orderId.length === 0) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Missing order_id in URL" }));
+      return;
+    }
+
+    try {
+      const status = await this.handleStatusRequest(orderId);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(status));
+    } catch (error: unknown) {
+      if (error instanceof IVXPError && error.code === "ORDER_NOT_FOUND") {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: error.message }));
+        return;
+      }
+      if (error instanceof IVXPError && error.code === "INVALID_REQUEST") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: error.message }));
+        return;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Handle the GET /ivxp/download/{order_id} route.
+   *
+   * Extracts the order ID from the URL path, delegates to
+   * `handleDownloadRequest()`, and returns the deliverable as JSON.
+   */
+  private async handleDownloadRoute(normalizedPath: string, res: ServerRes): Promise<void> {
+    const rawOrderId = normalizedPath.slice(DOWNLOAD_PATH_PREFIX.length);
+    const orderId = decodeURIComponent(rawOrderId).trim();
+
+    if (!orderId || orderId.length === 0) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Missing order_id in URL" }));
+      return;
+    }
+
+    try {
+      const download = await this.handleDownloadRequest(orderId);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(download));
+    } catch (error: unknown) {
+      if (error instanceof IVXPError) {
+        if (error.code === "ORDER_NOT_FOUND" || error.code === "DELIVERABLE_NOT_READY") {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: error.message }));
+          return;
+        }
+        if (error.code === "INVALID_REQUEST") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: error.message }));
+          return;
+        }
+      }
       throw error;
     }
   }

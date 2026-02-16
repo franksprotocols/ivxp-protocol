@@ -2418,3 +2418,720 @@ describe("IVXPProvider - Delivery Endpoint", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Status & Download Endpoint tests (Story 3.18)
+// ---------------------------------------------------------------------------
+
+describe("IVXPProvider - Status & Download Endpoints", () => {
+  /** Track servers for cleanup. */
+  const statusServersToCleanup: IVXPProvider[] = [];
+
+  afterEach(async () => {
+    for (const provider of statusServersToCleanup) {
+      await provider.stop().catch(() => {
+        /* ignore cleanup errors */
+      });
+    }
+    statusServersToCleanup.length = 0;
+  });
+
+  /**
+   * Helper to create a provider with mock services and service handlers.
+   */
+  function createStatusTestProvider(
+    overrides?: Partial<IVXPProviderConfig> & {
+      serviceHandlers?: ReadonlyMap<string, ServiceHandler>;
+      verifyResult?: boolean;
+      paymentVerifyResult?: boolean;
+    },
+  ): {
+    provider: IVXPProvider;
+    orderStore: MockOrderStorage;
+    mockCrypto: MockCryptoService;
+    mockPayment: MockPaymentService;
+  } {
+    const orderStore = new MockOrderStorage();
+    const mockCrypto = new MockCryptoService({
+      address: TEST_ACCOUNTS.provider.address,
+      verifyResult: overrides?.verifyResult ?? true,
+    });
+    const mockPayment = new MockPaymentService({
+      verifyResult: overrides?.paymentVerifyResult ?? true,
+    });
+
+    const provider = new IVXPProvider({
+      ...MINIMAL_CONFIG,
+      cryptoService: mockCrypto,
+      paymentService: mockPayment,
+      orderStore,
+      serviceHandlers: overrides?.serviceHandlers,
+      ...overrides,
+    });
+
+    return { provider, orderStore, mockCrypto, mockPayment };
+  }
+
+  /**
+   * Build a minimal valid ServiceRequest wire-format body.
+   */
+  function buildServiceRequest(serviceType: string): ServiceRequest {
+    return {
+      protocol: "IVXP/1.0",
+      message_type: "service_request",
+      timestamp: new Date().toISOString(),
+      client_agent: {
+        name: "TestClient",
+        wallet_address: TEST_ACCOUNTS.client.address,
+      },
+      service_request: {
+        type: serviceType,
+        description: "Test request",
+        budget_usdc: 100,
+      },
+    };
+  }
+
+  /**
+   * Seed an order in "quoted" status by invoking the full quote flow.
+   */
+  async function createQuotedOrder(provider: IVXPProvider): Promise<{
+    orderId: string;
+    priceUsdc: string;
+    paymentAddress: `0x${string}`;
+  }> {
+    const request = buildServiceRequest("code_review");
+    const quote = await provider.handleQuoteRequest(request);
+
+    return {
+      orderId: quote.order_id,
+      priceUsdc: "10.000000",
+      paymentAddress: quote.quote.payment_address as `0x${string}`,
+    };
+  }
+
+  /**
+   * Move an order through the full delivery pipeline to "delivered" status.
+   * Returns the orderId of the delivered order.
+   */
+  async function createDeliveredOrder(provider: IVXPProvider): Promise<string> {
+    const { orderId } = await createQuotedOrder(provider);
+
+    await provider.handleDeliveryRequest({
+      protocol: "IVXP/1.0",
+      message_type: "delivery_request",
+      timestamp: new Date().toISOString(),
+      order_id: orderId,
+      payment_proof: {
+        tx_hash:
+          "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+        from_address: TEST_ACCOUNTS.client.address,
+        network: "base-sepolia",
+      },
+      signature: "0xabcdef01" as `0x${string}`,
+      signed_message: `Order: ${orderId}`,
+    });
+
+    // Allow async handler to run and complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    return orderId;
+  }
+
+  // -------------------------------------------------------------------------
+  // handleStatusRequest() unit tests
+  // -------------------------------------------------------------------------
+
+  describe("handleStatusRequest()", () => {
+    it("should return current order status for a quoted order (AC #1)", async () => {
+      const { provider } = createStatusTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const status = await provider.handleStatusRequest(orderId);
+
+      expect(status.order_id).toBe(orderId);
+      expect(status.status).toBe("quoted");
+      expect(status.service).toBe("code_review");
+      expect(status.created_at).toBeDefined();
+      expect(Date.parse(status.created_at)).not.toBeNaN();
+    });
+
+    it("should include content_hash when deliverable exists", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "review result",
+        content_type: "text/plain",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({ serviceHandlers });
+      const orderId = await createDeliveredOrder(provider);
+
+      const status = await provider.handleStatusRequest(orderId);
+
+      expect(status.content_hash).toBeDefined();
+      expect(typeof status.content_hash).toBe("string");
+      expect(status.content_hash!.length).toBeGreaterThan(0);
+    });
+
+    it("should not include content_hash for quoted orders without deliverable", async () => {
+      const { provider } = createStatusTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const status = await provider.handleStatusRequest(orderId);
+
+      expect(status.content_hash).toBeUndefined();
+    });
+
+    it("should throw for unknown order ID (AC #3)", async () => {
+      const { provider } = createStatusTestProvider();
+
+      await expect(provider.handleStatusRequest("ivxp-nonexistent")).rejects.toThrow(
+        "Order not found",
+      );
+    });
+
+    it("should throw IVXPError with ORDER_NOT_FOUND code for unknown order", async () => {
+      const { provider } = createStatusTestProvider();
+
+      try {
+        await provider.handleStatusRequest("ivxp-nonexistent");
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("ORDER_NOT_FOUND");
+      }
+    });
+
+    it("should return 'delivered' status for a delivered order", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "delivered content",
+        content_type: "text/plain",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({ serviceHandlers });
+      const orderId = await createDeliveredOrder(provider);
+
+      const status = await provider.handleStatusRequest(orderId);
+
+      expect(status.status).toBe("delivered");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // handleDownloadRequest() unit tests
+  // -------------------------------------------------------------------------
+
+  describe("handleDownloadRequest()", () => {
+    it("should return deliverable content for a delivered order (AC #2)", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "review result content",
+        content_type: "text/plain",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({ serviceHandlers });
+      const orderId = await createDeliveredOrder(provider);
+
+      const download = await provider.handleDownloadRequest(orderId);
+
+      expect(download.order_id).toBe(orderId);
+      expect(download.content).toBe("review result content");
+      expect(download.content_type).toBe("text/plain");
+      expect(download.content_hash).toBeDefined();
+      expect(typeof download.content_hash).toBe("string");
+      expect(download.content_hash.length).toBeGreaterThan(0);
+    });
+
+    it("should throw for unknown order ID (AC #3)", async () => {
+      const { provider } = createStatusTestProvider();
+
+      await expect(provider.handleDownloadRequest("ivxp-nonexistent")).rejects.toThrow(
+        "Order not found",
+      );
+    });
+
+    it("should throw IVXPError with ORDER_NOT_FOUND code for unknown order", async () => {
+      const { provider } = createStatusTestProvider();
+
+      try {
+        await provider.handleDownloadRequest("ivxp-nonexistent");
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("ORDER_NOT_FOUND");
+      }
+    });
+
+    it("should throw when deliverable not ready (quoted order, AC #3)", async () => {
+      const { provider } = createStatusTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await expect(provider.handleDownloadRequest(orderId)).rejects.toThrow(
+        "Deliverable not ready",
+      );
+    });
+
+    it("should throw IVXPError with DELIVERABLE_NOT_READY code when not ready", async () => {
+      const { provider } = createStatusTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      try {
+        await provider.handleDownloadRequest(orderId);
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("DELIVERABLE_NOT_READY");
+      }
+    });
+
+    it("should allow download for delivery_failed orders (pull fallback)", async () => {
+      // Create a provider with a handler that produces a deliverable,
+      // but push delivery will fail because SSRF validation blocks localhost.
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "fallback content",
+        content_type: "text/plain",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      // allowPrivateDeliveryUrls is false by default, so localhost URLs
+      // are blocked by SSRF validation and push fails immediately
+      const { provider } = createStatusTestProvider({ serviceHandlers });
+      const { orderId } = await createQuotedOrder(provider);
+
+      // Deliver with a delivery_endpoint pointing to localhost (blocked by SSRF)
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+        delivery_endpoint: "http://127.0.0.1:9999/push-will-fail",
+      });
+
+      // Allow async handler to run and push to fail (SSRF block is immediate)
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.status).toBe("delivery_failed");
+
+      // Should still be downloadable via pull
+      const download = await provider.handleDownloadRequest(orderId);
+      expect(download.content).toBe("fallback content");
+      expect(download.content_hash).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // HTTP route tests for status and download endpoints
+  // -------------------------------------------------------------------------
+
+  describe("GET /ivxp/status/{order_id}", () => {
+    it("should return order status via HTTP (AC #1)", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "result",
+        content_type: "text/plain",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+        serviceHandlers,
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/status/${orderId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("application/json");
+
+      const body = await response.json();
+      expect(body.order_id).toBe(orderId);
+      expect(body.status).toBe("quoted");
+      expect(body.service).toBe("code_review");
+      expect(body.created_at).toBeDefined();
+    });
+
+    it("should return 404 for unknown order via HTTP (AC #3)", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/status/ivxp-nonexistent`);
+
+      expect(response.status).toBe(404);
+      const body = await response.json();
+      expect(body.error).toContain("Order not found");
+    });
+
+    it("should return 405 for non-GET methods on /ivxp/status/{order_id}", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/status/ivxp-some-id`, {
+        method: "POST",
+      });
+
+      expect(response.status).toBe(405);
+    });
+  });
+
+  describe("GET /ivxp/download/{order_id}", () => {
+    it("should return deliverable via HTTP for delivered order (AC #2)", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "download content",
+        content_type: "text/plain",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+        serviceHandlers,
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const orderId = await createDeliveredOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/download/${orderId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("application/json");
+
+      const body = await response.json();
+      expect(body.order_id).toBe(orderId);
+      expect(body.content).toBe("download content");
+      expect(body.content_type).toBe("text/plain");
+      expect(body.content_hash).toBeDefined();
+    });
+
+    it("should return 404 for unknown order via HTTP (AC #3)", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(
+        `http://127.0.0.1:${result.port}/ivxp/download/ivxp-nonexistent`,
+      );
+
+      expect(response.status).toBe(404);
+      const body = await response.json();
+      expect(body.error).toContain("Order not found");
+    });
+
+    it("should return 404 when deliverable not ready via HTTP (AC #3)", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/download/${orderId}`);
+
+      expect(response.status).toBe(404);
+      const body = await response.json();
+      expect(body.error).toContain("Deliverable not ready");
+    });
+
+    it("should return 405 for non-GET methods on /ivxp/download/{order_id}", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/download/ivxp-some-id`, {
+        method: "POST",
+      });
+
+      expect(response.status).toBe(405);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Input validation tests (orderId format)
+  // -------------------------------------------------------------------------
+
+  describe("orderId format validation", () => {
+    it("should reject non-ivxp prefixed orderId in handleStatusRequest", async () => {
+      const { provider } = createStatusTestProvider();
+
+      await expect(provider.handleStatusRequest("invalid-id")).rejects.toThrow(
+        "Invalid order ID format",
+      );
+    });
+
+    it("should throw INVALID_REQUEST for non-ivxp prefixed orderId in handleStatusRequest", async () => {
+      const { provider } = createStatusTestProvider();
+
+      try {
+        await provider.handleStatusRequest("bad-format");
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST");
+      }
+    });
+
+    it("should reject non-ivxp prefixed orderId in handleDownloadRequest", async () => {
+      const { provider } = createStatusTestProvider();
+
+      await expect(provider.handleDownloadRequest("invalid-id")).rejects.toThrow(
+        "Invalid order ID format",
+      );
+    });
+
+    it("should throw INVALID_REQUEST for non-ivxp prefixed orderId in handleDownloadRequest", async () => {
+      const { provider } = createStatusTestProvider();
+
+      try {
+        await provider.handleDownloadRequest("bad-format");
+        expect.unreachable("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(IVXPError);
+        expect((error as IVXPError).code).toBe("INVALID_REQUEST");
+      }
+    });
+
+    it("should reject empty orderId in handleStatusRequest", async () => {
+      const { provider } = createStatusTestProvider();
+
+      await expect(provider.handleStatusRequest("")).rejects.toThrow("Invalid order ID format");
+    });
+
+    it("should reject empty orderId in handleDownloadRequest", async () => {
+      const { provider } = createStatusTestProvider();
+
+      await expect(provider.handleDownloadRequest("")).rejects.toThrow("Invalid order ID format");
+    });
+
+    it("should return 400 for invalid orderId format via status HTTP route", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/status/bad-format`);
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toContain("Invalid order ID format");
+    });
+
+    it("should return 400 for invalid orderId format via download HTTP route", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/download/bad-format`);
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toContain("Invalid order ID format");
+    });
+
+    it("should return 400 for whitespace-only orderId via status HTTP route", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/status/%20`);
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should return 400 for whitespace-only orderId via download HTTP route", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/download/%20`);
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Binary (Uint8Array) deliverable tests
+  // -------------------------------------------------------------------------
+
+  describe("binary (Uint8Array) deliverables", () => {
+    it("should include content_hash in status for binary deliverable", async () => {
+      const binaryContent = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: binaryContent,
+        content_type: "application/octet-stream",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({ serviceHandlers });
+      const orderId = await createDeliveredOrder(provider);
+
+      const status = await provider.handleStatusRequest(orderId);
+
+      expect(status.content_hash).toBeDefined();
+      expect(typeof status.content_hash).toBe("string");
+      expect(status.content_hash!.length).toBeGreaterThan(0);
+    });
+
+    it("should return Uint8Array content from download for binary deliverable", async () => {
+      const binaryContent = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: binaryContent,
+        content_type: "application/octet-stream",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({ serviceHandlers });
+      const orderId = await createDeliveredOrder(provider);
+
+      const download = await provider.handleDownloadRequest(orderId);
+
+      expect(download.order_id).toBe(orderId);
+      expect(download.content_type).toBe("application/octet-stream");
+      expect(download.content_hash).toBeDefined();
+      expect(download.content_hash.length).toBeGreaterThan(0);
+      // Content stored in deliverable store should match input type
+      const deliverable = provider.getDeliverable(orderId);
+      expect(deliverable).toBeDefined();
+      expect(deliverable!.content).toBeInstanceOf(Uint8Array);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // URL-encoded order ID tests
+  // -------------------------------------------------------------------------
+
+  describe("URL-encoded order IDs", () => {
+    it("should handle URL-encoded order ID in status route", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      // URL-encode the orderId (hyphens get encoded to %2D)
+      const encodedId = encodeURIComponent(orderId);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/status/${encodedId}`);
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.order_id).toBe(orderId);
+      expect(body.status).toBe("quoted");
+    });
+
+    it("should handle URL-encoded order ID in download route", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "encoded test",
+        content_type: "text/plain",
+      });
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+        serviceHandlers,
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const orderId = await createDeliveredOrder(provider);
+
+      const encodedId = encodeURIComponent(orderId);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/download/${encodedId}`);
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.order_id).toBe(orderId);
+      expect(body.content).toBe("encoded test");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Path traversal security tests
+  // -------------------------------------------------------------------------
+
+  describe("path traversal security", () => {
+    it("should return 404 for path traversal attempts in status URL", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(
+        `http://127.0.0.1:${result.port}/ivxp/status/../../../etc/passwd`,
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("should return 404 for path traversal attempts in download URL", async () => {
+      const { provider } = createStatusTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+      });
+      statusServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(
+        `http://127.0.0.1:${result.port}/ivxp/download/../../../etc/passwd`,
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+});
