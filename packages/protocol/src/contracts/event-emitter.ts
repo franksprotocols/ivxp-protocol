@@ -64,6 +64,23 @@ export type SDKEvent =
         readonly orderId: string;
         readonly confirmedAt: string;
       };
+    }
+  | {
+      readonly type: "delivery.received";
+      readonly payload: {
+        readonly orderId: string;
+        readonly contentHash: string;
+        readonly format: string;
+      };
+    }
+  | {
+      readonly type: "delivery.rejected";
+      readonly payload: {
+        readonly orderId: string;
+        readonly reason: string;
+        readonly expectedHash: string;
+        readonly computedHash: string;
+      };
     };
 
 /**

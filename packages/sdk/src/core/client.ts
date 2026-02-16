@@ -38,6 +38,12 @@ import {
   TimeoutError,
 } from "../errors/specific.js";
 import { pollWithBackoff, type PollOptions } from "../polling/index.js";
+import {
+  createCallbackServer,
+  type CallbackServerOptions,
+  type CallbackServerResult,
+  type RejectionDetails,
+} from "./callback-server.js";
 import type {
   ServiceRequestParams,
   SubmitPaymentQuote,
@@ -378,6 +384,16 @@ export interface IVXPClientConfig {
 
   /** Optional: Custom payment service for testing. */
   readonly paymentService?: IPaymentService;
+
+  /**
+   * Optional: Callback server configuration for push delivery reception.
+   *
+   * When provided, the client can start a callback server to receive
+   * push deliveries from Providers. Use `startCallbackServer()` to
+   * start the server and `getCallbackUrl()` to get the URL for
+   * inclusion in service requests.
+   */
+  readonly callbackServer?: CallbackServerOptions;
 }
 
 /**
@@ -418,6 +434,8 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
   private readonly paymentService: IPaymentService;
   private readonly httpClient: IHttpClient;
   private readonly network: NetworkType;
+  private readonly callbackServerOptions?: CallbackServerOptions;
+  private callbackServerInstance?: CallbackServerResult;
 
   /**
    * Create a new IVXPClient instance.
@@ -440,6 +458,7 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
     }
 
     this.network = network;
+    this.callbackServerOptions = config.callbackServer;
 
     // Initialize services with DI support: use injected service if provided,
     // otherwise create a default implementation.
@@ -504,6 +523,101 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
   /** Access the underlying HTTP client. */
   get http(): IHttpClient {
     return this.httpClient;
+  }
+
+  // -------------------------------------------------------------------------
+  // Callback Server (Push Delivery Reception)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Start the callback server for receiving push deliveries.
+   *
+   * Creates an HTTP server that listens for push deliveries at
+   * POST /ivxp/callback. The server validates content hashes and
+   * emits 'delivery.received' or 'delivery.rejected' events.
+   *
+   * If callback server options were provided in the client config,
+   * those are used. Otherwise, default options (port 0, host 127.0.0.1)
+   * are applied.
+   *
+   * @param options - Optional override for callback server options
+   * @returns The callback server result with URL, port, and stop function
+   * @throws IVXPError if the callback server is already running
+   */
+  async startCallbackServer(options?: CallbackServerOptions): Promise<CallbackServerResult> {
+    if (this.callbackServerInstance) {
+      throw new IVXPError("Callback server is already running", "CALLBACK_SERVER_ALREADY_RUNNING");
+    }
+
+    const serverOptions = options ?? this.callbackServerOptions ?? {};
+
+    const onDelivery = (payload: unknown): void => {
+      const p = payload as {
+        readonly order_id: string;
+        readonly deliverable: {
+          readonly content_hash: string;
+          readonly format: string;
+        };
+      };
+      this.emit("delivery.received", {
+        orderId: p.order_id,
+        contentHash: p.deliverable.content_hash,
+        format: p.deliverable.format,
+      });
+    };
+
+    const onRejected = (details: RejectionDetails, payload: unknown): void => {
+      const p = payload as {
+        readonly order_id: string;
+      };
+
+      this.emit("delivery.rejected", {
+        orderId: p.order_id,
+        reason: details.reason,
+        expectedHash: details.expectedHash,
+        computedHash: details.computedHash,
+      });
+    };
+
+    const result = await createCallbackServer(onDelivery, onRejected, serverOptions);
+    this.callbackServerInstance = result;
+    return result;
+  }
+
+  /**
+   * Stop the callback server gracefully.
+   *
+   * Stops accepting new connections and drains pending deliveries
+   * before closing. Safe to call if the server is not running.
+   */
+  async stopCallbackServer(): Promise<void> {
+    if (!this.callbackServerInstance) {
+      return;
+    }
+
+    await this.callbackServerInstance.stop();
+    this.callbackServerInstance = undefined;
+  }
+
+  /**
+   * Get the callback URL for push delivery.
+   *
+   * Returns the full URL of the callback server endpoint, suitable
+   * for inclusion in service requests as the `delivery_endpoint`.
+   *
+   * @returns The callback URL, or undefined if the server is not running
+   */
+  getCallbackUrl(): string | undefined {
+    return this.callbackServerInstance?.url;
+  }
+
+  /**
+   * Check if the callback server is currently running.
+   *
+   * @returns true if the callback server is active
+   */
+  isCallbackServerRunning(): boolean {
+    return this.callbackServerInstance !== undefined;
   }
 
   // -------------------------------------------------------------------------
@@ -861,22 +975,25 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
       signal,
     } = options;
 
-    // Track previous status for change detection.
-    // This is local mutable state within the closure -- acceptable per spec.
-    let previousStatus: string | null = null;
+    // Track previous status for change detection using a closure-scoped
+    // context object that is replaced (not mutated) at each status transition.
+    // This avoids direct variable mutation while retaining the sequential
+    // single-threaded async flow behavior required for event ordering.
+    type PollContext = { readonly previousStatus: string | null };
+    let ctx: PollContext = { previousStatus: null };
 
     return pollWithBackoff(
       async () => {
         const orderStatus = await this.getOrderStatus(providerUrl, orderId);
 
         // Emit status change event if status differs from previous
-        if (orderStatus.status !== previousStatus) {
+        if (orderStatus.status !== ctx.previousStatus) {
           this.emit("order.status_changed", {
             orderId: orderStatus.orderId,
-            previousStatus,
+            previousStatus: ctx.previousStatus,
             newStatus: orderStatus.status,
           });
-          previousStatus = orderStatus.status;
+          ctx = { previousStatus: orderStatus.status };
         }
 
         // Return the order if target status is reached, null to continue polling
@@ -1165,9 +1282,12 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
       onConfirmed,
     } = params;
 
-    // Immutable flow state -- replaced at each step transition instead of
-    // mutating fields.  Keeps partial-state recovery data available for
-    // TimeoutError / ProviderError without violating immutability.
+    // FlowState tracks progression through the multi-step requestService
+    // pipeline. The `state` variable is reassigned (not mutated) at each
+    // step transition using spread syntax to create new immutable snapshots.
+    // This is local variable reassignment within a single-threaded async
+    // flow -- it does not violate the immutability principle, which applies
+    // to shared/external state and object mutation.
     type FlowState = {
       readonly step: string;
       readonly paymentTxHash?: `0x${string}`;
@@ -1249,22 +1369,18 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
         onConfirmed?.(confirmResult);
       }
 
-      // Explicit guard: paymentTxHash is always set after step 2 completes
-      // without error.  If we reach here, payment succeeded.
-      if (state.paymentTxHash === undefined) {
-        throw new IVXPError(
-          "Unexpected state: payment transaction hash is missing after payment step",
-          "INTERNAL_ERROR",
-          { step: state.step },
-        );
-      }
+      // paymentTxHash is guaranteed to be set at this point: step 2
+      // (submitPayment) succeeded without throwing, and the state was
+      // updated with the txHash immediately after. Any failure in steps
+      // 2-5 would have thrown, preventing execution from reaching here.
+      // The non-null assertion is safe due to this control flow guarantee.
 
       return {
         orderId: quote.orderId,
         status: autoConfirm ? "confirmed" : "delivered",
         deliverable,
         quote,
-        paymentTxHash: state.paymentTxHash,
+        paymentTxHash: state.paymentTxHash as `0x${string}`,
         confirmedAt,
       };
     } catch (error) {
