@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/Header";
+import { NetworkWarning } from "@/components/features/network";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body>
         <Providers>
           <Header />
+          <NetworkWarning />
           {children}
         </Providers>
       </body>
