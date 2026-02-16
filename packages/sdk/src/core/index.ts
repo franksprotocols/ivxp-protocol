@@ -39,6 +39,9 @@ export {
   type ProviderStartResult,
 } from "./provider.js";
 
+/** Default in-memory order storage implementation. */
+export { InMemoryOrderStore } from "./in-memory-order-store.js";
+
 /** Callback server for push delivery reception. */
 export {
   createCallbackServer,

@@ -45,6 +45,7 @@ export {
   createIVXPClient,
   IVXPProvider,
   createIVXPProvider,
+  InMemoryOrderStore,
   createCallbackServer,
   EventEmitter,
   type IVXPClientConfig,
