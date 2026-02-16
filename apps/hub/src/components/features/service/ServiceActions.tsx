@@ -13,13 +13,15 @@ import {
 } from "@/components/ui/sheet";
 import { formatPrice } from "@/lib/api/services";
 import type { ServiceDetail } from "@/lib/types/service";
+import type { ServiceQuote } from "@/hooks/use-service-request";
 import { ServiceRequestForm } from "@/components/features/service-request-form";
 
 interface ServiceActionsProps {
   readonly service: ServiceDetail;
+  readonly onQuoteReceived?: (quote: ServiceQuote) => void;
 }
 
-export function ServiceActions({ service }: ServiceActionsProps) {
+export function ServiceActions({ service, onQuoteReceived }: ServiceActionsProps) {
   const { isConnected } = useAccount();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -27,9 +29,9 @@ export function ServiceActions({ service }: ServiceActionsProps) {
     setIsSheetOpen(true);
   };
 
-  const handleQuoteReceived = () => {
+  const handleQuoteReceived = (quote: ServiceQuote) => {
     setIsSheetOpen(false);
-    // Quote Dialog (Story 5.2) will be triggered here
+    onQuoteReceived?.(quote);
   };
 
   return (
@@ -45,27 +47,21 @@ export function ServiceActions({ service }: ServiceActionsProps) {
         Request Service - {formatPrice(service.price_usdc)}
       </Button>
       {!isConnected && (
-        <p
-          className="text-center text-sm text-muted-foreground"
-          data-testid="wallet-prompt"
-        >
+        <p className="text-center text-sm text-muted-foreground" data-testid="wallet-prompt">
           Connect your wallet to request this service
         </p>
       )}
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
+          <SheetHeader className="px-6">
             <SheetTitle>Request Service</SheetTitle>
             <SheetDescription>
               Fill in the details below to request a quote for this service.
             </SheetDescription>
           </SheetHeader>
-          <div className="px-4 pb-4">
-            <ServiceRequestForm
-              service={service}
-              onQuoteReceived={handleQuoteReceived}
-            />
+          <div className="px-6 pb-6">
+            <ServiceRequestForm service={service} onQuoteReceived={handleQuoteReceived} />
           </div>
         </SheetContent>
       </Sheet>
