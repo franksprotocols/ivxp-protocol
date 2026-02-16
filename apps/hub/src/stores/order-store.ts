@@ -23,8 +23,8 @@ export interface Order {
   readonly priceUsdc: string;
   readonly providerAddress: Address;
   readonly status: OrderStatus;
-  readonly createdAt: Date;
-  readonly updatedAt?: Date;
+  readonly createdAt: number;
+  readonly updatedAt?: number;
   readonly txHash?: `0x${string}`;
   readonly blockNumber?: bigint;
   readonly errorMessage?: string;
@@ -69,7 +69,7 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
   updateOrderStatus: (orderId: string, status: OrderStatus) => {
     set((state) => ({
       orders: state.orders.map((o) =>
-        o.orderId === orderId ? { ...o, status, updatedAt: new Date() } : o,
+        o.orderId === orderId ? { ...o, status, updatedAt: Date.now() } : o,
       ),
     }));
   },
@@ -84,7 +84,7 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
           ...(payment.txHash !== undefined ? { txHash: payment.txHash } : {}),
           ...(payment.blockNumber !== undefined ? { blockNumber: payment.blockNumber } : {}),
           ...(payment.status !== undefined ? { status: payment.status } : {}),
-          updatedAt: new Date(),
+          updatedAt: Date.now(),
         };
       }),
     }));
@@ -99,7 +99,7 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
     // Currently all orders in the store belong to the connected wallet.
     return get()
       .orders.slice()
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.createdAt - a.createdAt);
   },
 
   fetchOrders: async (walletAddress: Address) => {

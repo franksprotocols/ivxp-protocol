@@ -9,7 +9,7 @@ const BASE_ORDER: Order = {
   priceUsdc: "2.50",
   providerAddress: "0x1234567890abcdef1234567890abcdef12345678",
   status: "processing",
-  createdAt: new Date("2025-06-01T10:00:00Z"),
+  createdAt: new Date("2025-06-01T10:00:00Z").getTime(),
 };
 
 function createOrder(overrides: Partial<Order> = {}): Order {

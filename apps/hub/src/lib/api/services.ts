@@ -29,7 +29,9 @@ export function getAllServiceTypes(): readonly string[] {
  */
 export function formatPrice(priceUsdc: string): string {
   const parsed = parseFloat(priceUsdc);
-  if (Number.isNaN(parsed)) return "0.00 USDC";
+  if (Number.isNaN(parsed) || !Number.isFinite(parsed) || parsed < 0) {
+    return "0.00 USDC";
+  }
   return `${parsed.toFixed(2)} USDC`;
 }
 

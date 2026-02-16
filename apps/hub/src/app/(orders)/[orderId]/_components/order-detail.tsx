@@ -34,8 +34,8 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
   delivery_failed: "Delivery Failed",
 };
 
-function formatTimestamp(date: Date): string {
-  return date.toLocaleString();
+function formatTimestamp(timestamp: number): string {
+  return new Date(timestamp).toLocaleString();
 }
 
 function isDeliveryFailed(status: OrderStatus): boolean {
