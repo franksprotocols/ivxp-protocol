@@ -5,12 +5,9 @@ import { WagmiProvider } from "wagmi";
 import { http, createConfig } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 import { mock } from "wagmi/connectors";
+import { MOCK_ADDRESS } from "@/__tests__/e2e/helpers/mocks";
 
-const MOCK_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as const;
-
-export function createTestConfig(
-  options: { connected?: boolean } = {},
-) {
+export function createTestConfig(options: { connected?: boolean } = {}) {
   const { connected = false } = options;
   return createConfig({
     chains: [base, baseSepolia],
@@ -46,9 +43,7 @@ export function createTestWrapper(config = createTestConfig()) {
   return function TestWrapper({ children }: TestWrapperProps) {
     return (
       <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          {children}
-        </QueryClientProvider>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
       </WagmiProvider>
     );
   };
