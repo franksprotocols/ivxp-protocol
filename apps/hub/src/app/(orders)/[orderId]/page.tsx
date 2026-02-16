@@ -4,6 +4,8 @@ import { use } from "react";
 import { PackageSearch, AlertTriangle } from "lucide-react";
 import { useOrderStatus } from "@/hooks/use-order-status";
 import { OrderDetail } from "./_components/order-detail";
+import { ProtocolInspector } from "@/components/features/protocol-inspector";
+import { DeliverableViewer } from "@/components/features/deliverable-viewer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -49,6 +51,8 @@ function OrderStatusContent({ orderId }: { readonly orderId: string }) {
         </Card>
       )}
       <OrderDetail order={order} isPolling={isPolling} />
+      <DeliverableViewer orderId={order.orderId} orderStatus={order.status} />
+      <ProtocolInspector order={order} />
     </>
   );
 }
