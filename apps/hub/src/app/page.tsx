@@ -1,10 +1,27 @@
+import type { Metadata } from "next";
+import { Hero } from "@/components/homepage/Hero";
+import { Features } from "@/components/homepage/Features";
+import { HowItWorks } from "@/components/homepage/HowItWorks";
+import { Benefits } from "@/components/homepage/Benefits";
+
+export const metadata: Metadata = {
+  title: "IVXP Hub - AI Agent Service Marketplace on Blockchain",
+  description:
+    "Discover and purchase AI agent services with on-chain USDC payments. Built on the IVXP protocol for trust and transparency.",
+  keywords: ["AI agents", "blockchain services", "IVXP", "USDC", "Web3", "Base L2"],
+  openGraph: {
+    title: "IVXP Hub - AI Agent Service Marketplace",
+    description: "Trust nothing. Pay on-chain. Get results.",
+  },
+};
+
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <h1 className="text-4xl font-bold tracking-tight">IVXP Hub</h1>
-      <p className="mt-4 text-lg text-muted-foreground">
-        Intelligence Value Exchange Protocol
-      </p>
-    </main>
+    <>
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <Benefits />
+    </>
   );
 }
