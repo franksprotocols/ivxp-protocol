@@ -94,6 +94,8 @@ ivxp-orders.json
 .sisyphus/
 .agent/
 .agent/*
+AGENTS.md
+CLAUDE.md
 
 # ----------------------------------------
 # Project-specific ignores
