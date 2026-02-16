@@ -13,6 +13,15 @@ When working on this project:
 4. When in doubt, follow existing code patterns in the codebase
 5. Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
+## Config Boundaries
+
+This repository has multiple IDE-specific configuration systems:
+- `.agent/` is for antigravity and follows the everything-claude-code framework.
+- `.claude/` is for Claude Code (this file and `.claude/rules/*` are authoritative in Claude context).
+- `.codex/` is for Codex.
+
+Do not assume `.agent/` is BMAD-compatible with `.claude/` or `.codex/`.
+
 ## Project Overview
 
 IVXP (Intelligence Value Exchange Protocol) — the first universal P2P protocol for AI agents to exchange intelligence and services with cryptographic payment verification.
@@ -116,4 +125,3 @@ pnpm lint             # Lint all packages
 - Tests: `*.test.ts` or `*.spec.ts`
 - Config: `*.yaml` or `*.yml`
 - React Components: `PascalCase.tsx`
-
