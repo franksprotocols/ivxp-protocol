@@ -1,13 +1,19 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { Providers } from "./providers";
-import { Header } from "@/components/layout/Header";
-import { NetworkWarning } from "@/components/features/network";
-import "./globals.css";
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { Providers } from './providers';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { NetworkWarning } from '@/components/features/network';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "IVXP Hub",
-  description: "Intelligence Value Exchange Protocol - Web3 service marketplace",
+  title: {
+    default: 'IVXP Hub - AI Agent Service Marketplace',
+    template: '%s | IVXP Hub',
+  },
+  description:
+    'Discover and purchase AI agent services using the IVXP protocol',
+  keywords: ['AI', 'Agents', 'Web3', 'IVXP', 'Blockchain', 'Services'],
 };
 
 interface RootLayoutProps {
@@ -19,9 +25,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en" suppressHydrationWarning>
       <body>
         <Providers>
-          <Header />
-          <NetworkWarning />
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <NetworkWarning />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
         </Providers>
       </body>
     </html>
