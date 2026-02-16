@@ -30,7 +30,13 @@ import { createCryptoService, formatIVXPMessage } from "../crypto/index.js";
 import { PaymentService, type NetworkType } from "../payment/index.js";
 import { createHttpClient } from "../http/index.js";
 import { IVXPError } from "../errors/base.js";
-import { PartialSuccessError, ServiceUnavailableError } from "../errors/specific.js";
+import {
+  BudgetExceededError,
+  PartialSuccessError,
+  ProviderError,
+  ServiceUnavailableError,
+  TimeoutError,
+} from "../errors/specific.js";
 import { pollWithBackoff, type PollOptions } from "../polling/index.js";
 import type {
   ServiceRequestParams,
@@ -38,6 +44,8 @@ import type {
   PaymentResult,
   DownloadOptions,
   ConfirmationResult,
+  RequestServiceParams,
+  RequestServiceResult,
 } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -1117,8 +1125,209 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
   }
 
   // -------------------------------------------------------------------------
+  // Request Service (one-line convenience method)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Complete service request flow in one call.
+   *
+   * Orchestrates: quote -> pay -> poll -> download -> confirm.
+   *
+   * Budget guard: If the quote price exceeds `budgetUsdc`, throws
+   * `BudgetExceededError` before any on-chain transaction is initiated.
+   *
+   * Timeout guard: If the entire flow exceeds `timeoutMs`, throws
+   * `TimeoutError` with partial state (e.g. txHash if payment succeeded).
+   *
+   * Provider errors: If the provider is unreachable or returns an error,
+   * throws `ProviderError` with step context (which stage failed).
+   *
+   * @param params - Service request parameters including budget, timeout, callbacks
+   * @returns Complete result with deliverable, quote, payment hash, and confirmation
+   * @throws BudgetExceededError if quote price exceeds budgetUsdc
+   * @throws TimeoutError if the flow exceeds timeoutMs
+   * @throws ProviderError if the provider is unreachable or returns an error
+   * @throws IVXPError if delivery fails
+   */
+  async requestService(params: RequestServiceParams): Promise<RequestServiceResult> {
+    const {
+      providerUrl,
+      serviceType,
+      description,
+      budgetUsdc,
+      deliveryFormat,
+      timeoutMs = 120_000,
+      autoConfirm = true,
+      pollOptions,
+      onQuote,
+      onPayment,
+      onDelivered,
+      onConfirmed,
+    } = params;
+
+    // Immutable flow state -- replaced at each step transition instead of
+    // mutating fields.  Keeps partial-state recovery data available for
+    // TimeoutError / ProviderError without violating immutability.
+    type FlowState = {
+      readonly step: string;
+      readonly paymentTxHash?: `0x${string}`;
+    };
+    let state: FlowState = { step: "quote" };
+
+    // Set up timeout via AbortController
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+
+    try {
+      // Step 1: Request quote
+      state = { ...state, step: "quote" };
+      const quote = await this.requestQuote(providerUrl, {
+        serviceType,
+        description,
+        budgetUsdc,
+        deliveryFormat,
+      });
+
+      // Budget guard: use integer micro-USDC comparison to avoid
+      // IEEE 754 floating-point precision issues.
+      const quoteCents = Math.round(quote.quote.priceUsdc * 1_000_000);
+      const budgetCents = Math.round(budgetUsdc * 1_000_000);
+      if (quoteCents > budgetCents) {
+        throw new BudgetExceededError(
+          `Quote price ${quote.quote.priceUsdc} USDC exceeds budget ${budgetUsdc} USDC`,
+          { orderId: quote.orderId, priceUsdc: quote.quote.priceUsdc },
+          budgetUsdc,
+        );
+      }
+
+      onQuote?.(quote);
+
+      // Check timeout after each step
+      this.checkAborted(abortController, timeoutMs, state);
+
+      // Step 2: Submit payment
+      state = { ...state, step: "payment" };
+      const paymentResult = await this.submitPayment(providerUrl, quote.orderId, {
+        priceUsdc: quote.quote.priceUsdc,
+        paymentAddress: quote.quote.paymentAddress as `0x${string}`,
+      });
+      state = { ...state, paymentTxHash: paymentResult.txHash };
+
+      onPayment?.(paymentResult);
+
+      this.checkAborted(abortController, timeoutMs, state);
+
+      // Step 3: Wait for delivery (poll with abort signal)
+      state = { ...state, step: "poll" };
+      const deliveredOrder = await this.waitForDelivery(providerUrl, quote.orderId, {
+        ...pollOptions,
+        signal: abortController.signal,
+      });
+
+      if (deliveredOrder.status === "delivery_failed") {
+        throw new IVXPError(`Delivery failed for order ${quote.orderId}`, "DELIVERY_FAILED", {
+          orderId: quote.orderId,
+        });
+      }
+
+      this.checkAborted(abortController, timeoutMs, state);
+
+      // Step 4: Download deliverable
+      state = { ...state, step: "download" };
+      const deliverable = await this.downloadDeliverable(providerUrl, quote.orderId);
+
+      onDelivered?.(deliverable);
+
+      this.checkAborted(abortController, timeoutMs, state);
+
+      // Step 5: Confirm delivery (if auto-confirm enabled)
+      let confirmedAt: string | undefined;
+      if (autoConfirm) {
+        state = { ...state, step: "confirm" };
+        const confirmResult = await this.confirmDelivery(providerUrl, quote.orderId);
+        confirmedAt = confirmResult.confirmedAt;
+        onConfirmed?.(confirmResult);
+      }
+
+      // Explicit guard: paymentTxHash is always set after step 2 completes
+      // without error.  If we reach here, payment succeeded.
+      if (state.paymentTxHash === undefined) {
+        throw new IVXPError(
+          "Unexpected state: payment transaction hash is missing after payment step",
+          "INTERNAL_ERROR",
+          { step: state.step },
+        );
+      }
+
+      return {
+        orderId: quote.orderId,
+        status: autoConfirm ? "confirmed" : "delivered",
+        deliverable,
+        quote,
+        paymentTxHash: state.paymentTxHash,
+        confirmedAt,
+      };
+    } catch (error) {
+      // If aborted, throw TimeoutError with partial state
+      if (abortController.signal.aborted) {
+        throw new TimeoutError(
+          `requestService timed out after ${timeoutMs}ms at step: ${state.step}`,
+          state.step,
+          state.paymentTxHash ? { txHash: state.paymentTxHash } : {},
+          error instanceof Error ? error : undefined,
+        );
+      }
+
+      // Wrap ServiceUnavailableError as ProviderError with step context
+      if (error instanceof ServiceUnavailableError) {
+        throw new ProviderError(
+          `Provider error at step "${state.step}": ${error.message}`,
+          providerUrl,
+          state.step,
+          error,
+        );
+      }
+
+      // Re-throw known IVXP errors (BudgetExceededError, etc.)
+      if (error instanceof IVXPError) {
+        throw error;
+      }
+
+      // Wrap unknown errors as ProviderError with step context
+      throw new ProviderError(
+        `Provider error at step "${state.step}": ${(error as Error).message}`,
+        providerUrl,
+        state.step,
+        error instanceof Error ? error : undefined,
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Check if the abort signal has fired and throw TimeoutError if so.
+   *
+   * Called between steps in `requestService` to detect timeouts early
+   * rather than waiting for the next async operation to check the signal.
+   */
+  private checkAborted(
+    controller: AbortController,
+    timeoutMs: number,
+    state: { readonly step: string; readonly paymentTxHash?: `0x${string}` },
+  ): void {
+    if (controller.signal.aborted) {
+      throw new TimeoutError(
+        `requestService timed out after ${timeoutMs}ms at step: ${state.step}`,
+        state.step,
+        state.paymentTxHash ? { txHash: state.paymentTxHash } : {},
+      );
+    }
+  }
 
   /**
    * Save deliverable content to a file.

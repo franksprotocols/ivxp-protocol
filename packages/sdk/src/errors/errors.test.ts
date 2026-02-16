@@ -26,6 +26,9 @@ import {
   ServiceUnavailableError,
   MaxPollAttemptsError,
   PartialSuccessError,
+  BudgetExceededError,
+  TimeoutError,
+  ProviderError,
 } from "./specific.js";
 import { ERROR_CODES } from "./index.js";
 
@@ -908,6 +911,9 @@ describe("Error code uniqueness", () => {
       new ServiceUnavailableError("msg"),
       new MaxPollAttemptsError(5),
       new PartialSuccessError("msg", sampleHash),
+      new BudgetExceededError("msg", { orderId: "test-order", priceUsdc: 50 }, 10),
+      new TimeoutError("msg", "quote"),
+      new ProviderError("msg", "http://test.example", "quote"),
     ];
 
     const codes = errors.map((e) => e.code);
@@ -935,6 +941,9 @@ describe("Error code uniqueness", () => {
       new ServiceUnavailableError("msg"),
       new MaxPollAttemptsError(5),
       new PartialSuccessError("msg", sampleHash),
+      new BudgetExceededError("msg", { orderId: "test-order", priceUsdc: 50 }, 10),
+      new TimeoutError("msg", "quote"),
+      new ProviderError("msg", "http://test.example", "quote"),
     ];
 
     const errorCodeValues = Object.values(ERROR_CODES);
@@ -1021,7 +1030,7 @@ describe("ERROR_CODES constant values match class codes", () => {
   });
 
   it("should have correct count of error codes", () => {
-    expect(Object.keys(ERROR_CODES).length).toBe(14);
+    expect(Object.keys(ERROR_CODES).length).toBe(17);
   });
 });
 

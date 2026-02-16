@@ -42,6 +42,8 @@ export {
   type PaymentResult,
   type DownloadOptions,
   type ConfirmationResult,
+  type RequestServiceParams,
+  type RequestServiceResult,
   type SDKEvent,
   type SDKEventMap,
   type SDKEventName,
@@ -65,5 +67,9 @@ export {
   ServiceUnavailableError,
   MaxPollAttemptsError,
   PartialSuccessError,
+  BudgetExceededError,
+  TimeoutError,
+  ProviderError,
   ERROR_CODES,
+  type BudgetExceededQuoteInfo,
 } from "./errors/index.js";

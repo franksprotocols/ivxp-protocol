@@ -36,4 +36,6 @@ export type {
   PaymentResult,
   DownloadOptions,
   ConfirmationResult,
+  RequestServiceParams,
+  RequestServiceResult,
 } from "./types.js";
