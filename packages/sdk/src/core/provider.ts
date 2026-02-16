@@ -16,6 +16,8 @@
  */
 
 import type {
+  DeliveryAccepted,
+  DeliveryRequest,
   ICryptoService,
   IOrderStorage,
   IPaymentService,
@@ -80,6 +82,9 @@ const CATALOG_PATH = "/ivxp/catalog";
 /** The quote request endpoint path. */
 const REQUEST_PATH = "/ivxp/request";
 
+/** The delivery endpoint path. */
+const DELIVER_PATH = "/ivxp/deliver";
+
 /** USDC decimal places for formatting price strings. */
 const USDC_DECIMAL_PLACES = 6;
 
@@ -88,6 +93,9 @@ const MAX_PRICE_USDC = 1_000_000;
 
 /** Maximum estimated delivery hours (1 year) to prevent overflow. */
 const MAX_DELIVERY_HOURS = 8760;
+
+/** Maximum request body size in bytes (64 KB). */
+const MAX_REQUEST_BODY_SIZE = 65_536;
 
 /** Regex for a valid 0x-prefixed 20-byte hex address (42 chars total). */
 const HEX_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
@@ -139,6 +147,22 @@ export interface ProviderStartResult {
 }
 
 /**
+ * Service handler function type.
+ *
+ * Called asynchronously after a delivery request is accepted and the order
+ * transitions to "paid" status. The handler processes the order and produces
+ * the deliverable content.
+ *
+ * @param order - The stored order in "paid" status
+ * @param params - Optional service-specific parameters
+ * @returns The deliverable content and content type
+ */
+export type ServiceHandler = (
+  order: StoredOrder,
+  params?: Record<string, unknown>,
+) => Promise<{ content: string | Buffer; content_type: string }>;
+
+/**
  * Configuration for creating an IVXPProvider instance.
  */
 export interface IVXPProviderConfig {
@@ -180,6 +204,15 @@ export interface IVXPProviderConfig {
    * implementation for persistent storage (e.g. SQLite, PostgreSQL).
    */
   readonly orderStore?: IOrderStorage;
+
+  /**
+   * Optional: Service handlers mapped by service type name.
+   *
+   * Each handler is invoked asynchronously after a delivery request is accepted.
+   * If no handler is registered for a service type, delivery acceptance still
+   * succeeds but no processing is triggered.
+   */
+  readonly serviceHandlers?: ReadonlyMap<string, ServiceHandler>;
 }
 
 // ---------------------------------------------------------------------------
@@ -281,6 +314,15 @@ export class IVXPProvider {
   private readonly providerName: string;
 
   /**
+   * Mutable service handler registry.
+   *
+   * Maps service type names to their handler functions. Handlers can be
+   * provided via config or registered dynamically via registerServiceHandler().
+   * This is intentionally mutable to support runtime registration.
+   */
+  private readonly serviceHandlers: Map<string, ServiceHandler>;
+
+  /**
    * Mutable lifecycle state: reference to the running HTTP server.
    *
    * This field is intentionally mutable to track the server lifecycle
@@ -324,6 +366,9 @@ export class IVXPProvider {
       });
 
     this.orderStore = config.orderStore ?? new InMemoryOrderStore();
+
+    // Initialize service handlers from config (defensive copy)
+    this.serviceHandlers = config.serviceHandlers ? new Map(config.serviceHandlers) : new Map();
 
     // Validate injected orderStore implements required interface (#6)
     if (config.orderStore) {
@@ -541,6 +586,137 @@ export class IVXPProvider {
   }
 
   // -------------------------------------------------------------------------
+  // Service handler registry
+  // -------------------------------------------------------------------------
+
+  /**
+   * Register a service handler for a specific service type.
+   *
+   * The handler will be invoked asynchronously after a delivery request
+   * for the given service type is accepted. Overwrites any previously
+   * registered handler for the same service type.
+   *
+   * @param serviceType - The service type name to handle
+   * @param handler - The handler function
+   */
+  registerServiceHandler(serviceType: string, handler: ServiceHandler): void {
+    this.serviceHandlers.set(serviceType, handler);
+  }
+
+  // -------------------------------------------------------------------------
+  // Delivery endpoint
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle a delivery request after payment.
+   *
+   * Validates the order exists and is in "quoted" status, verifies on-chain
+   * payment via paymentService.verify(), verifies the EIP-191 signature
+   * via cryptoService.verify(), transitions the order to "paid" status,
+   * and invokes the registered service handler asynchronously.
+   *
+   * @param request - The incoming DeliveryRequest (wire format)
+   * @returns A DeliveryAccepted response
+   * @throws IVXPError with code ORDER_NOT_FOUND if the order does not exist
+   * @throws IVXPError with code INVALID_ORDER_STATUS if the order is not in "quoted" status
+   * @throws IVXPError with code PAYMENT_VERIFICATION_FAILED if payment verification fails
+   * @throws IVXPError with code SIGNATURE_VERIFICATION_FAILED if signature verification fails
+   */
+  async handleDeliveryRequest(request: DeliveryRequest): Promise<DeliveryAccepted> {
+    // Look up order
+    const order = await this.orderStore.get(request.order_id);
+    if (!order) {
+      throw new IVXPError(`Order not found: ${request.order_id}`, "ORDER_NOT_FOUND", {
+        orderId: request.order_id,
+      });
+    }
+
+    if (order.status !== "quoted") {
+      throw new IVXPError(`Order not in quoted status: ${order.status}`, "INVALID_ORDER_STATUS", {
+        orderId: request.order_id,
+        currentStatus: order.status,
+      });
+    }
+
+    // Validate signed_message contains the order_id to bind signature to order.
+    // Prevents replay attacks where a valid signature for one order is used
+    // to claim delivery of a different order.
+    if (!request.signed_message.includes(request.order_id)) {
+      throw new IVXPError(
+        "Invalid signed message: must contain the order_id",
+        "INVALID_SIGNED_MESSAGE",
+        { orderId: request.order_id },
+      );
+    }
+
+    // Validate payment network matches the provider's configured network.
+    // Prevents cross-network payment spoofing (e.g. paying on Sepolia
+    // testnet for a mainnet order).
+    if (request.payment_proof.network !== this.network) {
+      throw new IVXPError(
+        `Network mismatch: expected ${this.network}, got ${request.payment_proof.network}`,
+        "NETWORK_MISMATCH",
+        {
+          orderId: request.order_id,
+          expected: this.network,
+          actual: request.payment_proof.network,
+        },
+      );
+    }
+
+    // Verify on-chain payment (AC #1)
+    // Amount validation is delegated to the PaymentService, which verifies
+    // the on-chain transfer amount matches order.priceUsdc. This design
+    // keeps the payment verification logic in a single place and allows
+    // the payment service to handle USDC decimal normalization.
+    const paymentValid = await this.paymentService.verify(request.payment_proof.tx_hash, {
+      from: request.payment_proof.from_address,
+      to: order.paymentAddress,
+      amount: order.priceUsdc,
+    });
+
+    if (!paymentValid) {
+      throw new IVXPError("Payment verification failed", "PAYMENT_VERIFICATION_FAILED", {
+        orderId: request.order_id,
+        txHash: request.payment_proof.tx_hash,
+      });
+    }
+
+    // Verify EIP-191 signature (AC #2)
+    const signatureValid = await this.cryptoService.verify(
+      request.signed_message,
+      request.signature,
+      order.clientAddress,
+    );
+
+    if (!signatureValid) {
+      throw new IVXPError("Signature verification failed", "SIGNATURE_VERIFICATION_FAILED", {
+        orderId: request.order_id,
+      });
+    }
+
+    // Transition to "paid" status and store tx_hash (AC #3)
+    const paidOrder = await this.orderStore.update(request.order_id, {
+      status: "paid",
+      txHash: request.payment_proof.tx_hash,
+      deliveryEndpoint: request.delivery_endpoint,
+    });
+
+    // Invoke service handler asynchronously (fire-and-forget) (AC #3)
+    const handler = this.serviceHandlers.get(order.serviceType);
+    if (handler) {
+      this.processOrderAsync(paidOrder, handler);
+    }
+
+    // Return DeliveryAccepted response (AC #4)
+    return {
+      order_id: request.order_id,
+      status: "accepted",
+      message: "Payment verified. Processing started.",
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // Server lifecycle
   // -------------------------------------------------------------------------
 
@@ -629,6 +805,7 @@ export class IVXPProvider {
    * Routes:
    * - GET  /ivxp/catalog  -> Service catalog
    * - POST /ivxp/request  -> Quote generation
+   * - POST /ivxp/deliver  -> Delivery acceptance
    *
    * Returns 404 for unknown paths and 405 for incorrect methods
    * on known paths.
@@ -671,6 +848,18 @@ export class IVXPProvider {
       return;
     }
 
+    // Route: POST /ivxp/deliver
+    if (normalizedPath === DELIVER_PATH) {
+      if (method !== "POST") {
+        res.writeHead(405, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Method not allowed" }));
+        return;
+      }
+
+      await this.handleDeliverRoute(req, res);
+      return;
+    }
+
     // Unknown route
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Not found" }));
@@ -688,7 +877,12 @@ export class IVXPProvider {
     try {
       const rawBody = await readRequestBody(req);
       body = JSON.parse(rawBody);
-    } catch {
+    } catch (readError: unknown) {
+      if (readError instanceof IVXPError && readError.code === "REQUEST_TOO_LARGE") {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Request body too large" }));
+        return;
+      }
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Invalid JSON body" }));
       return;
@@ -734,6 +928,117 @@ export class IVXPProvider {
       throw error;
     }
   }
+
+  /**
+   * Handle the POST /ivxp/deliver route.
+   *
+   * Reads the request body, parses it as JSON, validates basic
+   * structure, and delegates to `handleDeliveryRequest()`.
+   */
+  private async handleDeliverRoute(req: IncomingMsg, res: ServerRes): Promise<void> {
+    // Read and parse body
+    let body: unknown;
+    try {
+      const rawBody = await readRequestBody(req);
+      body = JSON.parse(rawBody);
+    } catch (readError: unknown) {
+      if (readError instanceof IVXPError && readError.code === "REQUEST_TOO_LARGE") {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Request body too large" }));
+        return;
+      }
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid JSON body" }));
+      return;
+    }
+
+    // Validate minimal structure
+    if (
+      !body ||
+      typeof body !== "object" ||
+      !("order_id" in body) ||
+      !("payment_proof" in body) ||
+      !("signature" in body) ||
+      !("signed_message" in body)
+    ) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          error: "Missing required fields: order_id, payment_proof, signature, signed_message",
+        }),
+      );
+      return;
+    }
+
+    try {
+      const accepted = await this.handleDeliveryRequest(body as DeliveryRequest);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(accepted));
+    } catch (error: unknown) {
+      if (error instanceof IVXPError) {
+        if (error.code === "ORDER_NOT_FOUND") {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: error.message }));
+          return;
+        }
+
+        // Verification and validation errors return 400 with the error message
+        const clientFacingCodes = new Set([
+          "PAYMENT_VERIFICATION_FAILED",
+          "SIGNATURE_VERIFICATION_FAILED",
+          "INVALID_ORDER_STATUS",
+          "INVALID_SIGNED_MESSAGE",
+          "NETWORK_MISMATCH",
+        ]);
+
+        if (clientFacingCodes.has(error.code)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: error.message }));
+          return;
+        }
+
+        // All other IVXPError types: return sanitized 400 without leaking details
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid delivery request" }));
+        return;
+      }
+
+      // Request too large
+      if (error instanceof Error && error.message.includes("too large")) {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Request body too large" }));
+        return;
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Process an order asynchronously via its service handler.
+   *
+   * Fire-and-forget: the delivery acceptance response is returned
+   * immediately while processing continues in the background.
+   * If the handler throws, the order status transitions to
+   * "delivery_failed" and the error is logged.
+   */
+  private processOrderAsync(order: StoredOrder, handler: ServiceHandler): void {
+    handler(order).catch(async (error: unknown) => {
+      console.error(
+        `Service handler error for order ${order.orderId}:`,
+        error instanceof Error ? error.message : error,
+      );
+
+      try {
+        await this.orderStore.update(order.orderId, { status: "delivery_failed" });
+      } catch (updateError: unknown) {
+        console.error(
+          `Failed to update order ${order.orderId} to delivery_failed:`,
+          updateError instanceof Error ? updateError.message : updateError,
+        );
+      }
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -746,6 +1051,9 @@ export class IVXPProvider {
  * Collects data chunks and concatenates them once the stream ends.
  * Returns an empty string if the request has no body.
  *
+ * Enforces a maximum body size (MAX_REQUEST_BODY_SIZE) to prevent
+ * denial-of-service attacks via oversized request bodies.
+ *
  * Avoids `Buffer` type references to maintain @types/node independence.
  * Instead, treats chunks as opaque values and uses the TextDecoder API
  * (available in Node.js 20+) for string conversion.
@@ -753,8 +1061,23 @@ export class IVXPProvider {
 function readRequestBody(req: IncomingMsg): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = "";
+    let totalBytes = 0;
+
     req.on("data", (chunk: unknown) => {
-      body += String(chunk);
+      const chunkStr = String(chunk);
+      totalBytes += chunkStr.length;
+
+      if (totalBytes > MAX_REQUEST_BODY_SIZE) {
+        reject(
+          new IVXPError(
+            `Request body too large: exceeds ${MAX_REQUEST_BODY_SIZE} bytes`,
+            "REQUEST_TOO_LARGE",
+          ),
+        );
+        return;
+      }
+
+      body += chunkStr;
     });
     req.on("end", () => {
       resolve(body);

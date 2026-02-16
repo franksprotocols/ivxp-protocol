@@ -7,7 +7,7 @@
  * Uses mocks from @ivxp/test-utils to avoid real blockchain calls.
  */
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MockCryptoService,
   MockPaymentService,
@@ -15,8 +15,13 @@ import {
   TEST_ACCOUNTS,
   DEFAULT_SERVICE_DEFINITIONS,
 } from "@ivxp/test-utils";
-import type { IOrderStorage, ServiceDefinition, ServiceRequest } from "@ivxp/protocol";
-import { IVXPProvider, createIVXPProvider, type IVXPProviderConfig } from "./provider.js";
+import type { IOrderStorage, ServiceDefinition, ServiceRequest, StoredOrder } from "@ivxp/protocol";
+import {
+  IVXPProvider,
+  createIVXPProvider,
+  type IVXPProviderConfig,
+  type ServiceHandler,
+} from "./provider.js";
 import { IVXPError } from "../errors/base.js";
 
 // ---------------------------------------------------------------------------
@@ -1402,6 +1407,1014 @@ describe("IVXPProvider - Quote Endpoint", () => {
       });
 
       expect(provider).toBeInstanceOf(IVXPProvider);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Delivery Endpoint tests (Story 3.16)
+// ---------------------------------------------------------------------------
+
+describe("IVXPProvider - Delivery Endpoint", () => {
+  /** Track servers for cleanup. */
+  const deliveryServersToCleanup: IVXPProvider[] = [];
+
+  afterEach(async () => {
+    for (const provider of deliveryServersToCleanup) {
+      await provider.stop().catch(() => {
+        /* ignore cleanup errors */
+      });
+    }
+    deliveryServersToCleanup.length = 0;
+  });
+
+  /**
+   * Helper to create a provider with mock services, an injectable order store,
+   * and optional service handlers for delivery endpoint testing.
+   */
+  function createDeliveryTestProvider(
+    overrides?: Partial<IVXPProviderConfig> & {
+      serviceHandlers?: ReadonlyMap<string, ServiceHandler>;
+      verifyResult?: boolean;
+      paymentVerifyResult?: boolean;
+    },
+  ): {
+    provider: IVXPProvider;
+    orderStore: MockOrderStorage;
+    mockCrypto: MockCryptoService;
+    mockPayment: MockPaymentService;
+  } {
+    const orderStore = new MockOrderStorage();
+    const mockCrypto = new MockCryptoService({
+      address: TEST_ACCOUNTS.provider.address,
+      verifyResult: overrides?.verifyResult ?? true,
+    });
+    const mockPayment = new MockPaymentService({
+      verifyResult: overrides?.paymentVerifyResult ?? true,
+    });
+
+    const provider = new IVXPProvider({
+      ...MINIMAL_CONFIG,
+      cryptoService: mockCrypto,
+      paymentService: mockPayment,
+      orderStore,
+      serviceHandlers: overrides?.serviceHandlers,
+      ...overrides,
+    });
+
+    return { provider, orderStore, mockCrypto, mockPayment };
+  }
+
+  /**
+   * Build a minimal valid ServiceRequest wire-format body.
+   */
+  function buildServiceRequest(serviceType: string): ServiceRequest {
+    return {
+      protocol: "IVXP/1.0",
+      message_type: "service_request",
+      timestamp: new Date().toISOString(),
+      client_agent: {
+        name: "TestClient",
+        wallet_address: TEST_ACCOUNTS.client.address,
+      },
+      service_request: {
+        type: serviceType,
+        description: "Test request",
+        budget_usdc: 100,
+      },
+    };
+  }
+
+  /**
+   * Seed an order in "quoted" status by invoking the full quote flow.
+   */
+  async function createQuotedOrder(provider: IVXPProvider): Promise<{
+    orderId: string;
+    priceUsdc: string;
+    paymentAddress: `0x${string}`;
+  }> {
+    const request = buildServiceRequest("code_review");
+    const quote = await provider.handleQuoteRequest(request);
+
+    return {
+      orderId: quote.order_id,
+      priceUsdc: "10.000000",
+      paymentAddress: quote.quote.payment_address as `0x${string}`,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // handleDeliveryRequest unit tests
+  // -------------------------------------------------------------------------
+
+  describe("handleDeliveryRequest()", () => {
+    it("should accept delivery with valid payment and signature (AC #1, #2, #4)", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const result = await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature:
+          "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId} | Payment: 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef | Timestamp: ${new Date().toISOString()}`,
+      });
+
+      expect(result.status).toBe("accepted");
+      expect(result.order_id).toBe(orderId);
+      expect(result.message).toBeDefined();
+      expect(result.message.length).toBeGreaterThan(0);
+    });
+
+    it("should verify payment on-chain via paymentService.verify() (AC #1)", async () => {
+      const { provider, mockPayment } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const txHash =
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`;
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash: txHash,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      // Verify paymentService.verify was called with correct params
+      const verifyCalls = mockPayment.getVerifyCalls();
+      expect(verifyCalls.length).toBe(1);
+      expect(verifyCalls[0].txHash).toBe(txHash);
+      expect(verifyCalls[0].expected.from).toBe(TEST_ACCOUNTS.client.address);
+      expect(verifyCalls[0].expected.to).toBe(TEST_ACCOUNTS.provider.address);
+      expect(verifyCalls[0].expected.amount).toBe("10.000000");
+    });
+
+    it("should verify EIP-191 signature via cryptoService.verify() (AC #2)", async () => {
+      const { provider, mockCrypto } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const signature = "0xabcdef01" as `0x${string}`;
+      const signedMessage = `Order: ${orderId}`;
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature,
+        signed_message: signedMessage,
+      });
+
+      // Verify cryptoService.verify was called with correct params
+      const verifyCalls = mockCrypto.getVerifyCalls();
+      expect(verifyCalls.length).toBe(1);
+      expect(verifyCalls[0].message).toBe(signedMessage);
+      expect(verifyCalls[0].signature).toBe(signature);
+      expect(verifyCalls[0].expectedAddress).toBe(TEST_ACCOUNTS.client.address);
+    });
+
+    it("should transition order status to 'paid' (AC #3)", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      const order = await provider.getOrder(orderId);
+      expect(order).not.toBeNull();
+      expect(order!.status).toBe("paid");
+    });
+
+    it("should store tx_hash on the order after acceptance", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const txHash =
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`;
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash: txHash,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.txHash).toBe(txHash);
+    });
+
+    it("should invoke registered service handler after acceptance (AC #3)", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "result content",
+        content_type: "text/plain",
+      });
+
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createDeliveryTestProvider({ serviceHandlers });
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      // Allow async handler to run
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(handlerFn).toHaveBeenCalledOnce();
+      const callArgs = handlerFn.mock.calls[0];
+      expect(callArgs[0].orderId).toBe(orderId);
+      expect(callArgs[0].status).toBe("paid");
+    });
+
+    it("should reject delivery when payment verification fails", async () => {
+      const { provider } = createDeliveryTestProvider({ paymentVerifyResult: false });
+      const { orderId } = await createQuotedOrder(provider);
+
+      await expect(
+        provider.handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: `Order: ${orderId}`,
+        }),
+      ).rejects.toThrow("Payment verification failed");
+    });
+
+    it("should not transition order status when payment verification fails", async () => {
+      const { provider } = createDeliveryTestProvider({ paymentVerifyResult: false });
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider
+        .handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: `Order: ${orderId}`,
+        })
+        .catch(() => {
+          /* expected */
+        });
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.status).toBe("quoted");
+    });
+
+    it("should reject delivery when signature verification fails", async () => {
+      const { provider } = createDeliveryTestProvider({ verifyResult: false });
+      const { orderId } = await createQuotedOrder(provider);
+
+      await expect(
+        provider.handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xbadsignature" as `0x${string}`,
+          signed_message: `Order: ${orderId}`,
+        }),
+      ).rejects.toThrow("Signature verification failed");
+    });
+
+    it("should reject delivery when order not found", async () => {
+      const { provider } = createDeliveryTestProvider();
+
+      await expect(
+        provider.handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: "ivxp-00000000-0000-0000-0000-000000000000",
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: "Order: ivxp-00000000-0000-0000-0000-000000000000",
+        }),
+      ).rejects.toThrow("Order not found");
+    });
+
+    it("should reject delivery when order is not in 'quoted' status", async () => {
+      const { provider, orderStore } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      // Manually transition order to "paid" status
+      await orderStore.update(orderId, { status: "paid" });
+
+      await expect(
+        provider.handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: `Order: ${orderId}`,
+        }),
+      ).rejects.toThrow("not in quoted status");
+    });
+
+    it("should not invoke service handler when none is registered", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      // Should not throw even without a handler
+      const result = await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      expect(result.status).toBe("accepted");
+    });
+
+    it("should store delivery_endpoint from request on the order", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        delivery_endpoint: "http://localhost:9999/callback",
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.deliveryEndpoint).toBe("http://localhost:9999/callback");
+    });
+
+    it("should store undefined when delivery_endpoint is not provided (Issue #10)", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.deliveryEndpoint).toBeUndefined();
+    });
+
+    it("should reject a second delivery request on an already-paid order (Issue #1 idempotency)", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      // First delivery should succeed
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      // Second delivery should fail with INVALID_ORDER_STATUS
+      await expect(
+        provider.handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: `Order: ${orderId}`,
+        }),
+      ).rejects.toThrow("not in quoted status");
+    });
+
+    it("should reject delivery when signed_message does not contain order_id (Issue #3)", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await expect(
+        provider.handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: "This message does not contain the order ID",
+        }),
+      ).rejects.toThrow("must contain the order_id");
+    });
+
+    it("should not transition order status when signed_message is invalid", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider
+        .handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: "No order ID here",
+        })
+        .catch(() => {
+          /* expected */
+        });
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.status).toBe("quoted");
+    });
+
+    it("should reject delivery when payment network does not match provider network (Issue #6)", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await expect(
+        provider.handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-mainnet",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: `Order: ${orderId}`,
+        }),
+      ).rejects.toThrow("Network mismatch");
+    });
+
+    it("should not transition order status when network mismatches", async () => {
+      const { provider } = createDeliveryTestProvider();
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider
+        .handleDeliveryRequest({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash:
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-mainnet",
+          },
+          signature: "0xabcdef01" as `0x${string}`,
+          signed_message: `Order: ${orderId}`,
+        })
+        .catch(() => {
+          /* expected */
+        });
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.status).toBe("quoted");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // HTTP endpoint tests (POST /ivxp/deliver)
+  // -------------------------------------------------------------------------
+
+  describe("POST /ivxp/deliver", () => {
+    it("should return DeliveryAccepted for a valid delivery request", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01",
+          signed_message: `Order: ${orderId}`,
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("application/json");
+
+      const body = await response.json();
+      expect(body.status).toBe("accepted");
+      expect(body.order_id).toBe(orderId);
+      expect(body.message).toBeDefined();
+    });
+
+    it("should return 400 for invalid JSON body on /ivxp/deliver", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not valid json",
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should return 400 for missing required fields on /ivxp/deliver", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ protocol: "IVXP/1.0" }),
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should return 405 for GET on /ivxp/deliver", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(405);
+    });
+
+    it("should return 400 when payment verification fails via HTTP", async () => {
+      const { provider } = createDeliveryTestProvider({
+        port: 0,
+        host: "127.0.0.1",
+        paymentVerifyResult: false,
+      });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01",
+          signed_message: `Order: ${orderId}`,
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toContain("Payment verification failed");
+    });
+
+    it("should return 404 when order not found via HTTP", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: "ivxp-00000000-0000-0000-0000-000000000000",
+          payment_proof: {
+            tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01",
+          signed_message: "Order: ivxp-00000000-0000-0000-0000-000000000000",
+        }),
+      });
+
+      expect(response.status).toBe(404);
+      const body = await response.json();
+      expect(body.error).toContain("Order not found");
+    });
+
+    it("should handle delivery request with trailing slash", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01",
+          signed_message: `Order: ${orderId}`,
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.status).toBe("accepted");
+    });
+
+    it("should return 413 for oversized request body (Issue #5)", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      // Create a body larger than 64KB
+      const oversizedBody = JSON.stringify({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: "ivxp-00000000-0000-0000-0000-000000000000",
+        payment_proof: {
+          tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01",
+        signed_message: "x".repeat(100_000),
+      });
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: oversizedBody,
+      });
+
+      expect(response.status).toBe(413);
+      const body = await response.json();
+      expect(body.error).toContain("too large");
+    });
+
+    it("should return 400 with network mismatch error via HTTP (Issue #6)", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-mainnet",
+          },
+          signature: "0xabcdef01",
+          signed_message: `Order: ${orderId}`,
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toContain("Network mismatch");
+    });
+
+    it("should return 400 with signed message error via HTTP (Issue #3)", async () => {
+      const { provider } = createDeliveryTestProvider({ port: 0, host: "127.0.0.1" });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+      const { orderId } = await createQuotedOrder(provider);
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: orderId,
+          payment_proof: {
+            tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01",
+          signed_message: "Does not contain order ID",
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toContain("must contain the order_id");
+    });
+
+    it("should sanitize unknown IVXPError codes in deliver route (Issue #9)", async () => {
+      // This test verifies that unexpected internal IVXPError types
+      // don't leak implementation details in the HTTP response.
+      // We simulate this by using a storage that injects a custom error.
+      const failingStore = new MockOrderStorage({
+        getError: new IVXPError("Internal DB error with sensitive info", "STORAGE_FAILURE", {
+          connectionString: "postgres://secret:password@db:5432",
+        }),
+      });
+
+      const provider = new IVXPProvider({
+        ...MINIMAL_CONFIG,
+        cryptoService: new MockCryptoService({ address: TEST_ACCOUNTS.provider.address }),
+        paymentService: new MockPaymentService({ verifyResult: true }),
+        orderStore: failingStore as unknown as IOrderStorage,
+        port: 0,
+        host: "127.0.0.1",
+      });
+      deliveryServersToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/ivxp/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          protocol: "IVXP/1.0",
+          message_type: "delivery_request",
+          timestamp: new Date().toISOString(),
+          order_id: "ivxp-00000000-0000-0000-0000-000000000000",
+          payment_proof: {
+            tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            from_address: TEST_ACCOUNTS.client.address,
+            network: "base-sepolia",
+          },
+          signature: "0xabcdef01",
+          signed_message: "Order: ivxp-00000000-0000-0000-0000-000000000000",
+        }),
+      });
+
+      // Should get a sanitized 400 (not a 500 with raw error details)
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toBe("Invalid delivery request");
+      expect(JSON.stringify(body)).not.toContain("postgres");
+      expect(JSON.stringify(body)).not.toContain("password");
+      expect(JSON.stringify(body)).not.toContain("STORAGE_FAILURE");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Service handler registry tests
+  // -------------------------------------------------------------------------
+
+  describe("registerServiceHandler()", () => {
+    it("should allow registering a handler via registerServiceHandler()", async () => {
+      const handlerFn = vi.fn().mockResolvedValue({
+        content: "result",
+        content_type: "text/plain",
+      });
+
+      const { provider } = createDeliveryTestProvider();
+      provider.registerServiceHandler("code_review", handlerFn);
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      // Allow async handler to run
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(handlerFn).toHaveBeenCalledOnce();
+    });
+
+    it("should not crash if service handler throws (fire-and-forget)", async () => {
+      const handlerFn = vi.fn().mockRejectedValue(new Error("Handler crashed"));
+
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createDeliveryTestProvider({ serviceHandlers });
+      const { orderId } = await createQuotedOrder(provider);
+
+      // Should not throw even though handler throws
+      const result = await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      expect(result.status).toBe("accepted");
+
+      // Allow async handler to run (and fail)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(handlerFn).toHaveBeenCalledOnce();
+    });
+
+    it("should transition order status to 'delivery_failed' when handler throws (Issue #4)", async () => {
+      const handlerFn = vi.fn().mockRejectedValue(new Error("Processing failed"));
+
+      const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
+
+      const { provider } = createDeliveryTestProvider({ serviceHandlers });
+      const { orderId } = await createQuotedOrder(provider);
+
+      await provider.handleDeliveryRequest({
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: orderId,
+        payment_proof: {
+          tx_hash:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as `0x${string}`,
+          from_address: TEST_ACCOUNTS.client.address,
+          network: "base-sepolia",
+        },
+        signature: "0xabcdef01" as `0x${string}`,
+        signed_message: `Order: ${orderId}`,
+      });
+
+      // Allow async handler to run and status update to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const order = await provider.getOrder(orderId);
+      expect(order!.status).toBe("delivery_failed");
     });
   });
 });
