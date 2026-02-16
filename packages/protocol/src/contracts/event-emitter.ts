@@ -31,7 +31,7 @@ export type SDKEvent =
       readonly type: "order.delivered";
       readonly payload: {
         readonly orderId: string;
-        readonly deliverableUrl: string;
+        readonly format: string;
       };
     }
   | {
@@ -39,10 +39,15 @@ export type SDKEvent =
       readonly payload: { readonly txHash: string };
     }
   | {
+      /**
+       * Reserved for future use. Will be emitted when the SDK implements
+       * on-chain payment confirmation watching (transaction receipt polling).
+       * Not currently emitted by any IVXPClient method.
+       */
       readonly type: "payment.confirmed";
       readonly payload: {
         readonly txHash: string;
-        readonly blockNumber: number;
+        readonly blockNumber?: bigint;
       };
     }
   | {

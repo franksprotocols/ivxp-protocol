@@ -12,9 +12,9 @@ import type {
   IPaymentService,
   IHttpClient,
   JsonSerializable,
-  SDKEvent,
   SDKEventMap,
 } from "@ivxp/protocol";
+import { EventEmitter } from "./events.js";
 import {
   PROTOCOL_VERSION,
   ServiceCatalogSchema,
@@ -383,26 +383,15 @@ export interface OrderPollOptions extends PollOptions {
   readonly targetStatuses?: readonly string[];
 }
 
-/**
- * Type alias for event handler functions.
- *
- * Uses `unknown` as the payload type for the internal handler storage.
- * Type safety is enforced at the public API boundary: `on<T>()` accepts
- * a handler with the correctly-typed payload via `SDKEventMap[T]`, and
- * `emit<T>()` passes the correctly-typed payload to each handler.
- *
- * The cast in `on()` from `(payload: SDKEventMap[T]) => void` to
- * `EventHandler` is safe because `emit()` only invokes handlers
- * registered for the matching event type key.
- */
-type EventHandler = (payload: unknown) => void;
-
 // ---------------------------------------------------------------------------
 // IVXPClient
 // ---------------------------------------------------------------------------
 
 /**
  * Main client for the IVXP protocol.
+ *
+ * Extends EventEmitter<SDKEventMap> to provide type-safe event emission
+ * for SDK lifecycle events (catalog.received, order.quoted, order.paid, etc.).
  *
  * Provides access to cryptographic signing, USDC payments, HTTP
  * communication, and service catalog fetching. Services are created
@@ -412,20 +401,15 @@ type EventHandler = (payload: unknown) => void;
  * @example
  * ```typescript
  * const client = createIVXPClient({ privateKey: "0x..." });
+ * client.on('order.paid', ({ orderId, txHash }) => console.log(orderId, txHash));
  * const catalog = await client.getCatalog("http://provider.example.com");
  * ```
  */
-export class IVXPClient {
+export class IVXPClient extends EventEmitter<SDKEventMap> {
   private readonly cryptoService: ICryptoService;
   private readonly paymentService: IPaymentService;
   private readonly httpClient: IHttpClient;
   private readonly network: NetworkType;
-
-  /**
-   * Event handler registry. Maps event type strings to arrays of handlers.
-   * Uses Map for O(1) lookup by event type.
-   */
-  private readonly eventHandlers = new Map<string, EventHandler[]>();
 
   /**
    * Create a new IVXPClient instance.
@@ -437,6 +421,8 @@ export class IVXPClient {
    * @throws If the private key format is invalid
    */
   constructor(config: IVXPClientConfig) {
+    super();
+
     const { privateKey, network = "base-sepolia" } = config;
 
     if (!privateKey || !PRIVATE_KEY_REGEX.test(privateKey)) {
@@ -510,47 +496,6 @@ export class IVXPClient {
   /** Access the underlying HTTP client. */
   get http(): IHttpClient {
     return this.httpClient;
-  }
-
-  // -------------------------------------------------------------------------
-  // Event emitter
-  // -------------------------------------------------------------------------
-
-  /**
-   * Subscribe to an SDK event.
-   *
-   * Handlers are invoked synchronously in registration order when the
-   * corresponding event is emitted. This method is designed for use in
-   * JavaScript's single-threaded execution model -- concurrent calls
-   * from the same event loop turn are not expected.
-   *
-   * @typeParam T - Event type string literal
-   * @param event - The event type to listen for
-   * @param handler - Callback invoked with the event's typed payload
-   */
-  on<T extends SDKEvent["type"]>(event: T, handler: (payload: SDKEventMap[T]) => void): void {
-    const handlers = this.eventHandlers.get(event) ?? [];
-    this.eventHandlers.set(event, [...handlers, handler as EventHandler]);
-  }
-
-  /**
-   * Unsubscribe from an SDK event.
-   *
-   * @typeParam T - Event type string literal
-   * @param event - The event type to stop listening for
-   * @param handler - The previously registered handler to remove
-   */
-  off<T extends SDKEvent["type"]>(event: T, handler: (payload: SDKEventMap[T]) => void): void {
-    const handlers = this.eventHandlers.get(event);
-    if (!handlers) {
-      return;
-    }
-    const remaining = handlers.filter((h) => h !== handler);
-    if (remaining.length === 0) {
-      this.eventHandlers.delete(event);
-    } else {
-      this.eventHandlers.set(event, remaining);
-    }
   }
 
   // -------------------------------------------------------------------------
@@ -1024,7 +969,7 @@ export class IVXPClient {
       // Emit event on successful download
       this.emit("order.delivered", {
         orderId: deliveryResponse.orderId,
-        deliverableUrl,
+        format: deliveryResponse.deliverable.format ?? "unknown",
       });
 
       return deliveryResponse;
@@ -1205,30 +1150,6 @@ export class IVXPClient {
     } else {
       // For objects/arrays, serialize to JSON with indentation
       await fs.writeFile(filePath, JSON.stringify(content, null, 2), "utf-8");
-    }
-  }
-
-  /**
-   * Emit an SDK event with a typed payload.
-   *
-   * Invokes all registered handlers for the given event type.
-   * Handlers are called synchronously in registration order.
-   * Each handler is wrapped in try-catch to ensure that a throwing
-   * handler does not prevent subsequent handlers from executing
-   * and does not propagate to the caller.
-   */
-  private emit<T extends SDKEvent["type"]>(event: T, payload: SDKEventMap[T]): void {
-    const handlers = this.eventHandlers.get(event);
-    if (!handlers) {
-      return;
-    }
-    for (const handler of handlers) {
-      try {
-        handler(payload);
-      } catch {
-        // Swallow handler errors to isolate event observers from
-        // each other and from the emitting code path (getCatalog, etc.).
-      }
     }
   }
 }
