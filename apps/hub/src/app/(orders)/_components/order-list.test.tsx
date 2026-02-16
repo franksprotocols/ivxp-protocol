@@ -24,7 +24,7 @@ const MOCK_ORDERS: readonly Order[] = [
     priceUsdc: "1.00",
     providerAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     status: "delivered",
-    createdAt: new Date("2025-05-01T10:00:00Z"),
+    createdAt: new Date("2025-05-01T10:00:00Z").getTime(),
   },
   {
     orderId: "ord_newer_one",
@@ -32,7 +32,7 @@ const MOCK_ORDERS: readonly Order[] = [
     priceUsdc: "5.00",
     providerAddress: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     status: "processing",
-    createdAt: new Date("2025-06-15T10:00:00Z"),
+    createdAt: new Date("2025-06-15T10:00:00Z").getTime(),
   },
 ];
 

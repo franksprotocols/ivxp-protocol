@@ -9,8 +9,8 @@ const BASE_ORDER: Order = {
   priceUsdc: "2.50",
   providerAddress: "0x1234567890abcdef1234567890abcdef12345678",
   status: "processing",
-  createdAt: new Date("2025-06-01T10:00:00Z"),
-  updatedAt: new Date("2025-06-01T10:05:00Z"),
+  createdAt: new Date("2025-06-01T10:00:00Z").getTime(),
+  updatedAt: new Date("2025-06-01T10:05:00Z").getTime(),
   txHash: "0xabc123def456abc123def456abc123def456abc123def456abc123def456abc1",
 };
 

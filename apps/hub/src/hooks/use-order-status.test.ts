@@ -10,7 +10,7 @@ const MOCK_ORDER: Order = {
   priceUsdc: "1.00",
   providerAddress: "0x1234567890abcdef1234567890abcdef12345678",
   status: "paid",
-  createdAt: new Date("2025-01-01T00:00:00Z"),
+  createdAt: new Date("2025-01-01T00:00:00Z").getTime(),
   txHash: "0xabc123def456abc123def456abc123def456abc123def456abc123def456abc1",
 };
 

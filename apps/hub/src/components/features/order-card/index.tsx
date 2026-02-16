@@ -34,8 +34,8 @@ function truncateOrderId(orderId: string): string {
   return `${orderId.slice(0, 8)}...${orderId.slice(-4)}`;
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
+function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
