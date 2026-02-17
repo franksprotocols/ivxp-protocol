@@ -79,3 +79,24 @@ export const registerProviderBodySchema = z.object({
 
 export type RegisterProviderBodyInput = z.input<typeof registerProviderBodySchema>;
 export type RegisterProviderBodyParsed = z.output<typeof registerProviderBodySchema>;
+
+export const updateProviderBodySchema = z.object({
+  name: z
+    .string()
+    .min(3, "name must be at least 3 characters")
+    .max(100, "name must be <= 100 characters"),
+  description: z
+    .string()
+    .min(10, "description must be at least 10 characters")
+    .max(500, "description must be <= 500 characters"),
+  endpoint_url: z
+    .string()
+    .url("endpoint_url must be a valid URL")
+    .startsWith("https://", "endpoint_url must use HTTPS"),
+  signature: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{130}$/, "Invalid signature format (must be 0x + 130 hex chars)"),
+  message: z.string().min(1, "Message is required"),
+});
+
+export type UpdateProviderBodyInput = z.input<typeof updateProviderBodySchema>;

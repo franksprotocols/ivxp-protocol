@@ -9,8 +9,45 @@ interface RegistryData {
   providers: RegistryProviderWire[];
 }
 
+/** Lock retry configuration for file-based registry operations */
+const LOCK_RETRIES = 10;
+const LOCK_MIN_TIMEOUT_MS = 100;
+const LOCK_MAX_TIMEOUT_MS = 1000;
+const LOCK_STALE_MS = 30_000;
+
+const LOCK_OPTIONS = {
+  retries: {
+    retries: LOCK_RETRIES,
+    minTimeout: LOCK_MIN_TIMEOUT_MS,
+    maxTimeout: LOCK_MAX_TIMEOUT_MS,
+  },
+  stale: LOCK_STALE_MS,
+} as const;
+
 function getRegistryFilePath(): string {
   return join(process.cwd(), "src", "data", "registry", "providers.json");
+}
+
+/**
+ * Classify and wrap errors from registry write operations
+ * with more specific context for callers.
+ */
+function classifyWriteError(error: unknown, operation: string): Error {
+  if (error instanceof SyntaxError) {
+    return new Error(`Registry JSON parse error during ${operation}: ${error.message}`);
+  }
+  if (error instanceof Error) {
+    if (error.message.includes("ENOENT")) {
+      return new Error(`Registry file not found during ${operation}: ${error.message}`);
+    }
+    if (error.message.includes("EACCES") || error.message.includes("EPERM")) {
+      return new Error(`Registry file permission denied during ${operation}: ${error.message}`);
+    }
+    if (error.message.includes("Lock file") || error.message.includes("lock")) {
+      return new Error(`Registry lock acquisition failed during ${operation}: ${error.message}`);
+    }
+  }
+  return error instanceof Error ? error : new Error(`Unknown error during ${operation}`);
 }
 
 /**
@@ -45,11 +82,7 @@ export async function addProvider(
   let release: (() => Promise<void>) | null = null;
 
   try {
-    // Acquire exclusive lock with 10s timeout
-    release = await lockfile.lock(filePath, {
-      retries: { retries: 10, minTimeout: 100, maxTimeout: 1000 },
-      stale: 30000,
-    });
+    release = await lockfile.lock(filePath, LOCK_OPTIONS);
 
     const raw = readFileSync(filePath, "utf-8");
     const data: RegistryData = JSON.parse(raw);
@@ -77,7 +110,80 @@ export async function addProvider(
         // Ignore cleanup errors
       }
     }
-    throw error;
+    throw classifyWriteError(error, "addProvider");
+  } finally {
+    if (release) {
+      await release();
+    }
+  }
+}
+
+/**
+ * Update a provider's name, description, and endpoint_url by address.
+ * Uses file locking and atomic write to prevent race conditions.
+ * Resets verification_status to "pending" when endpoint_url changes.
+ * Invalidates the in-memory cache after successful write.
+ *
+ * @throws Error if provider not found, lock/filesystem/JSON errors
+ */
+export async function updateProvider(
+  providerAddress: string,
+  fields: { name: string; description: string; endpoint_url: string },
+): Promise<RegistryProviderWire> {
+  const filePath = getRegistryFilePath();
+  const tmpPath = `${filePath}.tmp`;
+  let release: (() => Promise<void>) | null = null;
+
+  try {
+    release = await lockfile.lock(filePath, LOCK_OPTIONS);
+
+    const raw = readFileSync(filePath, "utf-8");
+    const data: RegistryData = JSON.parse(raw);
+
+    const index = data.providers.findIndex(
+      (p) => p.provider_address.toLowerCase() === providerAddress.toLowerCase(),
+    );
+
+    if (index === -1) {
+      throw new Error(`Provider with address ${providerAddress} not found`);
+    }
+
+    const existing = data.providers[index];
+    const endpointChanged = existing.endpoint_url !== fields.endpoint_url;
+
+    const updatedProvider: RegistryProviderWire = {
+      ...existing,
+      name: fields.name,
+      description: fields.description,
+      endpoint_url: fields.endpoint_url,
+      updated_at: new Date().toISOString(),
+      ...(endpointChanged
+        ? {
+            verification_status: "pending" as const,
+            last_verified_at: null,
+            consecutive_failures: 0,
+          }
+        : {}),
+    };
+
+    const updatedProviders = data.providers.map((p, i) => (i === index ? updatedProvider : p));
+    const updatedData: RegistryData = { ...data, providers: updatedProviders };
+
+    writeFileSync(tmpPath, JSON.stringify(updatedData, null, 2), "utf-8");
+    renameSync(tmpPath, filePath);
+
+    clearProviderCache();
+
+    return updatedProvider;
+  } catch (error) {
+    if (existsSync(tmpPath)) {
+      try {
+        unlinkSync(tmpPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    throw classifyWriteError(error, "updateProvider");
   } finally {
     if (release) {
       await release();
@@ -98,11 +204,7 @@ export async function updateProviderVerifications(
   let release: (() => Promise<void>) | null = null;
 
   try {
-    // Acquire exclusive lock with 10s timeout
-    release = await lockfile.lock(filePath, {
-      retries: { retries: 10, minTimeout: 100, maxTimeout: 1000 },
-      stale: 30000,
-    });
+    release = await lockfile.lock(filePath, LOCK_OPTIONS);
 
     const raw = readFileSync(filePath, "utf-8");
     const data: RegistryData = JSON.parse(raw);
@@ -129,7 +231,7 @@ export async function updateProviderVerifications(
         // Ignore cleanup errors
       }
     }
-    throw error;
+    throw classifyWriteError(error, "updateProviderVerifications");
   } finally {
     if (release) {
       await release();
