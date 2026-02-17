@@ -48,7 +48,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:interop": "vitest run --reporter=verbose src/__tests__/interop/",
-    "test:interop:ts-ts": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/junit.xml src/__tests__/interop/ts-ts.test.ts"
+    "test:interop:ts-ts": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/junit.xml src/__tests__/interop/ts-ts.test.ts",
+    "test:interop:ts-python": "vitest run --reporter=verbose src/__tests__/interop/ts-python.test.ts",
+    "test:interop:python-ts": "vitest run --reporter=verbose src/__tests__/interop/python-ts.test.ts",
+    "test:interop:python": "vitest run --reporter=verbose src/__tests__/interop/ts-python.test.ts src/__tests__/interop/python-ts.test.ts"
   },
   "dependencies": {
     "@ivxp/protocol": "workspace:*",
