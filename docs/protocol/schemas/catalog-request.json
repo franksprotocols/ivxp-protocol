@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivxp.dev/schemas/catalog-request.json",
+  "title": "IVXP Catalog Request",
+  "description": "GET /ivxp/catalog requires no request body. Query parameters are not used in IVXP/1.0.",
+  "type": "null"
+}

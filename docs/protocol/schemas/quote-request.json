@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivxp.dev/schemas/quote-request.json",
+  "title": "IVXP Service Request (Quote Request)",
+  "description": "POST /ivxp/request body. Client requests a service quote from the Provider.",
+  "type": "object",
+  "required": ["protocol", "message_type", "timestamp", "client_agent", "service_request"],
+  "properties": {
+    "protocol": {
+      "type": "string",
+      "const": "IVXP/1.0",
+      "description": "Protocol version identifier."
+    },
+    "message_type": {
+      "type": "string",
+      "const": "service_request",
+      "description": "Message type discriminator."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the request."
+    },
+    "client_agent": {
+      "$ref": "#/$defs/ClientAgent"
+    },
+    "service_request": {
+      "$ref": "#/$defs/ServiceRequestDetails"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "ClientAgent": {
+      "type": "object",
+      "required": ["name", "wallet_address"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the client agent."
+        },
+        "wallet_address": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Client's Ethereum wallet address."
+        },
+        "contact_endpoint": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional endpoint for P2P push delivery."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ServiceRequestDetails": {
+      "type": "object",
+      "required": ["type", "description", "budget_usdc"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Service type to request (must match a catalog entry)."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Requirement description text."
+        },
+        "budget_usdc": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Maximum budget the client is willing to pay in USDC."
+        },
+        "delivery_format": {
+          "type": "string",
+          "enum": ["markdown", "json", "code"],
+          "description": "Preferred delivery content format."
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Deadline for delivery (ISO 8601)."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

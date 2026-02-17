@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivxp.dev/schemas/status-request.json",
+  "title": "IVXP Status Request",
+  "description": "GET /ivxp/status/{order_id} requires no request body. The order_id is a path parameter.",
+  "type": "null"
+}

@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Client as Client Agent
+    participant Provider as Provider Agent
+    participant Chain as Base L2 (USDC)
+
+    Note over Client,Provider: 1. Discovery
+    Client->>Provider: GET /ivxp/catalog
+    Provider-->>Client: ServiceCatalog (services, pricing)
+
+    Note over Client,Provider: 2. Quote
+    Client->>Provider: POST /ivxp/request (ServiceRequest)
+    Provider-->>Client: ServiceQuote (order_id, price, payment_address)
+
+    Note over Client,Chain: 3. Payment
+    Client->>Chain: Transfer USDC to payment_address
+    Chain-->>Client: tx_hash confirmed
+
+    Note over Client,Provider: 4. Delivery Request
+    Client->>Provider: POST /ivxp/deliver (DeliveryRequest + PaymentProof + EIP-191 sig)
+    Provider->>Chain: Verify tx_hash on-chain
+    Chain-->>Provider: Payment confirmed
+    Provider-->>Client: DeliveryAccepted {status: "accepted"}
+
+    Note over Client,Provider: 5. Processing & Delivery
+    Provider->>Provider: Execute service handler
+    alt P2P Push (delivery_endpoint provided)
+        Provider->>Client: Push deliverable to endpoint
+    else Store & Forward (no endpoint)
+        Client->>Provider: GET /ivxp/status/{order_id}
+        Provider-->>Client: OrderStatusResponse {status: "delivered"}
+        Client->>Provider: GET /ivxp/download/{order_id}
+        Provider-->>Client: DeliveryResponse (deliverable)
+    end
