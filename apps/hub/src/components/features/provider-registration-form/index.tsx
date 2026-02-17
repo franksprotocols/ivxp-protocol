@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAccount } from "wagmi";
 import {
@@ -40,7 +40,9 @@ export function ProviderRegistrationForm() {
   const { register: registerProvider, state, error, reset } = useProviderRegistration();
 
   const form = useForm<ProviderRegistrationFormData>({
-    resolver: zodResolver(providerRegistrationFormSchema),
+    // z.coerce.number() produces `unknown` input type in Zod's inference,
+    // but the runtime coercion is safe. Cast to the expected Resolver type.
+    resolver: zodResolver(providerRegistrationFormSchema) as Resolver<ProviderRegistrationFormData>,
     defaultValues: {
       name: "",
       description: "",

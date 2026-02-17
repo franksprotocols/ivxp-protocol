@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { MarketplaceContent } from "@/components/features/marketplace";
 
 export const metadata: Metadata = {
@@ -13,11 +14,12 @@ export default function MarketplacePage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Marketplace</h1>
         <p className="mt-2 text-muted-foreground">
-          Discover and connect with AI services, data providers, and compute
-          resources.
+          Discover and connect with AI services, data providers, and compute resources.
         </p>
       </div>
-      <MarketplaceContent />
+      <Suspense fallback={<div className="text-muted-foreground">Loading marketplace...</div>}>
+        <MarketplaceContent />
+      </Suspense>
     </main>
   );
 }

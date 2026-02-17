@@ -5,7 +5,7 @@
  * for direct HTTP interaction with the provider.
  */
 
-import { TEST_ACCOUNTS, DEFAULT_TX_HASH, DEFAULT_SIGNATURE } from "@ivxp/test-utils";
+import { TEST_ACCOUNTS, DEFAULT_SIGNATURE } from "@ivxp/test-utils";
 
 // ---------------------------------------------------------------------------
 // HTTP helpers
@@ -14,9 +14,7 @@ import { TEST_ACCOUNTS, DEFAULT_TX_HASH, DEFAULT_SIGNATURE } from "@ivxp/test-ut
 /**
  * GET JSON from a URL, returning parsed body and status.
  */
-export async function httpGet<T = unknown>(
-  url: string,
-): Promise<{ status: number; body: T }> {
+export async function httpGet<T = unknown>(url: string): Promise<{ status: number; body: T }> {
   const response = await fetch(url);
   const body = (await response.json().catch(() => null)) as T;
   return { status: response.status, body };
@@ -67,28 +65,42 @@ export function buildServiceRequestBody(
 }
 
 /**
+ * Generate a unique 0x-prefixed 64-char hex tx hash for testing.
+ *
+ * Uses crypto.randomUUID() to produce unique hashes, avoiding replay
+ * protection rejections when multiple orders are delivered concurrently.
+ */
+function generateUniqueTxHash(): `0x${string}` {
+  const uuid = globalThis.crypto.randomUUID().replace(/-/g, "");
+  // Pad to 64 hex chars (32 bytes)
+  return `0x${uuid.padEnd(64, "0")}` as `0x${string}`;
+}
+
+/**
  * Build a valid IVXP/1.0 delivery request body.
+ *
+ * Each call generates a unique tx_hash by default to avoid replay
+ * protection rejections. Pass `options.txHash` to override.
  */
 export function buildDeliveryRequestBody(
   orderId: string,
-  options?: { deliveryEndpoint?: string; network?: string },
+  options?: { deliveryEndpoint?: string; network?: string; txHash?: `0x${string}` },
 ) {
   const timestamp = new Date().toISOString();
+  const txHash = options?.txHash ?? generateUniqueTxHash();
   return {
     protocol: "IVXP/1.0",
     message_type: "delivery_request",
     timestamp,
     order_id: orderId,
     payment_proof: {
-      tx_hash: DEFAULT_TX_HASH,
+      tx_hash: txHash,
       from_address: TEST_ACCOUNTS.client.address,
       network: options?.network ?? "base-sepolia",
     },
     signature: DEFAULT_SIGNATURE,
-    signed_message: `Order: ${orderId} | Payment: ${DEFAULT_TX_HASH} | Timestamp: ${timestamp}`,
-    ...(options?.deliveryEndpoint
-      ? { delivery_endpoint: options.deliveryEndpoint }
-      : {}),
+    signed_message: `Order: ${orderId} | Payment: ${txHash} | Timestamp: ${timestamp}`,
+    ...(options?.deliveryEndpoint ? { delivery_endpoint: options.deliveryEndpoint } : {}),
   };
 }
 

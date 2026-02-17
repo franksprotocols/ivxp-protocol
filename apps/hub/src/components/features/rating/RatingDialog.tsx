@@ -155,11 +155,7 @@ export function RatingDialog({
               </p>
             )}
 
-            <RatingForm
-              onSubmit={handleSubmit}
-              isLoading={isLoading}
-              disabled={state.step === "success"}
-            />
+            <RatingForm onSubmit={handleSubmit} isLoading={isLoading} disabled={isLoading} />
           </>
         )}
       </DialogContent>
