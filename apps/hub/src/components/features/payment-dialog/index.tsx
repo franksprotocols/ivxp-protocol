@@ -25,6 +25,8 @@ import { PaymentSteps } from "./payment-steps";
 import { TransactionLink } from "./transaction-link";
 import { RecoveryPanel } from "./recovery-panel";
 import { SignatureDialog } from "@/components/features/signature-dialog";
+import { CopyButton } from "@/components/features/protocol-visibility/copy-button";
+import { ProtocolTooltip } from "@/components/features/protocol-visibility/protocol-tooltip";
 
 export interface PaymentDialogProps {
   readonly open: boolean;
@@ -124,11 +126,26 @@ export function PaymentDialog({
         {/* Step progress */}
         <PaymentSteps currentStep={payment.step} />
 
-        {/* Transaction link */}
+        {/* Transaction link with protocol visibility */}
         {payment.txHash && payment.step !== "partial-success" && (
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">Transaction</p>
-            <TransactionLink txHash={payment.txHash} />
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Transaction
+                <ProtocolTooltip field="tx_hash" />
+              </p>
+              <TransactionLink txHash={payment.txHash} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Order ID
+                <ProtocolTooltip field="order_id" />
+              </p>
+              <div className="flex items-center gap-1">
+                <code className="font-mono text-sm">{orderId}</code>
+                <CopyButton value={orderId} label="order ID" />
+              </div>
+            </div>
           </div>
         )}
 

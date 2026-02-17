@@ -81,7 +81,7 @@ export function useIdentitySignature({
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const router = useRouter();
-  const updateOrderStatus = useOrderStore((s) => s.updateOrderStatus);
+  const updateOrderSignature = useOrderStore((s) => s.updateOrderSignature);
 
   const [step, setStep] = useState<SignatureStep>("idle");
   const [signature, setSignature] = useState<`0x${string}` | null>(null);
@@ -149,7 +149,12 @@ export function useIdentitySignature({
         });
 
         setStep("submitted");
-        updateOrderStatus(orderId, "processing");
+        updateOrderSignature(orderId, {
+          signature: sig,
+          signedMessage: msg,
+          signatureVerified: true,
+          status: "processing",
+        });
         router.push(`/orders/${orderId}`);
       } catch (err) {
         setStep("error");
@@ -158,7 +163,7 @@ export function useIdentitySignature({
         setErrorCode(SIGNATURE_ERROR_CODES.DELIVERY_FAILED);
       }
     },
-    [orderId, txHash, network, updateOrderStatus, router],
+    [orderId, txHash, network, updateOrderSignature, router],
   );
 
   const signAndDeliver = useCallback(async () => {

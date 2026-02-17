@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Download, AlertTriangle, RefreshCw } from "lucide-react";
+import { ExternalLink, Download, AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { ProgressStepper } from "./progress-stepper";
 import { getExplorerTxUrl } from "@/lib/usdc-contract";
 import { formatServiceName, formatPrice } from "@/lib/api/services";
 import type { Order, OrderStatus } from "@/stores/order-store";
+import { CopyButton } from "@/components/features/protocol-visibility/copy-button";
+import { ProtocolTooltip } from "@/components/features/protocol-visibility/protocol-tooltip";
 
 interface OrderDetailProps {
   readonly order: Order;
@@ -69,8 +71,14 @@ export function OrderDetail({ order, isPolling }: OrderDetailProps) {
 
           <dl className="grid gap-4 sm:grid-cols-2">
             <div>
-              <dt className="text-sm font-medium text-muted-foreground">Order ID</dt>
-              <dd className="mt-1 font-mono text-sm">{order.orderId}</dd>
+              <dt className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Order ID
+                <ProtocolTooltip field="order_id" />
+              </dt>
+              <dd className="mt-1 flex items-center gap-1">
+                <span className="font-mono text-sm">{order.orderId}</span>
+                <CopyButton value={order.orderId} label="order ID" />
+              </dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-muted-foreground">Service</dt>
@@ -82,8 +90,11 @@ export function OrderDetail({ order, isPolling }: OrderDetailProps) {
             </div>
             {explorerUrl && (
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">Transaction</dt>
-                <dd className="mt-1">
+                <dt className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  Transaction
+                  <ProtocolTooltip field="tx_hash" />
+                </dt>
+                <dd className="mt-1 flex items-center gap-1">
                   <a
                     href={explorerUrl}
                     target="_blank"
@@ -94,9 +105,60 @@ export function OrderDetail({ order, isPolling }: OrderDetailProps) {
                     {`${order.txHash?.slice(0, 10)}...${order.txHash?.slice(-6)}`}
                     <ExternalLink className="h-3 w-3" />
                   </a>
+                  {order.txHash && <CopyButton value={order.txHash} label="transaction hash" />}
                 </dd>
               </div>
             )}
+            {order.signature && (
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  Signature
+                  <ProtocolTooltip field="signature" />
+                </dt>
+                <dd className="mt-1 flex items-center gap-1">
+                  {order.signatureVerified ? (
+                    <Badge className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                      Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="gap-1">
+                      <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                      Unverified
+                    </Badge>
+                  )}
+                  <code className="font-mono text-xs truncate max-w-[120px]">
+                    {order.signature}
+                  </code>
+                  <CopyButton value={order.signature} label="signature" />
+                </dd>
+              </div>
+            )}
+            {order.contentHash && (
+              <div>
+                <dt className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  Content Hash
+                  <ProtocolTooltip field="content_hash" />
+                </dt>
+                <dd className="mt-1 flex items-center gap-1">
+                  <code className="font-mono text-xs truncate max-w-[160px]">
+                    {order.contentHash}
+                  </code>
+                  <CopyButton value={order.contentHash} label="content hash" />
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                Status
+                <ProtocolTooltip field="status" />
+              </dt>
+              <dd className="mt-1">
+                <Badge variant={STATUS_VARIANT[order.status]} data-testid="status-badge-detail">
+                  {STATUS_LABEL[order.status]}
+                </Badge>
+              </dd>
+            </div>
             <div>
               <dt className="text-sm font-medium text-muted-foreground">Created</dt>
               <dd className="mt-1 text-sm">{formatTimestamp(order.createdAt)}</dd>

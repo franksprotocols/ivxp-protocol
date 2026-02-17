@@ -32,10 +32,10 @@ vi.mock("@/lib/api/delivery", () => ({
 // Mock order store
 // ---------------------------------------------------------------------------
 
-const mockUpdateOrderStatus = vi.fn();
+const mockUpdateOrderSignature = vi.fn();
 vi.mock("@/stores/order-store", () => ({
   useOrderStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({ updateOrderStatus: mockUpdateOrderStatus }),
+    selector({ updateOrderSignature: mockUpdateOrderSignature }),
 }));
 
 // ---------------------------------------------------------------------------

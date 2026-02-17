@@ -23,6 +23,15 @@ vi.mock("wagmi", () => ({
   useChainId: () => 84532,
 }));
 
+vi.mock("@/components/ui/tooltip", () => ({
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode; asChild?: boolean }) => (
+    <span>{children}</span>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 // ---------------------------------------------------------------------------
 // Test data
 // ---------------------------------------------------------------------------
@@ -37,6 +46,7 @@ const MOCK_ORDER: Order = {
   txHash: "0xabc123def456abc123def456abc123def456abc123def456abc123def456abc1",
   signedMessage: "IVXP/1.0 order ord_test_abc",
   signature: "0xsig123abc456def789",
+  signatureVerified: true,
   contentHash: "sha256:abcdef1234567890",
 };
 
