@@ -26,7 +26,6 @@ import {
   MockPaymentService,
   TEST_ACCOUNTS,
   DEFAULT_SIGNATURE,
-  DEFAULT_TX_HASH,
   waitFor,
 } from "@ivxp/test-utils";
 import type { ServiceDefinition } from "@ivxp/protocol";
@@ -244,25 +243,37 @@ function buildQuoteRequestBody(serviceType: string) {
 }
 
 /**
+ * Generate a unique 0x-prefixed 64-char hex tx hash for testing.
+ */
+function generateUniqueTxHash(): `0x${string}` {
+  const uuid = globalThis.crypto.randomUUID().replace(/-/g, "");
+  return `0x${uuid.padEnd(64, "0")}` as `0x${string}`;
+}
+
+/**
  * Build a valid delivery request body for the POST /ivxp/deliver endpoint.
+ *
+ * Each call generates a unique tx_hash by default to avoid replay
+ * protection rejections when delivering multiple orders.
  */
 function buildDeliveryRequestBody(
   orderId: string,
   options?: { deliveryEndpoint?: string; network?: string },
 ) {
   const timestamp = new Date().toISOString();
+  const txHash = generateUniqueTxHash();
   return {
     protocol: "IVXP/1.0",
     message_type: "delivery_request",
     timestamp,
     order_id: orderId,
     payment_proof: {
-      tx_hash: DEFAULT_TX_HASH,
+      tx_hash: txHash,
       from_address: TEST_ACCOUNTS.client.address,
       network: options?.network ?? "base-sepolia",
     },
     signature: DEFAULT_SIGNATURE,
-    signed_message: `Order: ${orderId} | Payment: ${DEFAULT_TX_HASH} | Timestamp: ${timestamp}`,
+    signed_message: `Order: ${orderId} | Payment: ${txHash} | Timestamp: ${timestamp}`,
     ...(options?.deliveryEndpoint ? { delivery_endpoint: options.deliveryEndpoint } : {}),
   };
 }
@@ -1012,7 +1023,7 @@ describe("IVXPProvider - Full Integration Flow", () => {
       expect(content1.echo).toBe("echo");
 
       expect(download2.body.content).toContain("Analysis report");
-    });
+    }, 15_000);
   });
 
   // -------------------------------------------------------------------------

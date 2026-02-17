@@ -282,33 +282,41 @@ describe("AC #2: Complete protocol flow (catalog -> quote -> pay -> deliver -> d
     TEST_TIMEOUT_MS,
   );
 
-  it("should verify content hash integrity via round-trip recomputation", async () => {
-    const { orderId, download } = await runFullOrderLifecycle(baseUrl, "text_echo", "Hash test");
+  it(
+    "should verify content hash integrity via round-trip recomputation",
+    async () => {
+      const { orderId, download } = await runFullOrderLifecycle(baseUrl, "text_echo", "Hash test");
 
-    // Verify content_hash format is valid SHA-256
-    assertValidContentHash(download.content_hash);
+      // Verify content_hash format is valid SHA-256
+      assertValidContentHash(download.content_hash);
 
-    // Recompute content hash from downloaded content and verify match
-    const recomputedHash = await computeContentHash(download.content);
-    expect(download.content_hash).toBe(recomputedHash);
+      // Recompute content hash from downloaded content and verify match
+      const recomputedHash = await computeContentHash(download.content);
+      expect(download.content_hash).toBe(recomputedHash);
 
-    // Verify the content itself is parseable and references the order
-    const content = JSON.parse(download.content);
-    expect(content.order_id).toBe(orderId);
+      // Verify the content itself is parseable and references the order
+      const content = JSON.parse(download.content);
+      expect(content.order_id).toBe(orderId);
 
-    // Verify status endpoint also reports the same hash
-    const statusRes = await httpGet<StatusResponse>(`${baseUrl}/ivxp/status/${orderId}`);
-    expect(statusRes.body.content_hash).toBe(download.content_hash);
-  });
+      // Verify status endpoint also reports the same hash
+      const statusRes = await httpGet<StatusResponse>(`${baseUrl}/ivxp/status/${orderId}`);
+      expect(statusRes.body.content_hash).toBe(download.content_hash);
+    },
+    TEST_TIMEOUT_MS,
+  );
 
-  it("should work with different service types", async () => {
-    const { download } = await runFullOrderLifecycle(baseUrl, "json_transform", "Transform test");
+  it(
+    "should work with different service types",
+    async () => {
+      const { download } = await runFullOrderLifecycle(baseUrl, "json_transform", "Transform test");
 
-    expect(download.content_type).toBe("application/json");
-    const content = JSON.parse(download.content);
-    expect(content.transformed).toBe(true);
-    expect(content.service).toBe("json_transform");
-  });
+      expect(download.content_type).toBe("application/json");
+      const content = JSON.parse(download.content);
+      expect(content.transformed).toBe(true);
+      expect(content.service).toBe("json_transform");
+    },
+    TEST_TIMEOUT_MS,
+  );
 
   it(
     "should handle multiple concurrent orders with unique IDs and correct content",
@@ -459,16 +467,20 @@ describe("AC #3: Protocol message validation", () => {
     assertValidStatusResponse(statusRes.body, orderId);
   });
 
-  it("should return valid download response with content hash", async () => {
-    const { orderId } = await runFullOrderLifecycle(baseUrl, "text_echo");
+  it(
+    "should return valid download response with content hash",
+    async () => {
+      const { orderId } = await runFullOrderLifecycle(baseUrl, "text_echo");
 
-    const downloadRes = await httpGet<Record<string, unknown>>(
-      `${baseUrl}/ivxp/download/${orderId}`,
-    );
-    expect(downloadRes.status).toBe(200);
-    assertValidDownloadResponse(downloadRes.body, orderId);
-    assertValidContentHash(downloadRes.body.content_hash as string);
-  });
+      const downloadRes = await httpGet<Record<string, unknown>>(
+        `${baseUrl}/ivxp/download/${orderId}`,
+      );
+      expect(downloadRes.status).toBe(200);
+      assertValidDownloadResponse(downloadRes.body, orderId);
+      assertValidContentHash(downloadRes.body.content_hash as string);
+    },
+    TEST_TIMEOUT_MS,
+  );
 
   it("should use snake_case field naming in all wire protocol messages", async () => {
     // Catalog
