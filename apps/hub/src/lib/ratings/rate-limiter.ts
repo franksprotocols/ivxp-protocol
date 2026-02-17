@@ -4,6 +4,13 @@
  * Tracks request timestamps per key (typically client IP).
  * Not suitable for multi-process deployments -- use Redis-backed
  * rate limiting in production.
+ *
+ * IMMUTABILITY NOTE: This module intentionally uses mutable state (Map)
+ * for performance reasons. Rate limiting requires high-frequency updates
+ * (potentially 100+ req/sec per IP) where immutable data structures would
+ * cause excessive memory allocation and GC pressure. The mutation is
+ * encapsulated within the closure and not exposed to callers, maintaining
+ * referential transparency at the API boundary.
  */
 
 interface RateLimitEntry {
@@ -25,21 +32,35 @@ export interface RateLimitConfig {
 export function createRateLimiter(config: RateLimitConfig) {
   const store = new Map<string, RateLimitEntry>();
 
+  /** Maximum number of unique keys to track (prevents memory exhaustion) */
+  const MAX_KEYS = 10_000;
+
   /** Evict expired entries periodically to prevent memory leaks */
-  const CLEANUP_INTERVAL_MS = 60_000;
+  const CLEANUP_INTERVAL_MS = 10_000;
   let lastCleanup = Date.now();
 
   function cleanup(now: number): void {
     if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
     lastCleanup = now;
 
+    const cutoff = now - config.windowMs;
     for (const [key, entry] of store.entries()) {
-      const cutoff = now - config.windowMs;
       const active = entry.timestamps.filter((t) => t > cutoff);
       if (active.length === 0) {
         store.delete(key);
       } else {
         store.set(key, { timestamps: active });
+      }
+    }
+
+    // If still over limit after cleanup, remove oldest entries (LRU eviction)
+    if (store.size > MAX_KEYS) {
+      const keysToRemove = store.size - MAX_KEYS;
+      let removed = 0;
+      for (const key of store.keys()) {
+        if (removed >= keysToRemove) break;
+        store.delete(key);
+        removed++;
       }
     }
   }
@@ -56,9 +77,7 @@ export function createRateLimiter(config: RateLimitConfig) {
 
     const cutoff = now - config.windowMs;
     const existing = store.get(key);
-    const activeTimestamps = existing
-      ? existing.timestamps.filter((t) => t > cutoff)
-      : [];
+    const activeTimestamps = existing ? existing.timestamps.filter((t) => t > cutoff) : [];
 
     if (activeTimestamps.length >= config.maxRequests) {
       const oldestInWindow = activeTimestamps[0];
