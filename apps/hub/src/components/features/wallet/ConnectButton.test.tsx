@@ -10,12 +10,12 @@ const mockUseConnect = vi.fn();
 const mockUseDisconnect = vi.fn();
 
 vi.mock("wagmi", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("wagmi")>();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    useAccount: (...args: unknown[]) => mockUseAccount(...args),
-    useConnect: (...args: unknown[]) => mockUseConnect(...args),
-    useDisconnect: (...args: unknown[]) => mockUseDisconnect(...args),
+    useAccount: () => mockUseAccount(),
+    useConnect: () => mockUseConnect(),
+    useDisconnect: () => mockUseDisconnect(),
   };
 });
 

@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProgressStepper } from "./progress-stepper";
-import type { OrderStatus } from "@/stores/order-store";
 
 describe("ProgressStepper", () => {
   it("renders all four steps", () => {

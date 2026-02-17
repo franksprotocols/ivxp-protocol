@@ -108,7 +108,7 @@ export function applyDisconnectedState(mocks: WagmiMocks) {
 
 export function applyConnectedState(
   mocks: WagmiMocks,
-  address: string = MOCK_ADDRESS,
+  address: Address = MOCK_ADDRESS,
   chainId: number = BASE_CHAIN_ID,
 ) {
   const disconnectFn = vi.fn();
@@ -169,7 +169,7 @@ export function applyConnectingState(mocks: WagmiMocks) {
   });
 }
 
-export function applyWrongNetworkState(mocks: WagmiMocks, address: string = MOCK_ADDRESS) {
+export function applyWrongNetworkState(mocks: WagmiMocks, address: Address = MOCK_ADDRESS) {
   const switchChainFn = vi.fn();
 
   mocks.useAccount.mockReturnValue({
@@ -208,15 +208,15 @@ export function applyWrongNetworkState(mocks: WagmiMocks, address: string = MOCK
  * latest mocks even after `ref.current` is reassigned in beforeEach.
  */
 export function createWagmiModuleMock(ref: MockRef<WagmiMocks>) {
-  return async (importOriginal: () => Promise<typeof import("wagmi")>) => {
-    const actual = await importOriginal();
+  return async (importOriginal: () => Promise<unknown>) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
     return {
       ...actual,
-      useAccount: (...args: unknown[]) => ref.current.useAccount(...args),
-      useConnect: (...args: unknown[]) => ref.current.useConnect(...args),
-      useDisconnect: (...args: unknown[]) => ref.current.useDisconnect(...args),
-      useChainId: (...args: unknown[]) => ref.current.useChainId(...args),
-      useSwitchChain: (...args: unknown[]) => ref.current.useSwitchChain(...args),
+      useAccount: () => ref.current.useAccount(),
+      useConnect: () => ref.current.useConnect(),
+      useDisconnect: () => ref.current.useDisconnect(),
+      useChainId: () => ref.current.useChainId(),
+      useSwitchChain: () => ref.current.useSwitchChain(),
     };
   };
 }

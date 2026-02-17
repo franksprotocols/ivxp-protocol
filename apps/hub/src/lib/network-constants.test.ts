@@ -68,8 +68,6 @@ describe("network-constants", () => {
   });
 
   describe("getTargetChain", () => {
-    const originalEnv = process.env.NODE_ENV;
-
     afterEach(() => {
       vi.unstubAllEnvs();
     });
