@@ -112,7 +112,7 @@ jobs:
 
       - name: Post coverage to Codecov
         if: always() && env.SKIP_CODECOV == 'false'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
