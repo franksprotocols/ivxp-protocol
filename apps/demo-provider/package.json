@@ -18,7 +18,7 @@
   "dependencies": {
     "@ivxp/protocol": "workspace:*",
     "@ivxp/sdk": "workspace:*",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^12.6.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
