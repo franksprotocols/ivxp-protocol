@@ -39,6 +39,22 @@ export interface RegistryErrorResponseWire {
   };
 }
 
+/** Registration request body sent by the provider owner */
+export interface RegisterProviderRequestWire {
+  provider_address: string;
+  name: string;
+  description: string;
+  endpoint_url: string;
+  services: ProviderServiceWire[];
+  signature: string;
+  message: string;
+}
+
+/** Successful registration response */
+export interface RegisterProviderResponseWire {
+  provider: RegistryProviderWire;
+}
+
 // Internal types (camelCase for TypeScript code)
 
 export interface ProviderService {
