@@ -1,0 +1,28 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["packages/sdk/src/index.ts"],
+  "out": "docs/sdk/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "tsconfig": "packages/sdk/tsconfig.typedoc.json",
+  "exclude": ["**/*.test.ts", "**/__tests__/**", "**/__fixtures__/**"],
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "readme": "none",
+  "name": "@ivxp/sdk API Reference",
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "sort": ["source-order"],
+  "kindSortOrder": [
+    "Function",
+    "Class",
+    "Interface",
+    "TypeAlias",
+    "Variable",
+    "Enum"
+  ],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  }
+}

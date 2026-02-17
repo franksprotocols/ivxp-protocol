@@ -23,7 +23,11 @@
     "dev": "pnpm -r --parallel dev",
     "clean": "pnpm -r exec rm -rf dist node_modules && rm -rf node_modules",
     "publish:dry": "pnpm -r --filter './packages/*' publish --dry-run --access public --no-git-checks",
-    "publish": "pnpm -r --filter './packages/*' publish --provenance --access public"
+    "publish": "pnpm -r --filter './packages/*' publish --provenance --access public",
+    "docs:api": "typedoc",
+    "docs:api:watch": "typedoc --watch",
+    "docs:build": "pnpm docs:api",
+    "docs:validate": "pnpm --filter @ivxp/sdk typecheck && tsc --noEmit --project packages/sdk/tsconfig.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
@@ -32,6 +36,8 @@
     "eslint": "^9.0.0",
     "prettier": "^3.4.0",
     "tsup": "^8.0.0",
+    "typedoc": "^0.28.17",
+    "typedoc-plugin-markdown": "^4.10.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^3.0.0"
