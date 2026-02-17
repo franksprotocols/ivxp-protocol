@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import {
-  Download,
-  Loader2,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  FileDown,
-  ShieldCheck,
-} from "lucide-react";
+import { Download, Loader2, CheckCircle2, AlertTriangle, RefreshCw, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

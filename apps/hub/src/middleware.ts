@@ -7,7 +7,8 @@
  * - HTTPS enforcement in production
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { createRateLimiter } from "@/lib/ratings/rate-limiter";
 
 /** 100 requests per minute per IP */

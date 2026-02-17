@@ -296,11 +296,11 @@ describe("AC #3: SDK integration time", () => {
 
   it("documents friction points when found", () => {
     // Run multiple times to increase chance of friction points
-    let foundFriction = false;
+    let _foundFriction = false;
     for (let i = 0; i < 20; i++) {
       const result = simulateSDKIntegration(`Tester ${i}`);
       if (result.frictionPoints.length > 0) {
-        foundFriction = true;
+        _foundFriction = true;
         break;
       }
     }

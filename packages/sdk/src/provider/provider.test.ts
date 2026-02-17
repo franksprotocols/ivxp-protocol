@@ -15,7 +15,6 @@ import { EventEmitter } from "../core/events.js";
 import {
   handleOrderDelivery,
   type DeliverableOrder,
-  type DeliveryHandlerResult,
   type ProviderDeliveryEventMap,
 } from "./provider.js";
 

@@ -13,9 +13,8 @@ import {
   MockPaymentService,
   MockOrderStorage,
   TEST_ACCOUNTS,
-  DEFAULT_SERVICE_DEFINITIONS,
 } from "@ivxp/test-utils";
-import type { IOrderStorage, ServiceDefinition, ServiceRequest, StoredOrder } from "@ivxp/protocol";
+import type { IOrderStorage, ServiceDefinition, ServiceRequest } from "@ivxp/protocol";
 import {
   IVXPProvider,
   createIVXPProvider,

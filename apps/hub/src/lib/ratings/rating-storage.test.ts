@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import type { RatingWire } from "./types";
+import type * as RatingStorageModule from "./rating-storage";
 
 const mockRating: RatingWire = {
   rating_id: "rating-001",
@@ -54,9 +55,7 @@ describe("isDuplicateRating", () => {
 
   it("finds duplicate among multiple ratings", async () => {
     const mod = await import("./rating-storage");
-    expect(
-      mod.isDuplicateRating([secondRating, mockRating], "order-001", "0xBBB"),
-    ).toBe(true);
+    expect(mod.isDuplicateRating([secondRating, mockRating], "order-001", "0xBBB")).toBe(true);
   });
 
   it("returns false when order matches but client does not", async () => {
@@ -75,8 +74,8 @@ describe("isDuplicateRating", () => {
 // ============================================================
 
 // Mock the entire rating-storage module to test the API contract
-vi.mock("./rating-storage", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./rating-storage")>();
+vi.mock("./rating-storage", async (importOriginal: () => Promise<typeof RatingStorageModule>) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     loadRatings: vi.fn(() => []),
@@ -179,10 +178,7 @@ describe("getRatingsByProvider (mocked)", () => {
       ...secondRating,
       provider_address: "0xAAA",
     };
-    vi.mocked(mod.getRatingsByProvider).mockReturnValue([
-      mockRating,
-      anotherFromSameProvider,
-    ]);
+    vi.mocked(mod.getRatingsByProvider).mockReturnValue([mockRating, anotherFromSameProvider]);
 
     const ratings = mod.getRatingsByProvider("0xAAA");
     expect(ratings).toHaveLength(2);

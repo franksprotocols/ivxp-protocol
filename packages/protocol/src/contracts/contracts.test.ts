@@ -50,22 +50,6 @@ function createMockCryptoService(): ICryptoService {
   };
 }
 
-function createMockStoredOrder(overrides: Partial<StoredOrder> = {}): StoredOrder {
-  const status: OrderStatus = "quoted";
-  return {
-    orderId: "ivxp-550e8400-e29b-41d4-a716-446655440000",
-    status,
-    clientAddress: "0xclient",
-    serviceType: "code_review",
-    priceUsdc: "30.000000",
-    paymentAddress: "0xpayment",
-    network: "base-sepolia",
-    createdAt: "2026-02-05T12:00:00Z",
-    updatedAt: "2026-02-05T12:00:00Z",
-    ...overrides,
-  };
-}
-
 function createMockOrderStorage(): IOrderStorage & {
   readonly _orders: Map<string, StoredOrder>;
 } {

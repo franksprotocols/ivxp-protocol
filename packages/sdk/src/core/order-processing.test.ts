@@ -19,7 +19,6 @@ import {
 } from "@ivxp/test-utils";
 import type { ServiceDefinition, ServiceRequest } from "@ivxp/protocol";
 import { IVXPProvider, type IVXPProviderConfig, type ServiceHandler } from "./provider.js";
-import type { StoredDeliverable } from "./deliverable-store.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -267,7 +266,7 @@ describe("IVXPProvider - Order Processing & Storage", () => {
       const serviceHandlers = new Map<string, ServiceHandler>([["code_review", handlerFn]]);
 
       const { provider } = createProcessingTestProvider({ serviceHandlers });
-      const orderId = await createPaidOrderAndProcess(provider);
+      const _orderId = await createPaidOrderAndProcess(provider);
       await waitForProcessing();
 
       expect(capturedStatus).toBe("processing");
@@ -302,7 +301,10 @@ describe("IVXPProvider - Order Processing & Storage", () => {
 
       // Start a mock callback server that accepts deliveries
       const callbackServer = http.createServer(
-        (_req: import("http").IncomingMessage, res: import("http").ServerResponse) => {
+        (
+          _req: typeof http.IncomingMessage.prototype,
+          res: typeof http.ServerResponse.prototype,
+        ) => {
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ status: "received" }));
         },
@@ -382,7 +384,10 @@ describe("IVXPProvider - Order Processing & Storage", () => {
 
       // Mock callback server that returns 500
       const callbackServer = http.createServer(
-        (_req: import("http").IncomingMessage, res: import("http").ServerResponse) => {
+        (
+          _req: typeof http.IncomingMessage.prototype,
+          res: typeof http.ServerResponse.prototype,
+        ) => {
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "Internal server error" }));
         },
@@ -504,7 +509,7 @@ describe("IVXPProvider - Order Processing & Storage", () => {
 
       // Start a mock callback server that captures the request body
       const callbackServer = http.createServer(
-        (req: import("http").IncomingMessage, res: import("http").ServerResponse) => {
+        (req: typeof http.IncomingMessage.prototype, res: typeof http.ServerResponse.prototype) => {
           const chunks: Uint8Array[] = [];
           req.on("data", (chunk: Uint8Array) => chunks.push(chunk));
           req.on("end", () => {

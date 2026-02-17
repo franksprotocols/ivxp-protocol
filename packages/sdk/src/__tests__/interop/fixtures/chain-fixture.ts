@@ -6,10 +6,7 @@
  */
 
 import { createTestChain, type AnvilTestClient } from "@ivxp/test-utils";
-import {
-  deployMockERC20,
-  mintMockUSDC,
-} from "../../__tests__/integration/setup.js";
+import { deployMockERC20, mintMockUSDC } from "../../integration/setup.js";
 
 // ---------------------------------------------------------------------------
 // Types

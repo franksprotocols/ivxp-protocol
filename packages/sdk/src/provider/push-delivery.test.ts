@@ -18,7 +18,6 @@ import {
   shouldAttemptPush,
   type PushDeliveryOptions,
   type PushDeliveryPayload,
-  type PushDeliveryResult,
 } from "./push-delivery.js";
 
 // ---------------------------------------------------------------------------

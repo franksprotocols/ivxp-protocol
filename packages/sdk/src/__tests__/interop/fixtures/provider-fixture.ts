@@ -33,8 +33,8 @@ const DEFAULT_SERVICES: readonly ServiceDefinition[] = [
 /** Echo handler: returns the input text back as JSON. */
 const textEchoHandler: ServiceHandler = async (order) => ({
   content: JSON.stringify({
-    original_text: order.description ?? "no description",
-    echoed_text: order.description ?? "no description",
+    original_text: order.serviceType,
+    echoed_text: order.serviceType,
     order_id: order.orderId,
   }),
   content_type: "application/json",

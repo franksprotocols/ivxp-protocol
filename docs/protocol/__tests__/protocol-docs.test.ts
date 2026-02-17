@@ -14,7 +14,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 
@@ -43,7 +43,7 @@ function readJsonSchema(filename: string): Record<string, unknown> {
 function compileSchema(filename: string) {
   const schema = readJsonSchema(filename);
   // Strip $schema and $id to avoid ajv meta-schema resolution and duplicate key issues
-  const { $schema, $id, ...rest } = schema;
+  const { $schema: _$schema, $id: _$id, ...rest } = schema;
   return ajv.compile(rest);
 }
 

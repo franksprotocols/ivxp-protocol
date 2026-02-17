@@ -89,8 +89,7 @@ export function DemoProviderInfo({ url, onCatalogLoaded }: DemoProviderInfoProps
       controller.abort();
     };
     // onCatalogLoaded intentionally excluded to avoid re-fetch loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url]);
+  }, [url]); // eslint-disable-line
 
   return (
     <Card data-testid="demo-provider-info">

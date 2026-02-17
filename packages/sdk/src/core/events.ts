@@ -21,9 +21,12 @@
  * No external dependencies beyond `@ivxp/protocol` types.
  */
 
+// Import SDK event types for local use.
+import type { SDKEvent, SDKEventMap } from "@ivxp/protocol";
+
 // Re-export SDK event types from the protocol package.
 // This allows SDK consumers to import event types alongside EventEmitter.
-export type { SDKEvent, SDKEventMap } from "@ivxp/protocol";
+export type { SDKEvent, SDKEventMap };
 
 /**
  * Union of all SDK event name strings.
@@ -35,7 +38,7 @@ export type { SDKEvent, SDKEventMap } from "@ivxp/protocol";
  * const eventName: SDKEventName = "order.paid";
  * ```
  */
-export type SDKEventName = keyof import("@ivxp/protocol").SDKEventMap;
+export type SDKEventName = keyof SDKEventMap;
 
 /**
  * Extract the payload type for a specific SDK event.
@@ -48,7 +51,7 @@ export type SDKEventName = keyof import("@ivxp/protocol").SDKEventMap;
  * // => { readonly orderId: string; readonly txHash: string }
  * ```
  */
-export type SDKEventPayload<E extends SDKEventName> = import("@ivxp/protocol").SDKEventMap[E];
+export type SDKEventPayload<E extends SDKEventName> = SDKEventMap[E];
 
 /**
  * Type alias for event handler functions stored internally.

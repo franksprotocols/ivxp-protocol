@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { submitRatingBodySchema } from "@/lib/ratings/schemas";
 import { submitRating } from "@/lib/ratings/rating-service";

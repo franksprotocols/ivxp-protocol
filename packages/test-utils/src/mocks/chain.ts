@@ -12,7 +12,6 @@ import {
   walletActions,
   type Chain,
   type PublicActions,
-  type TestActions,
   type TestClient,
   type WalletActions,
 } from "viem";

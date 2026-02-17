@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { loadProviders, clearProviderCache } from "./loader";
-import type { RegistryProviderWire } from "./types";
 
 describe("loadProviders", () => {
   beforeEach(() => {

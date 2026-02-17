@@ -157,7 +157,12 @@ export function validateStatusTransition(params: {
   consecutiveFailures: number;
   gracePeriodFailures: number;
 }): void {
-  const { reachable, previousStatus, consecutiveFailures, gracePeriodFailures } = params;
+  const {
+    reachable: _reachable,
+    previousStatus,
+    consecutiveFailures,
+    gracePeriodFailures,
+  } = params;
 
   // Validate previousStatus is a valid enum value
   const validStatuses: VerificationStatus[] = ["verified", "unresponsive", "pending"];

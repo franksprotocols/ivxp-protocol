@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { ProtocolInspector } from "@/components/features/protocol-inspector";
 import { useUiStore } from "@/stores/ui-store";
 import type { Order } from "@/stores/order-store";

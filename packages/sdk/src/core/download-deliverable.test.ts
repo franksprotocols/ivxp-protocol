@@ -11,7 +11,7 @@
  * - Save to file option (savePath)
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   MockCryptoService,
   MockPaymentService,
@@ -20,7 +20,6 @@ import {
   createMockDeliveryResponse,
   resetOrderCounter,
 } from "@ivxp/test-utils";
-import type { DeliveryResponseOutput } from "@ivxp/protocol";
 import { IVXPClient, type IVXPClientConfig } from "./client.js";
 import { ServiceUnavailableError, OrderNotFoundError } from "../errors/specific.js";
 import { IVXPError } from "../errors/base.js";
