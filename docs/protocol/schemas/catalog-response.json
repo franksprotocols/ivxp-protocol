@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivxp.dev/schemas/catalog-response.json",
+  "title": "IVXP Service Catalog Response",
+  "description": "Response from GET /ivxp/catalog. Lists all services offered by the Provider.",
+  "type": "object",
+  "required": ["protocol", "provider", "wallet_address", "services"],
+  "properties": {
+    "protocol": {
+      "type": "string",
+      "const": "IVXP/1.0",
+      "description": "Protocol version identifier."
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Provider name or identifier."
+    },
+    "wallet_address": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Provider's Ethereum wallet address for receiving payments."
+    },
+    "services": {
+      "type": "array",
+      "description": "Array of services offered by this Provider.",
+      "items": {
+        "$ref": "#/$defs/ServiceDefinition"
+      }
+    },
+    "message_type": {
+      "type": "string",
+      "const": "service_catalog",
+      "description": "Optional message type discriminator."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the catalog was generated."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "ServiceDefinition": {
+      "type": "object",
+      "required": ["type", "base_price_usdc", "estimated_delivery_hours"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Service type identifier (e.g. 'code_review', 'translation')."
+        },
+        "base_price_usdc": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Base price in USDC for the service."
+        },
+        "estimated_delivery_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Estimated delivery time in hours."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

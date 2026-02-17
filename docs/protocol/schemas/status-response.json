@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivxp.dev/schemas/status-response.json",
+  "title": "IVXP Order Status Response",
+  "description": "Response from GET /ivxp/status/{order_id}. Returns current order status.",
+  "type": "object",
+  "required": ["order_id", "status", "created_at", "service_type", "price_usdc"],
+  "properties": {
+    "order_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Order identifier."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["quoted", "paid", "processing", "delivered", "delivery_failed"],
+      "description": "Current order status."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Order creation timestamp (ISO 8601)."
+    },
+    "service_type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Service type requested."
+    },
+    "price_usdc": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Quoted price in USDC."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,33 @@
+stateDiagram-v2
+    [*] --> quoted : POST /ivxp/request
+    quoted --> paid : payment verified on-chain
+    paid --> processing : delivery accepted (POST /ivxp/deliver)
+    processing --> delivered : deliverable ready (P2P push or store)
+    processing --> delivery_failed : processing error or push failure
+
+    delivered --> confirmed : client signs confirmation (IVXP/1.1)
+    confirmed --> [*]
+
+    quoted --> expired : TTL exceeded (payment_timeout)
+    paid --> refunded : payment verification failed post-acceptance
+    delivery_failed --> delivered : retry delivery / client downloads
+
+    expired --> [*]
+    refunded --> [*]
+    delivered --> [*]
+    delivery_failed --> [*]
+
+    note right of quoted
+        Order created with unique order_id.
+        Client must pay within payment_timeout.
+    end note
+
+    note right of processing
+        Provider executes service handler.
+        Attempts P2P push if delivery_endpoint provided.
+    end note
+
+    note right of delivery_failed
+        Deliverable is still available for download
+        via GET /ivxp/download/{order_id}.
+    end note

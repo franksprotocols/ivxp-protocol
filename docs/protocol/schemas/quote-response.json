@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivxp.dev/schemas/quote-response.json",
+  "title": "IVXP Service Quote Response",
+  "description": "Response from POST /ivxp/request. Provider returns a quote with pricing and payment info.",
+  "type": "object",
+  "required": ["protocol", "message_type", "timestamp", "order_id", "provider_agent", "quote"],
+  "properties": {
+    "protocol": {
+      "type": "string",
+      "const": "IVXP/1.0",
+      "description": "Protocol version identifier."
+    },
+    "message_type": {
+      "type": "string",
+      "const": "service_quote",
+      "description": "Message type discriminator."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the quote."
+    },
+    "order_id": {
+      "type": "string",
+      "pattern": "^ivxp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Unique order identifier. Format: ivxp-{uuid-v4} (lowercase hex)."
+    },
+    "provider_agent": {
+      "$ref": "#/$defs/ProviderAgent"
+    },
+    "quote": {
+      "$ref": "#/$defs/QuoteDetails"
+    },
+    "terms": {
+      "$ref": "#/$defs/QuoteTerms"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "ProviderAgent": {
+      "type": "object",
+      "required": ["name", "wallet_address"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Provider name."
+        },
+        "wallet_address": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Provider's Ethereum wallet address."
+        },
+        "public_key": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]+$",
+          "description": "Optional provider public key."
+        }
+      },
+      "additionalProperties": false
+    },
+    "QuoteDetails": {
+      "type": "object",
+      "required": ["price_usdc", "estimated_delivery", "payment_address", "network"],
+      "properties": {
+        "price_usdc": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Quoted price in USDC."
+        },
+        "estimated_delivery": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Estimated delivery time (ISO 8601)."
+        },
+        "payment_address": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Payment destination address."
+        },
+        "network": {
+          "type": "string",
+          "enum": ["base-mainnet", "base-sepolia"],
+          "description": "Blockchain network for payment."
+        },
+        "token_contract": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "USDC token contract address."
+        }
+      },
+      "additionalProperties": false
+    },
+    "QuoteTerms": {
+      "type": "object",
+      "properties": {
+        "payment_timeout": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "Payment timeout in seconds."
+        },
+        "revision_policy": {
+          "type": "string",
+          "description": "Revision policy description."
+        },
+        "refund_policy": {
+          "type": "string",
+          "description": "Refund policy description."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

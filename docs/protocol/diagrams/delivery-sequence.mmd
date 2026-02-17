@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Client as Client Agent
+    participant Provider as Provider Agent
+
+    Note over Client,Provider: Delivery Flow (after payment accepted)
+
+    Provider->>Provider: Execute service handler
+    Provider->>Provider: Generate deliverable content
+    Provider->>Provider: Compute content_hash (SHA-256)
+
+    alt P2P Push Delivery (delivery_endpoint provided)
+        Provider->>Client: POST {delivery_endpoint} (DeliveryResponse)
+        alt Push Succeeds
+            Provider->>Provider: Update order status -> "delivered"
+        else Push Fails
+            Provider->>Provider: Update order status -> "delivery_failed"
+            Note over Provider: Deliverable stored for download
+        end
+    else Store & Forward (no delivery_endpoint)
+        Provider->>Provider: Store deliverable
+        Provider->>Provider: Update order status -> "delivered"
+    end
+
+    Note over Client,Provider: Client Retrieval (Store & Forward or after push failure)
+
+    loop Poll for completion
+        Client->>Provider: GET /ivxp/status/{order_id}
+        Provider-->>Client: { status: "processing" | "delivered" | "delivery_failed" }
+    end
+
+    Client->>Provider: GET /ivxp/download/{order_id}
+    Provider-->>Client: DeliveryResponse { deliverable, content_hash }
+
+    Client->>Client: Verify content_hash matches deliverable

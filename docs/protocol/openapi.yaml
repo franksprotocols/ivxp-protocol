@@ -1,0 +1,639 @@
+openapi: 3.1.0
+info:
+  title: IVXP Protocol API
+  version: 1.0.0
+  description: |
+    Inter-agent Value Exchange Protocol (IVXP/1.0).
+    A P2P protocol for AI agents to exchange intelligence and services
+    with cryptographic payment verification using USDC on Base L2.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://{provider-domain}/ivxp
+    description: Provider endpoint
+    variables:
+      provider-domain:
+        default: localhost:3000
+        description: Provider's domain name
+
+paths:
+  /catalog:
+    get:
+      operationId: getCatalog
+      summary: Get service catalog
+      description: Returns the provider's service catalog with available services and pricing.
+      responses:
+        "200":
+          description: Service catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceCatalog"
+              example:
+                protocol: "IVXP/1.0"
+                provider: "IVXP Demo Provider"
+                wallet_address: "0x1234567890abcdef1234567890abcdef12345678"
+                services:
+                  - type: "code_review"
+                    base_price_usdc: 5.0
+                    estimated_delivery_hours: 2
+                  - type: "translation"
+                    base_price_usdc: 3.0
+                    estimated_delivery_hours: 1
+                message_type: "service_catalog"
+                timestamp: "2026-02-05T12:00:00Z"
+        "503":
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /request:
+    post:
+      operationId: requestQuote
+      summary: Request a service quote
+      description: |
+        Client submits a service request. Provider returns a quote with
+        pricing, payment address, and a unique order_id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceRequest"
+            example:
+              protocol: "IVXP/1.0"
+              message_type: "service_request"
+              timestamp: "2026-02-05T12:01:00Z"
+              client_agent:
+                name: "my-ai-agent"
+                wallet_address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+              service_request:
+                type: "code_review"
+                description: "Review the authentication module"
+                budget_usdc: 10.0
+                delivery_format: "markdown"
+      responses:
+        "200":
+          description: Service quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceQuote"
+              example:
+                protocol: "IVXP/1.0"
+                message_type: "service_quote"
+                timestamp: "2026-02-05T12:01:05Z"
+                order_id: "ivxp-550e8400-e29b-41d4-a716-446655440000"
+                provider_agent:
+                  name: "IVXP Demo Provider"
+                  wallet_address: "0x1234567890abcdef1234567890abcdef12345678"
+                quote:
+                  price_usdc: 5.0
+                  estimated_delivery: "2026-02-05T14:01:05Z"
+                  payment_address: "0x1234567890abcdef1234567890abcdef12345678"
+                  network: "base-sepolia"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                serviceNotSupported:
+                  summary: Service type not supported
+                  value:
+                    error: "SERVICE_TYPE_NOT_SUPPORTED"
+                    message: "Service type 'quantum_computing' is not offered"
+                budgetTooLow:
+                  summary: Budget too low
+                  value:
+                    error: "BUDGET_TOO_LOW"
+                    message: "Budget 1.0 USDC is below the base price of 5.0 USDC"
+
+  /deliver:
+    post:
+      operationId: requestDelivery
+      summary: Submit payment proof and request delivery
+      description: |
+        Client submits payment proof (on-chain tx_hash) and an EIP-191 signature.
+        Provider verifies the payment on-chain and begins processing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryRequest"
+            example:
+              protocol: "IVXP/1.0"
+              message_type: "delivery_request"
+              timestamp: "2026-02-05T12:05:00Z"
+              order_id: "ivxp-550e8400-e29b-41d4-a716-446655440000"
+              payment_proof:
+                tx_hash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                from_address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+                network: "base-sepolia"
+              signature: "0x1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c1b"
+              signed_message: "Order: ivxp-550e8400 | Payment: 0xabcdef... | Timestamp: 2026-02-05T12:05:00Z"
+      responses:
+        "200":
+          description: Delivery accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryAccepted"
+              example:
+                status: "accepted"
+                order_id: "ivxp-550e8400-e29b-41d4-a716-446655440000"
+                message: "Payment verified. Processing your request."
+        "401":
+          description: Signature invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "402":
+          description: Payment not verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /status/{order_id}:
+    get:
+      operationId: getOrderStatus
+      summary: Check order status
+      description: Returns the current status of an order.
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The order identifier from the quote
+          example: "ivxp-550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Order status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatusResponse"
+              example:
+                order_id: "ivxp-550e8400-e29b-41d4-a716-446655440000"
+                status: "processing"
+                created_at: "2026-02-05T12:01:05Z"
+                service_type: "code_review"
+                price_usdc: 5.0
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /download/{order_id}:
+    get:
+      operationId: downloadDeliverable
+      summary: Download completed deliverable
+      description: |
+        Returns the completed deliverable for a delivered order.
+        Available when order status is "delivered" or "delivery_failed".
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The order identifier
+          example: "ivxp-550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Delivery response with deliverable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryResponse"
+              example:
+                protocol: "IVXP/1.0"
+                message_type: "service_delivery"
+                timestamp: "2026-02-05T14:00:00Z"
+                order_id: "ivxp-550e8400-e29b-41d4-a716-446655440000"
+                status: "completed"
+                provider_agent:
+                  name: "IVXP Demo Provider"
+                  wallet_address: "0x1234567890abcdef1234567890abcdef12345678"
+                deliverable:
+                  type: "code_review_result"
+                  format: "markdown"
+                  content: "## Code Review Results\n\nNo critical issues found."
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    ServiceDefinition:
+      type: object
+      required:
+        - type
+        - base_price_usdc
+        - estimated_delivery_hours
+      properties:
+        type:
+          type: string
+          minLength: 1
+          description: Service type identifier
+        base_price_usdc:
+          type: number
+          minimum: 0
+          description: Base price in USDC
+        estimated_delivery_hours:
+          type: number
+          exclusiveMinimum: 0
+          description: Estimated delivery time in hours
+
+    ServiceCatalog:
+      type: object
+      required:
+        - protocol
+        - provider
+        - wallet_address
+        - services
+      properties:
+        protocol:
+          type: string
+          const: "IVXP/1.0"
+        provider:
+          type: string
+          minLength: 1
+        wallet_address:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceDefinition"
+        message_type:
+          type: string
+          const: "service_catalog"
+        timestamp:
+          type: string
+          format: date-time
+
+    ClientAgent:
+      type: object
+      required:
+        - name
+        - wallet_address
+      properties:
+        name:
+          type: string
+          minLength: 1
+        wallet_address:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        contact_endpoint:
+          type: string
+          format: uri
+
+    ServiceRequestDetails:
+      type: object
+      required:
+        - type
+        - description
+        - budget_usdc
+      properties:
+        type:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        budget_usdc:
+          type: number
+          exclusiveMinimum: 0
+        delivery_format:
+          type: string
+          enum: ["markdown", "json", "code"]
+        deadline:
+          type: string
+          format: date-time
+
+    ServiceRequest:
+      type: object
+      required:
+        - protocol
+        - message_type
+        - timestamp
+        - client_agent
+        - service_request
+      properties:
+        protocol:
+          type: string
+          const: "IVXP/1.0"
+        message_type:
+          type: string
+          const: "service_request"
+        timestamp:
+          type: string
+          format: date-time
+        client_agent:
+          $ref: "#/components/schemas/ClientAgent"
+        service_request:
+          $ref: "#/components/schemas/ServiceRequestDetails"
+
+    ProviderAgent:
+      type: object
+      required:
+        - name
+        - wallet_address
+      properties:
+        name:
+          type: string
+          minLength: 1
+        wallet_address:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        public_key:
+          type: string
+          pattern: "^0x[a-fA-F0-9]+$"
+
+    QuoteDetails:
+      type: object
+      required:
+        - price_usdc
+        - estimated_delivery
+        - payment_address
+        - network
+      properties:
+        price_usdc:
+          type: number
+          exclusiveMinimum: 0
+        estimated_delivery:
+          type: string
+          format: date-time
+        payment_address:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        network:
+          type: string
+          enum: ["base-mainnet", "base-sepolia"]
+        token_contract:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+
+    QuoteTerms:
+      type: object
+      properties:
+        payment_timeout:
+          type: integer
+          exclusiveMinimum: 0
+        revision_policy:
+          type: string
+        refund_policy:
+          type: string
+
+    ServiceQuote:
+      type: object
+      required:
+        - protocol
+        - message_type
+        - timestamp
+        - order_id
+        - provider_agent
+        - quote
+      properties:
+        protocol:
+          type: string
+          const: "IVXP/1.0"
+        message_type:
+          type: string
+          const: "service_quote"
+        timestamp:
+          type: string
+          format: date-time
+        order_id:
+          type: string
+          pattern: "^ivxp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          description: "Unique order ID (ivxp-{uuid-v4})"
+        provider_agent:
+          $ref: "#/components/schemas/ProviderAgent"
+        quote:
+          $ref: "#/components/schemas/QuoteDetails"
+        terms:
+          $ref: "#/components/schemas/QuoteTerms"
+
+    PaymentProof:
+      type: object
+      required:
+        - tx_hash
+        - from_address
+        - network
+      properties:
+        tx_hash:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{64}$"
+        from_address:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        network:
+          type: string
+          enum: ["base-mainnet", "base-sepolia"]
+        to_address:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+        amount_usdc:
+          type: string
+        block_number:
+          type: integer
+          minimum: 0
+
+    DeliveryRequest:
+      type: object
+      required:
+        - protocol
+        - message_type
+        - timestamp
+        - order_id
+        - payment_proof
+        - signature
+        - signed_message
+      properties:
+        protocol:
+          type: string
+          const: "IVXP/1.0"
+        message_type:
+          type: string
+          const: "delivery_request"
+        timestamp:
+          type: string
+          format: date-time
+        order_id:
+          type: string
+          minLength: 1
+        payment_proof:
+          $ref: "#/components/schemas/PaymentProof"
+        delivery_endpoint:
+          type: string
+          format: uri
+        signature:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{130}$"
+        signed_message:
+          type: string
+          minLength: 1
+
+    DeliveryAccepted:
+      type: object
+      required:
+        - status
+        - order_id
+        - message
+      properties:
+        status:
+          type: string
+          const: "accepted"
+        order_id:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+
+    OrderStatusResponse:
+      type: object
+      required:
+        - order_id
+        - status
+        - created_at
+        - service_type
+        - price_usdc
+      properties:
+        order_id:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum: ["quoted", "paid", "processing", "delivered", "delivery_failed"]
+        created_at:
+          type: string
+          format: date-time
+        service_type:
+          type: string
+          minLength: 1
+        price_usdc:
+          type: number
+          minimum: 0
+
+    Deliverable:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          minLength: 1
+        format:
+          type: string
+        content: {}
+
+    DeliveryProviderAgent:
+      type: object
+      required:
+        - name
+        - wallet_address
+      properties:
+        name:
+          type: string
+          minLength: 1
+        wallet_address:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{40}$"
+
+    DeliveryResponse:
+      type: object
+      required:
+        - protocol
+        - message_type
+        - timestamp
+        - order_id
+        - status
+        - provider_agent
+        - deliverable
+      properties:
+        protocol:
+          type: string
+          const: "IVXP/1.0"
+        message_type:
+          type: string
+          const: "service_delivery"
+        timestamp:
+          type: string
+          format: date-time
+        order_id:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          const: "completed"
+        provider_agent:
+          $ref: "#/components/schemas/DeliveryProviderAgent"
+        deliverable:
+          $ref: "#/components/schemas/Deliverable"
+        content_hash:
+          type: string
+          pattern: "^sha256:[a-f0-9]{64}$"
+          description: "SHA-256 hash of deliverable content. Format: sha256:{hex}"
+        delivered_at:
+          type: string
+          format: date-time
+        signature:
+          type: string
+          pattern: "^0x[a-fA-F0-9]{130}$"
+        signed_message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - PAYMENT_NOT_VERIFIED
+            - SIGNATURE_INVALID
+            - ORDER_NOT_FOUND
+            - SERVICE_UNAVAILABLE
+            - INSUFFICIENT_BALANCE
+            - SERVICE_TYPE_NOT_SUPPORTED
+            - BUDGET_TOO_LOW
+            - PAYMENT_TIMEOUT
+            - ORDER_EXPIRED
+            - PROTOCOL_VERSION_UNSUPPORTED
+            - INTERNAL_ERROR
+            - INVALID_TIMESTAMP
+            - DUPLICATE_DELIVERY_REQUEST
+            - INVALID_NETWORK
+            - INVALID_TOKEN_CONTRACT
+            - AMOUNT_MISMATCH
+            - INVALID_ORDER_STATE
+        message:
+          type: string
+        details:
+          type: object

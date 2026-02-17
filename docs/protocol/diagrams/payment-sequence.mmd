@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant Client as Client Agent
+    participant Chain as Base L2 (USDC)
+    participant Provider as Provider Agent
+
+    Note over Client,Provider: Payment Flow
+
+    Client->>Client: Read quote.payment_address, quote.price_usdc, quote.network
+    Client->>Client: Resolve USDC contract address for network
+
+    Note over Client,Chain: On-Chain Transfer
+    Client->>Chain: USDC.transfer(payment_address, amount)
+    Chain-->>Chain: Transaction included in block
+    Chain-->>Client: tx_hash, block_number
+
+    Note over Client,Provider: Payment Proof Submission
+    Client->>Client: Construct signed_message = "Order: {order_id} | Payment: {tx_hash} | Timestamp: {ts}"
+    Client->>Client: Sign message with EIP-191 (personal_sign)
+    Client->>Provider: POST /ivxp/deliver { payment_proof: { tx_hash, from_address, network }, signature, signed_message }
+
+    Note over Provider,Chain: On-Chain Verification
+    Provider->>Chain: Verify tx_hash exists
+    Provider->>Chain: Check to_address == payment_address
+    Provider->>Chain: Check amount >= price_usdc
+    Provider->>Chain: Check token contract == USDC
+    Chain-->>Provider: Verification result
+
+    alt Payment Verified
+        Provider->>Provider: Recover signer from signature
+        Provider->>Provider: Verify signer == from_address
+        Provider-->>Client: { status: "accepted", order_id, message }
+    else Payment Not Verified
+        Provider-->>Client: { error: "PAYMENT_NOT_VERIFIED", message: "..." }
+    end

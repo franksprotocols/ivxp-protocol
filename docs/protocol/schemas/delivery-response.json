@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ivxp.dev/schemas/delivery-response.json",
+  "title": "IVXP Delivery Accepted Response",
+  "description": "Response from POST /ivxp/deliver. Provider acknowledges the delivery request.",
+  "type": "object",
+  "required": ["status", "order_id", "message"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "accepted",
+      "description": "Always 'accepted' on success."
+    },
+    "order_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Order identifier."
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable acceptance message."
+    }
+  },
+  "additionalProperties": false
+}
