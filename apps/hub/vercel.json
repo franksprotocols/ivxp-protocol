@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "pnpm --filter @ivxp/protocol build && pnpm --filter @ivxp/sdk build && pnpm --filter @ivxp/hub build",
+  "outputDirectory": "apps/hub/.next",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "env": {
+    "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID": "@walletconnect-project-id",
+    "NEXT_PUBLIC_DEMO_PROVIDER_URL": "@demo-provider-url"
+  }
+}
