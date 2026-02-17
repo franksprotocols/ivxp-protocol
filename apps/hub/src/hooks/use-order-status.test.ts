@@ -191,16 +191,16 @@ describe("useOrderStatus", () => {
     clearTimeoutSpy.mockRestore();
   });
 
-  it("stops polling and sets error after max attempts (50)", () => {
+  it("stops polling and sets error after max attempts (20)", () => {
     useOrderStore.getState().addOrder(MOCK_ORDER);
 
     const { result } = renderHook(() => useOrderStatus("ord_test_123"));
     expect(result.current.isPolling).toBe(true);
 
-    // Advance enough time to exhaust all 50 attempts.
-    // Max interval is 30s, so 50 * 31s = 1550s is more than enough.
+    // Advance enough time to exhaust all 20 attempts.
+    // Max interval is 30s, so 20 * 31s = 620s is more than enough.
     act(() => {
-      vi.advanceTimersByTime(1_600_000);
+      vi.advanceTimersByTime(700_000);
     });
 
     expect(result.current.isPolling).toBe(false);

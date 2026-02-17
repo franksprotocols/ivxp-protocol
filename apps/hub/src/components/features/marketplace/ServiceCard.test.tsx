@@ -49,9 +49,10 @@ describe("ServiceCard", () => {
     expect(screen.getByTestId("service-category")).toHaveTextContent("AI");
   });
 
-  it("renders View Details button as disabled when no callback", () => {
+  it("renders View Details as a link when no callback provided", () => {
     renderWithProviders(<ServiceCard service={mockService} />);
-    expect(screen.getByRole("button", { name: /view details/i })).toBeDisabled();
+    const link = screen.getByRole("link", { name: /view details/i });
+    expect(link).toHaveAttribute("href", "/marketplace/image_gen");
   });
 
   it("renders View Details button as enabled when callback provided", () => {

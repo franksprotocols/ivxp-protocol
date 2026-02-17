@@ -16,6 +16,7 @@ import { useAccount, useWriteContract, usePublicClient, useChainId } from "wagmi
 import { usdcConfig, USDC_DECIMALS, assertUsdcConfigured } from "@/lib/usdc-contract";
 import { isSupportedChain, getTargetChain } from "@/lib/network-constants";
 import { useOrderStore } from "@/stores/order-store";
+import { useIVXPClient } from "./use-ivxp-client";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -103,6 +104,7 @@ export function usePayment(orderId: string): UsePaymentReturn {
   const chainId = useChainId();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
+  const ivxpClient = useIVXPClient();
   const updateOrderPayment = useOrderStore((s) => s.updateOrderPayment);
 
   const [step, setStep] = useState<PaymentStep>("idle");
@@ -218,6 +220,7 @@ export function usePayment(orderId: string): UsePaymentReturn {
         });
         setTxHash(hash);
         updateOrderPayment(orderId, { txHash: hash, status: "paying" });
+        ivxpClient?.emit?.("payment.sent", { orderId, txHash: hash });
 
         // Step 4: Wait for confirmation
         setStep("confirming");
@@ -243,7 +246,13 @@ export function usePayment(orderId: string): UsePaymentReturn {
           setBlockNumber(confirmedBlock);
           setStep("confirmed");
           updateOrderPayment(orderId, { blockNumber: confirmedBlock, status: "paid" });
-        } catch (confirmErr) {
+          ivxpClient?.emit?.("payment.confirmed", {
+            orderId,
+            txHash: hash,
+            blockNumber: confirmedBlock,
+          });
+          ivxpClient?.emit?.("order.paid", { orderId, txHash: hash });
+        } catch {
           // Transaction sent but confirmation/verification failed
           setStep("partial-success");
           setError({
@@ -259,7 +268,7 @@ export function usePayment(orderId: string): UsePaymentReturn {
         setError(classifyError(err));
       }
     },
-    [address, chainId, publicClient, writeContractAsync, updateOrderPayment, orderId],
+    [address, chainId, publicClient, writeContractAsync, updateOrderPayment, orderId, ivxpClient],
   );
 
   const retry = useCallback(async () => {
@@ -300,6 +309,12 @@ export function usePayment(orderId: string): UsePaymentReturn {
       setBlockNumber(confirmedBlock);
       setStep("confirmed");
       updateOrderPayment(orderId, { blockNumber: confirmedBlock, status: "paid" });
+      ivxpClient?.emit?.("payment.confirmed", {
+        orderId,
+        txHash,
+        blockNumber: confirmedBlock,
+      });
+      ivxpClient?.emit?.("order.paid", { orderId, txHash });
     } catch {
       setStep("partial-success");
       setError({
@@ -310,7 +325,7 @@ export function usePayment(orderId: string): UsePaymentReturn {
     } finally {
       setIsRetrying(false);
     }
-  }, [txHash, publicClient, updateOrderPayment, orderId]);
+  }, [txHash, publicClient, updateOrderPayment, orderId, ivxpClient]);
 
   return {
     step,

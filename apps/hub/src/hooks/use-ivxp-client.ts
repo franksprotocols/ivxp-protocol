@@ -15,6 +15,7 @@ export interface DeliverableResponse {
 export interface IVXPClient {
   on(event: string, handler: (payload: unknown) => void): void;
   off(event: string, handler: (payload: unknown) => void): void;
+  emit?(event: string, payload: unknown): void;
   downloadDeliverable(orderId: string): Promise<DeliverableResponse>;
 }
 

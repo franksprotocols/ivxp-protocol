@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useIVXPClient } from "./use-ivxp-client";
 
 /**
  * Represents a service quote returned by the provider.
@@ -36,7 +37,7 @@ export interface UseServiceRequestReturn {
 async function mockRequestQuote(
   serviceType: string,
   providerUrl: string,
-  input: Record<string, unknown>,
+  _input: Record<string, unknown>,
 ): Promise<ServiceQuote> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 100));
@@ -62,6 +63,7 @@ async function mockRequestQuote(
  * when the full provider integration is available.
  */
 export function useServiceRequest(): UseServiceRequestReturn {
+  const client = useIVXPClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ServiceRequestError | null>(null);
 
@@ -80,6 +82,10 @@ export function useServiceRequest(): UseServiceRequestReturn {
 
       try {
         const quote = await mockRequestQuote(serviceType, providerUrl, input);
+        client?.emit?.("order.quoted", {
+          orderId: quote.order_id,
+          priceUsdc: quote.price_usdc,
+        });
         return quote;
       } catch (err) {
         const requestError: ServiceRequestError = {
@@ -92,7 +98,7 @@ export function useServiceRequest(): UseServiceRequestReturn {
         setIsLoading(false);
       }
     },
-    [],
+    [client],
   );
 
   return { submitRequest, isLoading, error, reset };

@@ -22,7 +22,7 @@ LOG_DIR="$PROJECT_DIR/logs/batch-dev"
 CHECKPOINT="$PROJECT_DIR/.claude/workflow-checkpoint.json"
 
 MAX_BUDGET_PER_STORY=15
-COOLDOWN_SECONDS=10
+COOLDOWN_SECONDS=0
 PERMISSION_MODE="bypassPermissions"
 
 # ─── Defaults ────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ Options:
   --start-from ID       Start from story ID (e.g., 3-7)
   --max-stories N       Stop after N stories (0 = unlimited)
   --max-budget N        Max USD per story (default: 15)
-  --cooldown N          Seconds between stories (default: 10)
+  --cooldown N          Seconds between stories (default: 0)
   --skip-on-failure     Skip failed stories instead of stopping
   --interactive         Require confirmation before starting (default: auto-start)
   --resume ID           Resume a specific failed story
@@ -173,14 +173,14 @@ run_story() {
   if [[ "$VERBOSE" == true ]]; then
     env -u CLAUDECODE claude \
       -p "$prompt" \
-      --model opus \
+      --model sonnet \
       --max-budget-usd "$MAX_BUDGET_PER_STORY" \
       --permission-mode "$PERMISSION_MODE" \
       2>&1 | tee "$log_file" || exit_code=$?
   else
     env -u CLAUDECODE claude \
       -p "$prompt" \
-      --model opus \
+      --model sonnet \
       --max-budget-usd "$MAX_BUDGET_PER_STORY" \
       --permission-mode "$PERMISSION_MODE" \
       > "$log_file" 2>&1 || exit_code=$?
@@ -340,7 +340,6 @@ main() {
       local story_duration=$(( $(date +%s) - story_start ))
       log OK "$story_id completed in ${story_duration}s"
       results+=("${story_id}:OK")
-      sync_main
     else
       local story_duration=$(( $(date +%s) - story_start ))
       log ERROR "$story_id failed after ${story_duration}s"
@@ -349,7 +348,6 @@ main() {
 
       if [[ "$SKIP_ON_FAILURE" == true ]]; then
         log WARN "Skipping to next story (--skip-on-failure)"
-        sync_main
       else
         log ERROR "Stopping batch. Resume with:"
         log ERROR "  ./scripts/batch-story-dev.sh --resume $story_id --phase 2"

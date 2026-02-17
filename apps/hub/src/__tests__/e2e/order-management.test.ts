@@ -8,11 +8,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { createElement } from "react";
+import { renderHook, act, render, screen } from "@testing-library/react";
 import { useOrderStatus, getBackoffInterval } from "@/hooks/use-order-status";
 import { useOrderStore, TERMINAL_STATUSES } from "@/stores/order-store";
 import type { Order, OrderStatus } from "@/stores/order-store";
 import type { Address } from "viem";
+import { OrderCard } from "@/components/features/order-card";
 import {
   TEST_WALLET_ADDRESS,
   PROVIDER_ADDRESS,
@@ -31,6 +33,7 @@ function createTestOrder(overrides: Partial<Order> = {}): Order {
     serviceType: "text_echo",
     priceUsdc: "1.00",
     providerAddress: PROVIDER_ADDRESS,
+    clientAddress: TEST_WALLET_ADDRESS,
     status: "quoted" as OrderStatus,
     createdAt: Date.now(),
     txHash: FAKE_TX_HASH,
@@ -148,7 +151,7 @@ describe("E2E: Order Management", () => {
     );
 
     it(
-      "stops polling and sets error after max attempts",
+      "stops polling and sets error after max attempts (20)",
       () => {
         const order = createTestOrder({
           orderId: "ord_poll_004",
@@ -159,9 +162,9 @@ describe("E2E: Order Management", () => {
         const { result } = renderHook(() => useOrderStatus("ord_poll_004"));
         expect(result.current.isPolling).toBe(true);
 
-        // Advance enough time to exhaust all 50 attempts
+        // Advance enough time to exhaust all 20 attempts
         act(() => {
-          vi.advanceTimersByTime(1_600_000);
+          vi.advanceTimersByTime(700_000);
         });
 
         expect(result.current.isPolling).toBe(false);
@@ -314,15 +317,21 @@ describe("E2E: Order Management", () => {
     });
 
     it("order list filters by connected wallet", () => {
-      // Currently all orders belong to connected wallet
-      const order1 = createTestOrder({ orderId: "ord_filter_001" });
-      const order2 = createTestOrder({ orderId: "ord_filter_002" });
+      const order1 = {
+        ...createTestOrder({ orderId: "ord_filter_001" }),
+        clientAddress: TEST_WALLET_ADDRESS,
+      };
+      const order2 = {
+        ...createTestOrder({ orderId: "ord_filter_002" }),
+        clientAddress: "0x1234000000000000000000000000000000000000" as Address,
+      };
       useOrderStore.getState().addOrder(order1);
       useOrderStore.getState().addOrder(order2);
 
       const orders = useOrderStore.getState().getOrdersByWallet(TEST_WALLET_ADDRESS);
 
-      expect(orders.length).toBe(2);
+      expect(orders.length).toBe(1);
+      expect(orders[0].orderId).toBe("ord_filter_001");
     });
 
     it("order list sorts by date (newest first)", () => {
@@ -367,6 +376,18 @@ describe("E2E: Order Management", () => {
       const afterPaid = useOrderStore.getState().getOrder("ord_transition_001");
       expect(afterPaid!.updatedAt).toBeDefined();
       expect(afterPaid!.status).toBe("paid");
+    });
+
+    it("navigation between order list and order detail uses orderId route", () => {
+      const order = createTestOrder({
+        orderId: "ord_nav_001",
+        status: "processing",
+      });
+
+      render(createElement(OrderCard, { order }));
+
+      const link = screen.getByRole("link", { name: /view order/i });
+      expect(link).toHaveAttribute("href", "/orders/ord_nav_001");
     });
   });
 

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { DollarSign } from "lucide-react";
 import type { Service } from "@/lib/types/service";
 import { truncateAddress } from "@/lib/address";
+import { formatServiceName } from "@/lib/api/services";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,18 +12,10 @@ interface ServiceCardProps {
   readonly onViewDetails?: (service: Service) => void;
 }
 
-function formatServiceName(serviceType: string): string {
-  if (!serviceType || serviceType.trim() === "") return "";
-  return serviceType
-    .split("_")
-    .filter((segment) => segment.length > 0)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
 export function ServiceCard({ service, onViewDetails }: ServiceCardProps) {
   const displayName = formatServiceName(service.service_type);
   const providerLabel = service.provider_name ?? truncateAddress(service.provider_address);
+  const detailHref = `/marketplace/${service.service_type}`;
 
   return (
     <Card className="flex h-full flex-col transition-shadow hover:shadow-md">
@@ -48,15 +42,20 @@ export function ServiceCard({ service, onViewDetails }: ServiceCardProps) {
             {providerLabel}
           </span>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          disabled={!onViewDetails}
-          onClick={onViewDetails ? () => onViewDetails(service) : undefined}
-        >
-          View Details
-        </Button>
+        {onViewDetails ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => onViewDetails(service)}
+          >
+            View Details
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" className="w-full" asChild>
+            <Link href={detailHref}>View Details</Link>
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

@@ -42,3 +42,19 @@ export {
   type AnvilTestClient,
   type TestChainConfig,
 } from "./chain.js";
+
+export {
+  MockUSDC,
+  type MockUSDCDeployConfig,
+} from "./usdc.js";
+
+export {
+  MockProvider,
+  type MockProviderStartConfig,
+  type MockOrderStatus,
+  type MockServiceCatalogMessage,
+  type MockServiceQuoteMessage,
+  type MockDeliveryAcceptedMessage,
+  type MockOrderStatusMessage,
+  type MockDeliverableMessage,
+} from "./provider.js";

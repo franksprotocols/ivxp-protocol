@@ -9,7 +9,7 @@ import {
 const INITIAL_INTERVAL_MS = 1_000;
 const MAX_INTERVAL_MS = 30_000;
 const JITTER_FACTOR = 0.2;
-const MAX_POLL_ATTEMPTS = 50;
+const MAX_POLL_ATTEMPTS = 20;
 
 export interface UseOrderStatusReturn {
   readonly order: Order | null;

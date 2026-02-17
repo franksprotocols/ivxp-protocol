@@ -79,6 +79,16 @@ export {
   anvilChain,
   type AnvilTestClient,
   type TestChainConfig,
+  MockUSDC,
+  type MockUSDCDeployConfig,
+  MockProvider,
+  type MockProviderStartConfig,
+  type MockOrderStatus,
+  type MockServiceCatalogMessage,
+  type MockServiceQuoteMessage,
+  type MockDeliveryAcceptedMessage,
+  type MockOrderStatusMessage,
+  type MockDeliverableMessage,
 } from "./mocks/index.js";
 
 // Helpers
