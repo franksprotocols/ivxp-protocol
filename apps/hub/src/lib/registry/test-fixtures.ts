@@ -24,6 +24,10 @@ export const mockProviders: RegistryProviderWire[] = [
     status: "active",
     registered_at: "2025-01-01T00:00:00Z",
     updated_at: "2025-01-01T00:00:00Z",
+    verification_status: "pending",
+    last_verified_at: null,
+    last_check_at: null,
+    consecutive_failures: 0,
   },
   {
     provider_id: "prov-002",
@@ -50,6 +54,10 @@ export const mockProviders: RegistryProviderWire[] = [
     status: "active",
     registered_at: "2025-02-01T00:00:00Z",
     updated_at: "2025-02-01T00:00:00Z",
+    verification_status: "pending",
+    last_verified_at: null,
+    last_check_at: null,
+    consecutive_failures: 0,
   },
   {
     provider_id: "prov-003",
@@ -69,5 +77,9 @@ export const mockProviders: RegistryProviderWire[] = [
     status: "inactive",
     registered_at: "2025-01-20T00:00:00Z",
     updated_at: "2025-03-01T00:00:00Z",
+    verification_status: "pending",
+    last_verified_at: null,
+    last_check_at: null,
+    consecutive_failures: 0,
   },
 ];
