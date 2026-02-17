@@ -98,7 +98,8 @@ const MOCK_PROVIDER_URL = "http://mock-provider.test";
  * The orderId group accepts URL-encoded characters (%xx) plus alphanumeric,
  * hyphens, and underscores.
  */
-const ORDERS_PATH_REGEX = /\/ivxp\/orders\/([a-zA-Z0-9._~:@!$&'()*+,;=%-]+)\/(payment|confirm|deliverable)$/;
+const ORDERS_PATH_REGEX =
+  /\/ivxp\/orders\/([a-zA-Z0-9._~:@!$&'()*+,;=%-]+)\/(payment|confirm|deliverable)$/;
 
 /**
  * Regex for order status endpoint (no trailing action segment).
@@ -202,7 +203,7 @@ export function createMockProvider(config: MockProviderConfig): MockProviderResu
   }
 
   // Helper: schedule delivery transition with timeout tracking.
-  function scheduleDelivery(orderId: string, paidOrder: MockOrder): void {
+  function scheduleDelivery(orderId: string, _paidOrder: MockOrder): void {
     const timeoutId = setTimeout(() => {
       pendingTimeouts.delete(timeoutId);
       const currentOrder = orders.get(orderId);

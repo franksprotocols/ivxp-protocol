@@ -399,7 +399,7 @@ describe("createCallbackServer", () => {
       const options: CallbackServerOptions = { port: 0, host: "127.0.0.1" };
       const optionsBefore = JSON.parse(JSON.stringify(options));
 
-      const server = await createTrackedServer(vi.fn(), vi.fn(), options);
+      const _server = await createTrackedServer(vi.fn(), vi.fn(), options);
 
       expect(options).toEqual(optionsBefore);
     });

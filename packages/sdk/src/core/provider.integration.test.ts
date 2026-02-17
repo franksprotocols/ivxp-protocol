@@ -21,6 +21,7 @@
  */
 
 import { afterEach, describe, expect, it } from "vitest";
+import type * as NodeHttp from "node:http";
 import {
   MockCryptoService,
   MockPaymentService,
@@ -349,7 +350,7 @@ interface CallbackServerResult {
  */
 async function startCallbackServer(): Promise<CallbackServerResult> {
   const httpModuleName = "node:http";
-  const http = (await import(httpModuleName)) as typeof import("node:http");
+  const http = (await import(httpModuleName)) as typeof NodeHttp;
 
   const receivedPayloads: unknown[] = [];
   const shouldFail = { value: false };

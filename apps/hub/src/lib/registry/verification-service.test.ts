@@ -301,6 +301,7 @@ describe("applyVerificationResult", () => {
       reachable: true,
       responseTimeMs: 100,
       error: null,
+      errorCode: null,
       checkedAt: "2025-06-15T10:30:00Z",
     };
 
@@ -323,6 +324,7 @@ describe("applyVerificationResult", () => {
       reachable: false,
       responseTimeMs: null,
       error: "Timeout",
+      errorCode: null,
       checkedAt: "2025-06-15T10:30:00Z",
     };
 
@@ -344,6 +346,7 @@ describe("applyVerificationResult", () => {
       reachable: true,
       responseTimeMs: 100,
       error: null,
+      errorCode: null,
       checkedAt: "2025-06-15T10:30:00Z",
     };
 

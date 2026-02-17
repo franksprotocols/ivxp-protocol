@@ -8,7 +8,6 @@
 import type {
   DeliveryRequest,
   DeliveryResponse,
-  HexAddress,
   HexHash,
   HexSignature,
   OrderStatus,

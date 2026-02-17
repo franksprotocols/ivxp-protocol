@@ -198,8 +198,8 @@ describe("submitRating", () => {
   });
 
   it("returns ORDER_NOT_FOUND when order does not exist", async () => {
-    getOrder.mockReturnValue(undefined);
-    const result = await submitRating(validParams, getOrder);
+    const getOrderReturningUndefined = vi.fn(() => undefined);
+    const result = await submitRating(validParams, getOrderReturningUndefined);
     expect(result).toEqual({
       success: false,
       code: "ORDER_NOT_FOUND",

@@ -64,48 +64,6 @@ import {
   USDC_DECIMALS,
 } from "@ivxp/sdk";
 
-import type {
-  IVXPClientConfig,
-  IVXPProviderConfig,
-  RequestServiceParams,
-  RequestServiceResult,
-  ServiceRequestParams,
-  SubmitPaymentQuote,
-  PaymentResult,
-  DownloadOptions,
-  ConfirmationResult,
-  OrderPollOptions,
-  CallbackServerOptions,
-  CallbackServerResult,
-  RejectionDetails,
-  IDeliverableStore,
-  StoredDeliverable,
-  ProviderStartResult,
-  SDKEvent,
-  SDKEventMap,
-  SDKEventName,
-  SDKEventPayload,
-  IVXPMessageParams,
-  IVXPSignedMessage,
-  IVXPVerifyParams,
-  IVXPVerificationResult,
-  NetworkType,
-  PaymentServiceConfig,
-  PaymentClientOverrides,
-  HttpClientOptions,
-  PollOptions,
-  BudgetExceededQuoteInfo,
-  ServiceCatalog,
-  ServiceQuote,
-  OrderStatus,
-  Deliverable,
-  DeliveryFormat,
-  ServiceCatalogOutput,
-  ServiceQuoteOutput,
-  OrderStatusResponseOutput,
-  DeliveryResponseOutput,
-} from "@ivxp/sdk";
-
 // Test private key (not a real wallet)
 const TEST_PRIVATE_KEY = ("0x" + "ab".repeat(32)) as `0x${string}`;
 

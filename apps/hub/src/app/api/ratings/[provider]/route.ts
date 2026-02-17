@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { queryProviderRatings } from "@/lib/ratings/rating-queries";
 import { createRatingCache } from "@/lib/ratings/rating-cache";
 import type {

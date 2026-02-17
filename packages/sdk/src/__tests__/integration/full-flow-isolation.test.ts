@@ -16,7 +16,6 @@ import {
   PROVIDER_ADDRESS,
   FAST_POLL_OPTIONS,
   createFundedClient,
-  createIntegrationClient,
   initTestEnvironment,
 } from "./full-flow-helpers.js";
 
@@ -51,9 +50,7 @@ describe("test isolation (AC #4)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client1 = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider1, "2000",
-    );
+    const client1 = await createFundedClient(testClient, mockUsdcAddress, mockProvider1, "2000");
     const result1 = await client1.requestService({
       providerUrl: mockProvider1.providerUrl,
       serviceType: "test_service",
@@ -67,9 +64,7 @@ describe("test isolation (AC #4)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client2 = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider2, "2000",
-    );
+    const client2 = await createFundedClient(testClient, mockUsdcAddress, mockProvider2, "2000");
     const result2 = await client2.requestService({
       providerUrl: mockProvider2.providerUrl,
       serviceType: "test_service",
@@ -91,9 +86,7 @@ describe("test isolation (AC #4)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 3,
     });
-    const client = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider, "5000",
-    );
+    const client = await createFundedClient(testClient, mockUsdcAddress, mockProvider, "5000");
 
     const orderIds: string[] = [];
     const txHashes: string[] = [];

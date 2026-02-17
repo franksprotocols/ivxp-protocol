@@ -13,14 +13,12 @@ interface ProviderRatingsSectionProps {
  * Full ratings section for a provider detail page.
  * Fetches ratings via SWR and renders the average + list.
  */
-export function ProviderRatingsSection({
-  providerAddress,
-}: ProviderRatingsSectionProps) {
+export function ProviderRatingsSection({ providerAddress }: ProviderRatingsSectionProps) {
   const {
     data,
     isLoading,
     sort,
-    page,
+    page: _page,
     onSortChange,
     onPageChange,
   } = useRatings({ providerAddress });
@@ -32,10 +30,7 @@ export function ProviderRatingsSection({
           <CardTitle className="text-lg">Ratings</CardTitle>
         </CardHeader>
         <CardContent>
-          <div
-            className="animate-pulse space-y-3"
-            data-testid="ratings-loading"
-          >
+          <div className="animate-pulse space-y-3" data-testid="ratings-loading">
             <div className="h-8 w-32 rounded bg-muted" />
             <div className="h-4 w-48 rounded bg-muted" />
             <div className="h-20 rounded bg-muted" />

@@ -11,7 +11,7 @@
  * Uses real HTTP servers (OS-assigned ports) for accurate testing.
  */
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import {
   MockCryptoService,

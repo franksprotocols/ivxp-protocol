@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { listProvidersQuerySchema, registerProviderBodySchema } from "@/lib/registry/schemas";
 import { loadProviders } from "@/lib/registry/loader";

@@ -61,7 +61,7 @@ describe("POST /api/ratings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: rate limiter allows
-    _rateLimiter.check = vi.fn(() => ({ allowed: true, remaining: 99 }));
+    _rateLimiter.check = vi.fn(() => ({ allowed: true as const, remaining: 99 }));
   });
 
   it("returns 201 with rating_id for valid submission", async () => {
@@ -80,7 +80,7 @@ describe("POST /api/ratings", () => {
 
   it("returns 429 when rate limited", async () => {
     _rateLimiter.check = vi.fn(() => ({
-      allowed: false,
+      allowed: false as const,
       retryAfterMs: 30_000,
     }));
 

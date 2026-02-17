@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { type AnvilTestClient } from "@ivxp/test-utils";
 import { type IntegrationTestEnv } from "./setup.js";
-import { createMockProvider, type MockProviderResult } from "./mock-provider.js";
+import { createMockProvider } from "./mock-provider.js";
 import {
   PROVIDER_ADDRESS,
   FAST_POLL_OPTIONS,
