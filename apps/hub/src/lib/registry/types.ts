@@ -123,3 +123,61 @@ export interface VerificationResult {
   errorCode: string | null;
   checkedAt: string;
 }
+
+// --- Service Search Types (Story 7.5) ---
+
+/** A service search result with embedded provider info (wire format) */
+export interface SearchServiceResultWire {
+  service_type: string;
+  name: string;
+  description: string;
+  price_usdc: string;
+  estimated_time_seconds: number;
+  provider_id: string;
+  provider_name: string;
+  provider_address: string;
+  provider_endpoint_url: string;
+  relevance_score?: number;
+}
+
+/** Paginated response for service search (wire format) */
+export interface SearchServicesResponseWire {
+  services: SearchServiceResultWire[];
+  total: number;
+  page: number;
+  page_size: number;
+  query?: string;
+  filters_applied: {
+    service_type?: string;
+    min_price?: string;
+    max_price?: string;
+    provider_id?: string;
+  };
+}
+
+/** A service search result with embedded provider info (internal) */
+export interface SearchServiceResult {
+  serviceType: string;
+  name: string;
+  description: string;
+  priceUsdc: string;
+  estimatedTimeSeconds: number;
+  providerId: string;
+  providerName: string;
+  providerAddress: string;
+  providerEndpointUrl: string;
+  relevanceScore?: number;
+}
+
+/** Internal query parameters for service search */
+export interface SearchServicesQuery {
+  page: number;
+  pageSize: number;
+  q?: string;
+  serviceType?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  providerId?: string;
+  sortBy: "name" | "price" | "relevance";
+  sortOrder: "asc" | "desc";
+}
