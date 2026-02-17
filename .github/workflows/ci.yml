@@ -58,7 +58,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages (required for cross-package types)
-        run: pnpm --filter @ivxp/protocol build && pnpm --filter @ivxp/test-utils build
+        run: pnpm --filter @ivxp/protocol build && pnpm --filter @ivxp/test-utils build && pnpm --filter @ivxp/sdk build
 
       - name: Run type checking
         run: pnpm typecheck
