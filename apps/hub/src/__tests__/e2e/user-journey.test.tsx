@@ -118,9 +118,7 @@ describe("E2E User Journeys", () => {
       expect(screen.getByRole("banner")).toBeInTheDocument();
 
       // Connect wallet button is visible (not connected)
-      expect(
-        screen.getByRole("button", { name: /connect wallet/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /connect wallet/i })).toBeInTheDocument();
 
       // Marketplace content is rendered with search results
       for (const service of mockSearchServices) {
@@ -153,9 +151,7 @@ describe("E2E User Journeys", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/text_echo");
 
-      const textEchoDetail = MOCK_SERVICE_DETAILS.find(
-        (s) => s.service_type === "text_echo",
-      )!;
+      const textEchoDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "text_echo")!;
 
       renderPageLayout(<ServiceDetail service={textEchoDetail} />);
 
@@ -163,14 +159,10 @@ describe("E2E User Journeys", () => {
       expect(screen.getByTestId("service-detail")).toBeInTheDocument();
 
       // Wallet prompt is shown (not connected)
-      expect(screen.getByTestId("wallet-prompt")).toHaveTextContent(
-        /connect your wallet/i,
-      );
+      expect(screen.getByTestId("wallet-prompt")).toHaveTextContent(/connect your wallet/i);
 
       // Request service button is disabled
-      expect(
-        screen.getByTestId("request-service-button"),
-      ).toBeDisabled();
+      expect(screen.getByTestId("request-service-button")).toBeDisabled();
     });
   });
 
@@ -183,9 +175,7 @@ describe("E2E User Journeys", () => {
 
       // Wallet address is shown instead of connect button
       expect(screen.getByText("0x1234...5678")).toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: /connect wallet/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /connect wallet/i })).not.toBeInTheDocument();
     });
 
     it("user on wrong network sees warning and can switch", async () => {
@@ -198,9 +188,7 @@ describe("E2E User Journeys", () => {
       // Network warning is visible
       const alert = screen.getByRole("alert");
       expect(alert).toBeInTheDocument();
-      expect(
-        within(alert).getByText(/wrong network/i),
-      ).toBeInTheDocument();
+      expect(within(alert).getByText(/wrong network/i)).toBeInTheDocument();
 
       // Switch network button is available
       const switchBtn = within(alert).getByRole("button", {
@@ -209,9 +197,7 @@ describe("E2E User Journeys", () => {
       expect(switchBtn).toBeInTheDocument();
 
       await user.click(switchBtn);
-      expect(
-        mockRef.current.useSwitchChain().switchChain,
-      ).toHaveBeenCalled();
+      expect(mockRef.current.useSwitchChain().switchChain).toHaveBeenCalled();
     });
 
     it("connected user on correct network sees no warning", () => {
@@ -222,9 +208,7 @@ describe("E2E User Journeys", () => {
 
       // No network warning
       const alerts = screen.queryAllByRole("alert");
-      const networkAlerts = alerts.filter((el) =>
-        el.textContent?.includes("Wrong network"),
-      );
+      const networkAlerts = alerts.filter((el) => el.textContent?.includes("Wrong network"));
       expect(networkAlerts).toHaveLength(0);
     });
 
@@ -232,21 +216,15 @@ describe("E2E User Journeys", () => {
       applyConnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/text_echo");
 
-      const textEchoDetail = MOCK_SERVICE_DETAILS.find(
-        (s) => s.service_type === "text_echo",
-      )!;
+      const textEchoDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "text_echo")!;
 
       renderPageLayout(<ServiceDetail service={textEchoDetail} />);
 
       // Request service button is enabled
-      expect(
-        screen.getByTestId("request-service-button"),
-      ).not.toBeDisabled();
+      expect(screen.getByTestId("request-service-button")).not.toBeDisabled();
 
       // No wallet prompt
-      expect(
-        screen.queryByTestId("wallet-prompt"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId("wallet-prompt")).not.toBeInTheDocument();
     });
   });
 
@@ -255,9 +233,7 @@ describe("E2E User Journeys", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/image_gen");
 
-      const imageGenDetail = MOCK_SERVICE_DETAILS.find(
-        (s) => s.service_type === "image_gen",
-      )!;
+      const imageGenDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "image_gen")!;
 
       renderPageLayout(<ServiceDetail service={imageGenDetail} />);
 
@@ -265,23 +241,17 @@ describe("E2E User Journeys", () => {
       expect(screen.getByTestId("service-detail")).toBeInTheDocument();
 
       // Description is shown
-      expect(
-        screen.getByTestId("service-description"),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("service-description")).toBeInTheDocument();
 
       // Price is shown in the action button
-      expect(
-        screen.getByTestId("request-service-button"),
-      ).toHaveTextContent(/1\.50 USDC/);
+      expect(screen.getByTestId("request-service-button")).toHaveTextContent(/1\.50 USDC/);
     });
 
     it("marketplace navigation link is active on service detail page", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/text_echo");
 
-      const textEchoDetail = MOCK_SERVICE_DETAILS.find(
-        (s) => s.service_type === "text_echo",
-      )!;
+      const textEchoDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "text_echo")!;
 
       renderPageLayout(<ServiceDetail service={textEchoDetail} />);
 
@@ -297,18 +267,14 @@ describe("E2E User Journeys", () => {
       applyDisconnectedState(mockRef.current);
       mockRef.current.useConnect.mockReturnValue({
         connect: vi.fn(),
-        connectors: [
-          { id: "metaMask", name: "MetaMask", type: "injected" },
-        ],
+        connectors: [{ id: "metaMask", name: "MetaMask", type: "injected" }],
         isPending: false,
         error: new Error("User rejected the request"),
       });
 
       renderWithProviders(<ConnectButton />);
 
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Connection request was rejected.",
-      );
+      expect(screen.getByRole("alert")).toHaveTextContent("Connection request was rejected.");
     });
 
     it("search with no results shows helpful empty state", () => {
@@ -328,9 +294,7 @@ describe("E2E User Journeys", () => {
 
       renderPageLayout(<MarketplaceContent />);
 
-      expect(
-        screen.getByText(/no services available yet/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/no services available yet/i)).toBeInTheDocument();
     });
   });
 });

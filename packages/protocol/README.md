@@ -17,12 +17,12 @@ import {
   USDC_CONTRACT_ADDRESSES,
   ServiceRequestSchema,
   ServiceQuoteSchema,
-} from '@ivxp/protocol';
+} from "@ivxp/protocol";
 
 // Validate incoming service request
 const result = ServiceRequestSchema.safeParse(incomingData);
 if (!result.success) {
-  console.error('Invalid request:', result.error);
+  console.error("Invalid request:", result.error);
 }
 
 // Type-safe protocol constants

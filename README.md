@@ -32,15 +32,15 @@ ivxp-protocol/
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|------------|
-| Language | TypeScript 5.x |
-| Runtime | Node.js 20+ LTS |
-| Monorepo | pnpm workspaces |
-| Frontend | Next.js, React, Tailwind CSS, shadcn/ui |
-| Web3 | wagmi v2, viem v2 |
-| Testing | Vitest, viem/test |
-| Build | tsup |
+| Category   | Technology                               |
+| ---------- | ---------------------------------------- |
+| Language   | TypeScript 5.x                           |
+| Runtime    | Node.js 20+ LTS                          |
+| Monorepo   | pnpm workspaces                          |
+| Frontend   | Next.js, React, Tailwind CSS, shadcn/ui  |
+| Web3       | wagmi v2, viem v2                        |
+| Testing    | Vitest, viem/test                        |
+| Build      | tsup                                     |
 | Blockchain | Base L2 (Mainnet/Sepolia), USDC (ERC-20) |
 
 ## Getting Started

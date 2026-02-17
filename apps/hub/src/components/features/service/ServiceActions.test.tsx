@@ -101,9 +101,7 @@ describe("ServiceActions", () => {
       address: "0x1234567890abcdef1234567890abcdef12345678",
     } as unknown as ReturnType<typeof useAccount>);
 
-    renderWithProviders(
-      <ServiceActions service={createService({ price_usdc: "3" })} />,
-    );
+    renderWithProviders(<ServiceActions service={createService({ price_usdc: "3" })} />);
     expect(screen.getByTestId("request-service-button")).toHaveTextContent("3.00 USDC");
   });
 });

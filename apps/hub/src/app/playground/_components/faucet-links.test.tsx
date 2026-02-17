@@ -35,8 +35,6 @@ describe("FaucetLinks", () => {
     expect(screen.getByText("Base Sepolia ETH")).toBeInTheDocument();
     expect(screen.getByText("Testnet USDC")).toBeInTheDocument();
     expect(screen.getByText("Required for gas fees")).toBeInTheDocument();
-    expect(
-      screen.getByText("Required for paying for services"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Required for paying for services")).toBeInTheDocument();
   });
 });

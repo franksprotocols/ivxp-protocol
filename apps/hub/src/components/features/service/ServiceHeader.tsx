@@ -14,7 +14,10 @@ export function ServiceHeader({ service }: ServiceHeaderProps) {
 
   return (
     <div className="space-y-4">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-muted-foreground">
+      <nav
+        aria-label="Breadcrumb"
+        className="flex items-center gap-2 text-sm text-muted-foreground"
+      >
         <Link href="/marketplace" className="hover:text-foreground transition-colors">
           <Button variant="ghost" size="sm" className="gap-1 px-2">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />

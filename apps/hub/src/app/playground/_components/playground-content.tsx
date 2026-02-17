@@ -8,17 +8,11 @@ import { DemoProviderInfo } from "./demo-provider-info";
 import { ServiceTester } from "./service-tester";
 import type { ExecutionResult } from "./service-tester";
 import { ProtocolInspector } from "./protocol-inspector";
-import {
-  DEMO_PROVIDER_URL,
-  BASE_SEPOLIA_CHAIN_ID,
-} from "./playground-constants";
+import { DEMO_PROVIDER_URL, BASE_SEPOLIA_CHAIN_ID } from "./playground-constants";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import type { ServiceDetail } from "@/lib/types/service";
-import type {
-  ProtocolEvent,
-  StateTransition,
-} from "@/hooks/use-protocol-events";
+import type { ProtocolEvent, StateTransition } from "@/hooks/use-protocol-events";
 import { MOCK_SERVICE_DETAILS } from "@/lib/mock-data/service-details";
 
 export function PlaygroundContent() {
@@ -26,32 +20,22 @@ export function PlaygroundContent() {
   const chainId = useChainId();
   const isCorrectNetwork = chainId === BASE_SEPOLIA_CHAIN_ID;
 
-  const [catalogServices, setCatalogServices] = useState<
-    readonly ServiceDetail[]
-  >([]);
+  const [catalogServices, setCatalogServices] = useState<readonly ServiceDetail[]>([]);
   const [events, setEvents] = useState<readonly ProtocolEvent[]>([]);
-  const [transitions, setTransitions] = useState<
-    readonly StateTransition[]
-  >([]);
+  const [transitions, setTransitions] = useState<readonly StateTransition[]>([]);
   const [result, setResult] = useState<ExecutionResult | null>(null);
 
-  const handleCatalogLoaded = useCallback(
-    (services: readonly ServiceDetail[]) => {
-      setCatalogServices(services);
-    },
-    [],
-  );
+  const handleCatalogLoaded = useCallback((services: readonly ServiceDetail[]) => {
+    setCatalogServices(services);
+  }, []);
 
   const handleEvent = useCallback((event: ProtocolEvent) => {
     setEvents((prev) => [...prev, event]);
   }, []);
 
-  const handleTransition = useCallback(
-    (transition: StateTransition) => {
-      setTransitions((prev) => [...prev, transition]);
-    },
-    [],
-  );
+  const handleTransition = useCallback((transition: StateTransition) => {
+    setTransitions((prev) => [...prev, transition]);
+  }, []);
 
   const handleResult = useCallback((execResult: ExecutionResult) => {
     setResult(execResult);
@@ -64,8 +48,7 @@ export function PlaygroundContent() {
   }, []);
 
   // Use catalog services if available, otherwise fall back to mock data
-  const availableServices =
-    catalogServices.length > 0 ? catalogServices : MOCK_SERVICE_DETAILS;
+  const availableServices = catalogServices.length > 0 ? catalogServices : MOCK_SERVICE_DETAILS;
 
   return (
     <div className="space-y-6" data-testid="playground-content">
@@ -79,9 +62,7 @@ export function PlaygroundContent() {
         </Badge>
         {isConnected && (
           <Badge variant={isCorrectNetwork ? "default" : "destructive"}>
-            {isCorrectNetwork
-              ? "Base Sepolia"
-              : "Wrong Network"}
+            {isCorrectNetwork ? "Base Sepolia" : "Wrong Network"}
           </Badge>
         )}
       </div>
@@ -90,8 +71,7 @@ export function PlaygroundContent() {
         <Alert variant="destructive" data-testid="connect-wallet-prompt">
           <AlertTitle>Wallet Required</AlertTitle>
           <AlertDescription>
-            Connect your wallet using the button in the header to test
-            the protocol.
+            Connect your wallet using the button in the header to test the protocol.
           </AlertDescription>
         </Alert>
       )}
@@ -100,8 +80,7 @@ export function PlaygroundContent() {
         <Alert variant="destructive" data-testid="switch-network-prompt">
           <AlertTitle>Wrong Network</AlertTitle>
           <AlertDescription>
-            Please switch to Base Sepolia (chain ID{" "}
-            {BASE_SEPOLIA_CHAIN_ID}) to use the playground.
+            Please switch to Base Sepolia (chain ID {BASE_SEPOLIA_CHAIN_ID}) to use the playground.
           </AlertDescription>
         </Alert>
       )}
@@ -110,10 +89,7 @@ export function PlaygroundContent() {
       <FaucetLinks />
 
       {/* Demo Provider info */}
-      <DemoProviderInfo
-        url={DEMO_PROVIDER_URL}
-        onCatalogLoaded={handleCatalogLoaded}
-      />
+      <DemoProviderInfo url={DEMO_PROVIDER_URL} onCatalogLoaded={handleCatalogLoaded} />
 
       {/* Service tester */}
       <ServiceTester

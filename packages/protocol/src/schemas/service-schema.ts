@@ -31,9 +31,7 @@ const ServiceDefinitionWireSchema = z.object({
 });
 
 /** Transform wire-format service definition to camelCase. */
-function transformServiceDefinition(
-  data: z.output<typeof ServiceDefinitionWireSchema>,
-) {
+function transformServiceDefinition(data: z.output<typeof ServiceDefinitionWireSchema>) {
   return {
     type: data.type,
     basePriceUsdc: data.base_price_usdc,
@@ -44,8 +42,9 @@ function transformServiceDefinition(
 /**
  * Schema for a service definition with snake_case -> camelCase transform.
  */
-export const ServiceDefinitionSchema =
-  ServiceDefinitionWireSchema.transform(transformServiceDefinition);
+export const ServiceDefinitionSchema = ServiceDefinitionWireSchema.transform(
+  transformServiceDefinition,
+);
 
 // ---------------------------------------------------------------------------
 // ServiceCatalog - GET /ivxp/catalog response
@@ -72,16 +71,14 @@ const ServiceCatalogWireSchema = z.object({
  * Reuses transformServiceDefinition to avoid duplicating
  * the per-service transform logic.
  */
-export const ServiceCatalogSchema = ServiceCatalogWireSchema.transform(
-  (data) => ({
-    protocol: data.protocol,
-    provider: data.provider,
-    walletAddress: data.wallet_address,
-    services: data.services.map(transformServiceDefinition),
-    messageType: data.message_type,
-    timestamp: data.timestamp,
-  }),
-);
+export const ServiceCatalogSchema = ServiceCatalogWireSchema.transform((data) => ({
+  protocol: data.protocol,
+  provider: data.provider,
+  walletAddress: data.wallet_address,
+  services: data.services.map(transformServiceDefinition),
+  messageType: data.message_type,
+  timestamp: data.timestamp,
+}));
 
 // ---------------------------------------------------------------------------
 // ClientAgent (nested within ServiceRequest)
@@ -97,9 +94,7 @@ const ClientAgentWireSchema = z.object({
 });
 
 /** Transform wire-format client agent to camelCase. */
-function transformClientAgent(
-  data: z.output<typeof ClientAgentWireSchema>,
-) {
+function transformClientAgent(data: z.output<typeof ClientAgentWireSchema>) {
   return {
     name: data.name,
     walletAddress: data.wallet_address,
@@ -110,8 +105,7 @@ function transformClientAgent(
 /**
  * Schema for client agent with snake_case -> camelCase transform.
  */
-export const ClientAgentSchema =
-  ClientAgentWireSchema.transform(transformClientAgent);
+export const ClientAgentSchema = ClientAgentWireSchema.transform(transformClientAgent);
 
 // ---------------------------------------------------------------------------
 // ServiceRequestDetails (nested within ServiceRequest)
@@ -129,9 +123,7 @@ const ServiceRequestDetailsWireSchema = z.object({
 });
 
 /** Transform wire-format service request details to camelCase. */
-function transformServiceRequestDetails(
-  data: z.output<typeof ServiceRequestDetailsWireSchema>,
-) {
+function transformServiceRequestDetails(data: z.output<typeof ServiceRequestDetailsWireSchema>) {
   return {
     type: data.type,
     description: data.description,
@@ -144,8 +136,9 @@ function transformServiceRequestDetails(
 /**
  * Schema for service request details with snake_case -> camelCase transform.
  */
-export const ServiceRequestDetailsSchema =
-  ServiceRequestDetailsWireSchema.transform(transformServiceRequestDetails);
+export const ServiceRequestDetailsSchema = ServiceRequestDetailsWireSchema.transform(
+  transformServiceRequestDetails,
+);
 
 // ---------------------------------------------------------------------------
 // ServiceRequest - POST /ivxp/request body
@@ -171,15 +164,13 @@ const ServiceRequestWireSchema = z.object({
  * Reuses transformClientAgent and transformServiceRequestDetails
  * to avoid duplicating transform logic.
  */
-export const ServiceRequestSchema = ServiceRequestWireSchema.transform(
-  (data) => ({
-    protocol: data.protocol,
-    messageType: data.message_type,
-    timestamp: data.timestamp,
-    clientAgent: transformClientAgent(data.client_agent),
-    serviceRequest: transformServiceRequestDetails(data.service_request),
-  }),
-);
+export const ServiceRequestSchema = ServiceRequestWireSchema.transform((data) => ({
+  protocol: data.protocol,
+  messageType: data.message_type,
+  timestamp: data.timestamp,
+  clientAgent: transformClientAgent(data.client_agent),
+  serviceRequest: transformServiceRequestDetails(data.service_request),
+}));
 
 // ---------------------------------------------------------------------------
 // Type Exports

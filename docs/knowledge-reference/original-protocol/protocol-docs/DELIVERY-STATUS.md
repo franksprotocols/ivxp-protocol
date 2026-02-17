@@ -49,6 +49,7 @@ if response.status_code == 200:
 **"delivered" = "Provider successfully POSTed to client's endpoint"**
 
 It means:
+
 - ✅ HTTP POST succeeded
 - ✅ Client's server returned 200 OK
 - ❌ Does NOT guarantee client saved it
@@ -58,16 +59,19 @@ It means:
 ### Problem: No Client Confirmation
 
 **Current flow:**
+
 ```
 Provider → POST deliverable → Client returns 200 → Provider marks "delivered"
 ```
 
 **Missing:**
+
 - No proof client actually saved the deliverable
 - No client signature on receipt
 - No satisfaction confirmation
 - No way for client to dispute non-receipt
-```
+
+````
 
 ## How Clients Check Status
 
@@ -77,9 +81,10 @@ Client can poll the provider:
 
 ```bash
 GET /ivxp/status/<order_id>
-```
+````
 
 **Response:**
+
 ```json
 {
   "order_id": "ivxp-123...",
@@ -91,6 +96,7 @@ GET /ivxp/status/<order_id>
 ```
 
 **This tells you:**
+
 - ✅ Whether provider attempted delivery
 - ✅ Whether provider thinks it was successful
 - ❌ NOT whether YOU actually received it
@@ -109,6 +115,7 @@ def receive():
 ```
 
 **Problem:**
+
 - Client returning 200 doesn't mean client confirmed receipt
 - Just means HTTP request succeeded
 - No cryptographic proof of receipt
@@ -118,11 +125,13 @@ def receive():
 ### Current vs Ideal
 
 **Current (IVXP/1.0):**
+
 ```
 Provider delivers → Client returns HTTP 200 → Provider marks "delivered" → DONE
 ```
 
 **Ideal (IVXP/1.1):**
+
 ```
 Provider delivers → Client returns HTTP 200 → Provider marks "posted"
     ↓
@@ -157,6 +166,7 @@ Provider verifies signature → Marks "client_confirmed" → DONE
 ```
 
 **Provider verifies signature and updates:**
+
 ```python
 order['status'] = 'client_confirmed'
 order['client_confirmation'] = confirmation_data
@@ -165,12 +175,14 @@ order['client_confirmation'] = confirmation_data
 ### Benefits of Confirmation
 
 **For Provider:**
+
 - ✅ Cryptographic proof client received service
 - ✅ Content hash proves what was delivered
 - ✅ Satisfaction rating for reputation
 - ✅ Dispute protection
 
 **For Client:**
+
 - ✅ Can dispute if provider claims delivered but client didn't receive
 - ✅ Cryptographic proof of what they received
 - ✅ Record for future reference
@@ -215,6 +227,7 @@ order['client_confirmation'] = confirmation_data
 **Check if client received:**
 
 The only way to know is if:
+
 1. HTTP POST returned 200 (status = 'delivered')
 2. No error occurred (status != 'delivery_failed')
 
@@ -225,6 +238,7 @@ The only way to know is if:
 **Two ways to receive:**
 
 **Option A: Run server (Push)**
+
 ```python
 @app.route('/ivxp/receive', methods=['POST'])
 def receive():
@@ -244,6 +258,7 @@ def receive():
 ```
 
 **Option B: Poll status (Pull)**
+
 ```python
 while True:
     status = requests.get(f"{provider_url}/ivxp/status/{order_id}").json()
@@ -266,10 +281,12 @@ while True:
 **Yes, but limited:**
 
 **Provider tracks:**
+
 - `'delivered'` - Successfully POSTed to client (HTTP 200)
 - `'delivery_failed'` - Failed to POST
 
 **But:**
+
 - ❌ No separate "posted" vs "confirmed" status
 - ❌ No client acknowledgment required
 - ❌ No cryptographic receipt from client
@@ -279,6 +296,7 @@ while True:
 **Both are supported:**
 
 **Pull (Polling):**
+
 ```bash
 # Client pulls status
 GET /ivxp/status/<order_id>
@@ -288,6 +306,7 @@ GET /ivxp/download/<order_id>
 ```
 
 **Push (P2P POST):**
+
 ```bash
 # Provider pushes to client
 POST http://client-endpoint/ivxp/receive
@@ -296,11 +315,13 @@ POST http://client-endpoint/ivxp/receive
 ### Recommendations
 
 **For IVXP/1.0 (Current):**
+
 - Use polling if client doesn't have public server
 - Status 'delivered' = provider successfully POSTed
 - Client should verify deliverable immediately after receiving
 
 **For IVXP/1.1 (Future):**
+
 - Add 'posted' status (HTTP succeeded)
 - Add 'client_confirmed' status (client signed receipt)
 - Add delivery confirmation message
@@ -310,6 +331,7 @@ POST http://client-endpoint/ivxp/receive
 ## Next Steps
 
 Would you like me to:
+
 1. Add delivery confirmation to the IVXP protocol spec?
 2. Implement receipt signing in ivxp-client.py?
 3. Add 'posted' vs 'confirmed' status tracking in ivxp-provider.py?

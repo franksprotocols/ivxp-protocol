@@ -11,12 +11,14 @@
 **Solutions:**
 
 #### Option 1: Run HTTP Server (Original Design)
+
 ```bash
 python3 ivxp-receiver.py 6066
 # Expose via ngrok/cloudflare/cloud server
 ```
 
 #### Option 2: Polling (Easier!)
+
 ```bash
 # Client just polls for completion
 curl http://provider:5055/ivxp/status/ivxp-123...
@@ -28,10 +30,12 @@ curl http://provider:5055/ivxp/download/ivxp-123...
 **Yes! The Order ID**
 
 Each service request gets a unique identifier:
+
 - **Format:** `ivxp-<uuid>`
 - **Example:** `ivxp-550e8400-e29b-41d4-a716-446655440000`
 
 **In the delivery message:**
+
 ```json
 {
   "order_id": "ivxp-550e8400-...",  ← Identifies THIS specific service
@@ -46,6 +50,7 @@ Each service request gets a unique identifier:
 ```
 
 **Track multiple services:**
+
 ```python
 orders = {
     "ivxp-abc123": {"provider": "babeta", "type": "research"},
@@ -62,6 +67,7 @@ orders = {
 - ❌ **NOT globally unique** across all providers
 
 **Example:**
+
 ```
 Provider A generates: ivxp-550e8400-...
 Provider B generates: ivxp-550e8400-... (by chance, same UUID)
@@ -70,6 +76,7 @@ Provider B generates: ivxp-550e8400-... (by chance, same UUID)
 These are DIFFERENT orders because different providers.
 
 **For global tracking, use composite key:**
+
 ```python
 global_id = f"{provider_wallet}:{order_id}"
 # Example: "0x0c0f...:ivxp-550e8400-..."
@@ -80,6 +87,7 @@ global_id = f"{provider_wallet}:{order_id}"
 ### Scenario 1: Client With Public Server
 
 **Client Side:**
+
 ```bash
 # 1. Start receiver
 python3 ivxp-receiver.py 6066
@@ -94,6 +102,7 @@ python3 ivxp-client.py request http://provider:5055 research "topic" 50
 ```
 
 **What Happens:**
+
 1. Client requests → Gets order_id: `ivxp-123...`
 2. Client pays → Confirms payment
 3. Provider processes service
@@ -101,6 +110,7 @@ python3 ivxp-client.py request http://provider:5055 research "topic" 50
 5. Client receives delivery automatically
 
 **Delivery message includes:**
+
 - `order_id` - Which service this is
 - `provider_agent.wallet_address` - Who sent it
 - `deliverable` - The actual content
@@ -108,6 +118,7 @@ python3 ivxp-client.py request http://provider:5055 research "topic" 50
 ### Scenario 2: Client Without Server (Polling)
 
 **Client Side:**
+
 ```python
 # 1. Request service
 quote = client.request_service(provider_url, "research", "topic", 50)
@@ -135,6 +146,7 @@ while True:
 ```
 
 **What Happens:**
+
 1. Client requests → Gets order_id: `ivxp-123...`
 2. Client pays → Confirms payment
 3. Client polls every 30 seconds
@@ -144,6 +156,7 @@ while True:
 ### Scenario 3: Multiple Services from Different Providers
 
 **Track Multiple Orders:**
+
 ```python
 class ServiceTracker:
     def __init__(self):
@@ -207,22 +220,26 @@ def receive():
 ## Key Takeaways
 
 ### Service Identification
+
 1. **order_id** uniquely identifies each service request
 2. **provider_wallet** identifies who is providing
 3. **deliverable.type** identifies what kind of service
 4. Combine provider_wallet + order_id for global uniqueness
 
 ### Delivery Methods
+
 1. **P2P HTTP POST** - Provider pushes to client (requires public endpoint)
 2. **Polling** - Client pulls from provider (no public endpoint needed)
 3. Both work with the same order_id system
 
 ### Multiple Services
+
 1. Each request gets its own unique order_id
 2. Track orders with provider_wallet + order_id as composite key
 3. Match deliveries by checking both provider and order_id
 
 ### Current Limitation
+
 - order_id is per-provider, not globally unique
 - For global tracking, use: `f"{provider_wallet}:{order_id}"`
 - Future IVXP/2.0 could add global transaction IDs
@@ -230,13 +247,16 @@ def receive():
 ## Recommendations
 
 **For Testing:**
+
 - Use polling (no server needed)
 
 **For Production:**
+
 - Small scale: Use ngrok/cloudflare tunnel with ivxp-receiver.py
 - Large scale: Deploy receiver on cloud server with HTTPS
 
 **For Multiple Services:**
+
 - Use ServiceTracker class to manage all orders
 - Always track both provider_wallet and order_id
 - Check provider wallet when receiving deliveries

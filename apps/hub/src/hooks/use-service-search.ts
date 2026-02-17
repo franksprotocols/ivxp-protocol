@@ -35,25 +35,20 @@ export function buildSearchUrl(params: UseServiceSearchParams): string {
   const searchParams = new URLSearchParams();
 
   if (params.q) searchParams.set("q", params.q);
-  if (params.serviceType)
-    searchParams.set("service_type", params.serviceType);
+  if (params.serviceType) searchParams.set("service_type", params.serviceType);
   if (params.minPrice) searchParams.set("min_price", params.minPrice);
   if (params.maxPrice) searchParams.set("max_price", params.maxPrice);
-  if (params.providerId)
-    searchParams.set("provider_id", params.providerId);
+  if (params.providerId) searchParams.set("provider_id", params.providerId);
   if (params.sortBy) searchParams.set("sort_by", params.sortBy);
   if (params.sortOrder) searchParams.set("sort_order", params.sortOrder);
   if (params.page) searchParams.set("page", String(params.page));
-  if (params.pageSize)
-    searchParams.set("page_size", String(params.pageSize));
+  if (params.pageSize) searchParams.set("page_size", String(params.pageSize));
 
   const qs = searchParams.toString();
   return `/api/registry/services/search${qs ? `?${qs}` : ""}`;
 }
 
-export function useServiceSearch(
-  params: UseServiceSearchParams,
-): UseServiceSearchReturn {
+export function useServiceSearch(params: UseServiceSearchParams): UseServiceSearchReturn {
   const [currentPage, setCurrentPage] = useState(params.page ?? 1);
 
   const url = useMemo(
@@ -61,14 +56,10 @@ export function useServiceSearch(
     [params, currentPage],
   );
 
-  const { data, error, isLoading } = useSWR<SearchServicesResponseWire>(
-    url,
-    fetcher,
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-    },
-  );
+  const { data, error, isLoading } = useSWR<SearchServicesResponseWire>(url, fetcher, {
+    keepPreviousData: true,
+    revalidateOnFocus: false,
+  });
 
   const setPage = useCallback((page: number) => {
     setCurrentPage(page);

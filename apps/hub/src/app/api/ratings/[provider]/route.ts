@@ -1,4 +1,4 @@
-import type { NextRequest} from "next/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { queryProviderRatings } from "@/lib/ratings/rating-queries";
 import { createRatingCache } from "@/lib/ratings/rating-cache";
@@ -8,12 +8,7 @@ import type {
   RatingSortOption,
 } from "@/lib/ratings/types";
 
-const VALID_SORT_OPTIONS: readonly string[] = [
-  "newest",
-  "oldest",
-  "highest",
-  "lowest",
-];
+const VALID_SORT_OPTIONS: readonly string[] = ["newest", "oldest", "highest", "lowest"];
 
 const MIN_PAGE = 1;
 const MIN_LIMIT = 1;
@@ -69,17 +64,8 @@ export async function GET(
     const sort: RatingSortOption = VALID_SORT_OPTIONS.includes(sortParam)
       ? (sortParam as RatingSortOption)
       : "newest";
-    const page = parseIntParam(
-      searchParams.get("page"),
-      MIN_PAGE,
-      MIN_PAGE,
-    );
-    const limit = parseIntParam(
-      searchParams.get("limit"),
-      DEFAULT_LIMIT,
-      MIN_LIMIT,
-      MAX_LIMIT,
-    );
+    const page = parseIntParam(searchParams.get("page"), MIN_PAGE, MIN_PAGE);
+    const limit = parseIntParam(searchParams.get("limit"), DEFAULT_LIMIT, MIN_LIMIT, MAX_LIMIT);
 
     // Check cache first
     const cached = ratingCache.get(provider, sort, page, limit);
@@ -94,8 +80,7 @@ export async function GET(
 
     return NextResponse.json(result);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message.slice(0, 200) : "Unknown error";
+    const message = error instanceof Error ? error.message.slice(0, 200) : "Unknown error";
     console.error("[Ratings API] GET error:", message);
 
     const errorResponse: RatingErrorResponseWire = {

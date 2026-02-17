@@ -18,28 +18,19 @@ export const searchServicesQuerySchema = z.object({
   min_price: z
     .string()
     .optional()
-    .refine(
-      (val) => val === undefined || (!isNaN(Number(val)) && Number(val) >= 0),
-      { message: "min_price must be a non-negative number" },
-    ),
+    .refine((val) => val === undefined || (!isNaN(Number(val)) && Number(val) >= 0), {
+      message: "min_price must be a non-negative number",
+    }),
   max_price: z
     .string()
     .optional()
-    .refine(
-      (val) => val === undefined || (!isNaN(Number(val)) && Number(val) >= 0),
-      { message: "max_price must be a non-negative number" },
-    ),
+    .refine((val) => val === undefined || (!isNaN(Number(val)) && Number(val) >= 0), {
+      message: "max_price must be a non-negative number",
+    }),
   provider_id: z.string().optional(),
-  sort_by: z
-    .enum(["name", "price", "relevance"])
-    .optional()
-    .default("relevance"),
+  sort_by: z.enum(["name", "price", "relevance"]).optional().default("relevance"),
   sort_order: z.enum(["asc", "desc"]).optional().default("asc"),
 });
 
-export type SearchServicesQueryInput = z.input<
-  typeof searchServicesQuerySchema
->;
-export type SearchServicesQueryParsed = z.output<
-  typeof searchServicesQuerySchema
->;
+export type SearchServicesQueryInput = z.input<typeof searchServicesQuerySchema>;
+export type SearchServicesQueryParsed = z.output<typeof searchServicesQuerySchema>;

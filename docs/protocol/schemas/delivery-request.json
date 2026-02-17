@@ -4,7 +4,15 @@
   "title": "IVXP Delivery Request",
   "description": "POST /ivxp/deliver body. Client submits payment proof and requests delivery.",
   "type": "object",
-  "required": ["protocol", "message_type", "timestamp", "order_id", "payment_proof", "signature", "signed_message"],
+  "required": [
+    "protocol",
+    "message_type",
+    "timestamp",
+    "order_id",
+    "payment_proof",
+    "signature",
+    "signed_message"
+  ],
   "properties": {
     "protocol": {
       "type": "string",

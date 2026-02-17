@@ -1,17 +1,17 @@
-import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 const INTERNAL_LINKS = [
-  { href: '/docs', label: 'Docs' },
-  { href: '/community', label: 'Community' },
+  { href: "/docs", label: "Docs" },
+  { href: "/community", label: "Community" },
 ] as const;
 
 const EXTERNAL_LINKS = [
   {
-    href: 'https://github.com/ivxp-protocol',
-    label: 'GitHub',
+    href: "https://github.com/ivxp-protocol",
+    label: "GitHub",
   },
 ] as const;
 

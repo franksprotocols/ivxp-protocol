@@ -8,24 +8,24 @@
  *   PROVIDER_PRIVATE_KEY=0x... npx tsx docs/sdk/examples/basic-provider.ts
  */
 
-import { createIVXPProvider, type IVXPProviderConfig } from '@ivxp/sdk';
+import { createIVXPProvider, type IVXPProviderConfig } from "@ivxp/sdk";
 
 async function main(): Promise<void> {
   const privateKey = process.env.PROVIDER_PRIVATE_KEY as `0x${string}`;
   if (!privateKey) {
-    throw new Error('PROVIDER_PRIVATE_KEY environment variable is required');
+    throw new Error("PROVIDER_PRIVATE_KEY environment variable is required");
   }
 
   const config: IVXPProviderConfig = {
     privateKey,
-    network: 'base-sepolia',
+    network: "base-sepolia",
     port: 3001,
-    host: '127.0.0.1',
-    providerName: 'Demo Provider',
+    host: "127.0.0.1",
+    providerName: "Demo Provider",
     services: [
       {
-        type: 'text_echo',
-        description: 'Echoes back the input text',
+        type: "text_echo",
+        description: "Echoes back the input text",
         base_price_usdc: 0.1,
         estimated_delivery_hours: 0.01,
       },
@@ -35,10 +35,10 @@ async function main(): Promise<void> {
   const provider = createIVXPProvider(config);
 
   // Register service handler
-  provider.registerServiceHandler('text_echo', async (order) => {
+  provider.registerServiceHandler("text_echo", async (order) => {
     return {
       content: `Echo: order ${order.orderId} for service ${order.serviceType}`,
-      content_type: 'text/plain',
+      content_type: "text/plain",
     };
   });
 
@@ -46,11 +46,11 @@ async function main(): Promise<void> {
   const { port, host } = await provider.start();
   console.log(`Provider listening on http://${host}:${port}`);
   console.log(`Catalog: http://${host}:${port}/ivxp/catalog`);
-  console.log('Press Ctrl+C to stop');
+  console.log("Press Ctrl+C to stop");
 
   // Graceful shutdown
-  process.on('SIGINT', async () => {
-    console.log('\nStopping provider...');
+  process.on("SIGINT", async () => {
+    console.log("\nStopping provider...");
     await provider.stop();
     process.exit(0);
   });

@@ -2,9 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createRatingCache } from "./rating-cache";
 import type { ProviderRatingsWire } from "./types";
 
-function makeCacheData(
-  overrides: Partial<ProviderRatingsWire> = {},
-): ProviderRatingsWire {
+function makeCacheData(overrides: Partial<ProviderRatingsWire> = {}): ProviderRatingsWire {
   return {
     provider_address: "0xAAA",
     average_rating: 4.5,

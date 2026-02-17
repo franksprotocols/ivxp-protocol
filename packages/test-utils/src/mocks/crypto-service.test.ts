@@ -7,9 +7,7 @@ import { MockCryptoService } from "./crypto-service.js";
 import { TEST_ACCOUNTS } from "../fixtures/wallets.js";
 
 describe("MockCryptoService", () => {
-  const createService = (
-    overrides?: Partial<ConstructorParameters<typeof MockCryptoService>[0]>,
-  ) =>
+  const createService = (overrides?: Partial<ConstructorParameters<typeof MockCryptoService>[0]>) =>
     new MockCryptoService({
       address: TEST_ACCOUNTS.client.address,
       ...overrides,
@@ -81,21 +79,13 @@ describe("MockCryptoService", () => {
         verifyError: new Error("verify failed"),
       });
       await expect(
-        service.verify(
-          "test",
-          "0xsig" as `0x${string}`,
-          TEST_ACCOUNTS.provider.address,
-        ),
+        service.verify("test", "0xsig" as `0x${string}`, TEST_ACCOUNTS.provider.address),
       ).rejects.toThrow("verify failed");
     });
 
     it("should record calls", async () => {
       const service = createService();
-      await service.verify(
-        "test",
-        "0xsig" as `0x${string}`,
-        TEST_ACCOUNTS.provider.address,
-      );
+      await service.verify("test", "0xsig" as `0x${string}`, TEST_ACCOUNTS.provider.address);
       const calls = service.getVerifyCalls();
       expect(calls).toHaveLength(1);
       expect(calls[0].message).toBe("test");
@@ -114,22 +104,14 @@ describe("MockCryptoService", () => {
     it("should track verify call count", async () => {
       const service = createService();
       expect(service.getVerifyCallCount()).toBe(0);
-      await service.verify(
-        "test",
-        "0xsig" as `0x${string}`,
-        TEST_ACCOUNTS.provider.address,
-      );
+      await service.verify("test", "0xsig" as `0x${string}`, TEST_ACCOUNTS.provider.address);
       expect(service.getVerifyCallCount()).toBe(1);
     });
 
     it("should reset calls", async () => {
       const service = createService();
       await service.sign("test");
-      await service.verify(
-        "test",
-        "0xsig" as `0x${string}`,
-        TEST_ACCOUNTS.provider.address,
-      );
+      await service.verify("test", "0xsig" as `0x${string}`, TEST_ACCOUNTS.provider.address);
       service.resetCalls();
       expect(service.getSignCallCount()).toBe(0);
       expect(service.getVerifyCallCount()).toBe(0);

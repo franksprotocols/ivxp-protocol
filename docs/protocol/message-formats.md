@@ -4,28 +4,28 @@ This document defines all request and response message structures for the IVXP/1
 
 ## Common Types
 
-| Type | Format | Description |
-|------|--------|-------------|
-| `ProtocolVersion` | `"IVXP/1.0"` | Protocol version identifier (literal) |
-| `HexAddress` | `0x` + 40 hex chars | Ethereum address (checksummed or lowercase) |
-| `HexSignature` | `0x` + 130 hex chars | EIP-191 signature (65 bytes) |
-| `HexHash` | `0x` + 64 hex chars | Transaction hash (32 bytes) |
-| `NetworkId` | `"base-mainnet"` or `"base-sepolia"` | Supported blockchain networks |
-| `DeliveryFormat` | `"markdown"`, `"json"`, or `"code"` | Delivery content formats |
-| `ISOTimestamp` | ISO 8601 string | e.g. `"2026-02-05T12:00:00Z"` |
+| Type              | Format                               | Description                                 |
+| ----------------- | ------------------------------------ | ------------------------------------------- |
+| `ProtocolVersion` | `"IVXP/1.0"`                         | Protocol version identifier (literal)       |
+| `HexAddress`      | `0x` + 40 hex chars                  | Ethereum address (checksummed or lowercase) |
+| `HexSignature`    | `0x` + 130 hex chars                 | EIP-191 signature (65 bytes)                |
+| `HexHash`         | `0x` + 64 hex chars                  | Transaction hash (32 bytes)                 |
+| `NetworkId`       | `"base-mainnet"` or `"base-sepolia"` | Supported blockchain networks               |
+| `DeliveryFormat`  | `"markdown"`, `"json"`, or `"code"`  | Delivery content formats                    |
+| `ISOTimestamp`    | ISO 8601 string                      | e.g. `"2026-02-05T12:00:00Z"`               |
 
 ## Message Type Discriminators
 
 Every IVXP message includes a `message_type` field for routing:
 
-| Value | Direction | Description |
-|-------|-----------|-------------|
-| `service_catalog` | Provider -> Client | Service catalog listing |
-| `service_request` | Client -> Provider | Service quote request |
-| `service_quote` | Provider -> Client | Quote with pricing |
-| `delivery_request` | Client -> Provider | Payment proof + delivery trigger |
-| `service_delivery` | Provider -> Client | Completed deliverable |
-| `delivery_confirmation` | Client -> Provider | Receipt confirmation (IVXP/1.1) |
+| Value                   | Direction          | Description                      |
+| ----------------------- | ------------------ | -------------------------------- |
+| `service_catalog`       | Provider -> Client | Service catalog listing          |
+| `service_request`       | Client -> Provider | Service quote request            |
+| `service_quote`         | Provider -> Client | Quote with pricing               |
+| `delivery_request`      | Client -> Provider | Payment proof + delivery trigger |
+| `service_delivery`      | Provider -> Client | Completed deliverable            |
+| `delivery_confirmation` | Client -> Provider | Receipt confirmation (IVXP/1.1)  |
 
 ---
 
@@ -58,22 +58,22 @@ Every IVXP message includes a `message_type` field for routing:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `protocol` | `ProtocolVersion` | Yes | Must be `"IVXP/1.0"` |
-| `provider` | `string` | Yes | Provider name/identifier |
-| `wallet_address` | `HexAddress` | Yes | Provider's payment wallet |
-| `services` | `ServiceDefinition[]` | Yes | Available services |
-| `message_type` | `"service_catalog"` | No | Message discriminator |
-| `timestamp` | `ISOTimestamp` | No | Catalog generation time |
+| Field            | Type                  | Required | Description               |
+| ---------------- | --------------------- | -------- | ------------------------- |
+| `protocol`       | `ProtocolVersion`     | Yes      | Must be `"IVXP/1.0"`      |
+| `provider`       | `string`              | Yes      | Provider name/identifier  |
+| `wallet_address` | `HexAddress`          | Yes      | Provider's payment wallet |
+| `services`       | `ServiceDefinition[]` | Yes      | Available services        |
+| `message_type`   | `"service_catalog"`   | No       | Message discriminator     |
+| `timestamp`      | `ISOTimestamp`        | No       | Catalog generation time   |
 
 ### `ServiceDefinition`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `type` | `string` | Yes | Service type identifier |
-| `base_price_usdc` | `number` | Yes | Base price in USDC (>= 0) |
-| `estimated_delivery_hours` | `number` | Yes | Estimated hours (> 0) |
+| Field                      | Type     | Required | Description               |
+| -------------------------- | -------- | -------- | ------------------------- |
+| `type`                     | `string` | Yes      | Service type identifier   |
+| `base_price_usdc`          | `number` | Yes      | Base price in USDC (>= 0) |
+| `estimated_delivery_hours` | `number` | Yes      | Estimated hours (> 0)     |
 
 ---
 
@@ -104,31 +104,31 @@ Every IVXP message includes a `message_type` field for routing:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `protocol` | `ProtocolVersion` | Yes | Must be `"IVXP/1.0"` |
-| `message_type` | `"service_request"` | Yes | Message discriminator |
-| `timestamp` | `ISOTimestamp` | Yes | Request timestamp |
-| `client_agent` | `ClientAgent` | Yes | Client identification |
-| `service_request` | `ServiceRequestDetails` | Yes | Service details |
+| Field             | Type                    | Required | Description           |
+| ----------------- | ----------------------- | -------- | --------------------- |
+| `protocol`        | `ProtocolVersion`       | Yes      | Must be `"IVXP/1.0"`  |
+| `message_type`    | `"service_request"`     | Yes      | Message discriminator |
+| `timestamp`       | `ISOTimestamp`          | Yes      | Request timestamp     |
+| `client_agent`    | `ClientAgent`           | Yes      | Client identification |
+| `service_request` | `ServiceRequestDetails` | Yes      | Service details       |
 
 ### `ClientAgent`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | `string` | Yes | Client agent name |
-| `wallet_address` | `HexAddress` | Yes | Client's wallet address |
-| `contact_endpoint` | `string` (URL) | No | P2P push delivery endpoint |
+| Field              | Type           | Required | Description                |
+| ------------------ | -------------- | -------- | -------------------------- |
+| `name`             | `string`       | Yes      | Client agent name          |
+| `wallet_address`   | `HexAddress`   | Yes      | Client's wallet address    |
+| `contact_endpoint` | `string` (URL) | No       | P2P push delivery endpoint |
 
 ### `ServiceRequestDetails`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `type` | `string` | Yes | Service type (must match catalog) |
-| `description` | `string` | Yes | Requirement description |
-| `budget_usdc` | `number` | Yes | Max budget in USDC (> 0) |
-| `delivery_format` | `DeliveryFormat` | No | Preferred content format |
-| `deadline` | `ISOTimestamp` | No | Delivery deadline |
+| Field             | Type             | Required | Description                       |
+| ----------------- | ---------------- | -------- | --------------------------------- |
+| `type`            | `string`         | Yes      | Service type (must match catalog) |
+| `description`     | `string`         | Yes      | Requirement description           |
+| `budget_usdc`     | `number`         | Yes      | Max budget in USDC (> 0)          |
+| `delivery_format` | `DeliveryFormat` | No       | Preferred content format          |
+| `deadline`        | `ISOTimestamp`   | No       | Delivery deadline                 |
 
 ---
 
@@ -164,41 +164,41 @@ Every IVXP message includes a `message_type` field for routing:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `protocol` | `ProtocolVersion` | Yes | Must be `"IVXP/1.0"` |
-| `message_type` | `"service_quote"` | Yes | Message discriminator |
-| `timestamp` | `ISOTimestamp` | Yes | Quote timestamp |
-| `order_id` | `string` | Yes | Unique order ID (`ivxp-{uuid-v4}`). UUID v4 lowercase hex. Pattern: `^ivxp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` |
-| `provider_agent` | `ProviderAgent` | Yes | Provider identification |
-| `quote` | `QuoteDetails` | Yes | Pricing and payment info |
-| `terms` | `QuoteTerms` | No | Payment/service terms |
+| Field            | Type              | Required | Description                                                                                                                                      |
+| ---------------- | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `protocol`       | `ProtocolVersion` | Yes      | Must be `"IVXP/1.0"`                                                                                                                             |
+| `message_type`   | `"service_quote"` | Yes      | Message discriminator                                                                                                                            |
+| `timestamp`      | `ISOTimestamp`    | Yes      | Quote timestamp                                                                                                                                  |
+| `order_id`       | `string`          | Yes      | Unique order ID (`ivxp-{uuid-v4}`). UUID v4 lowercase hex. Pattern: `^ivxp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$` |
+| `provider_agent` | `ProviderAgent`   | Yes      | Provider identification                                                                                                                          |
+| `quote`          | `QuoteDetails`    | Yes      | Pricing and payment info                                                                                                                         |
+| `terms`          | `QuoteTerms`      | No       | Payment/service terms                                                                                                                            |
 
 ### `ProviderAgent`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | `string` | Yes | Provider name |
-| `wallet_address` | `HexAddress` | Yes | Provider's wallet |
-| `public_key` | `HexAddress` | No | Provider public key |
+| Field            | Type         | Required | Description         |
+| ---------------- | ------------ | -------- | ------------------- |
+| `name`           | `string`     | Yes      | Provider name       |
+| `wallet_address` | `HexAddress` | Yes      | Provider's wallet   |
+| `public_key`     | `HexAddress` | No       | Provider public key |
 
 ### `QuoteDetails`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `price_usdc` | `number` | Yes | Quoted price in USDC (> 0) |
-| `estimated_delivery` | `ISOTimestamp` | Yes | Estimated delivery time |
-| `payment_address` | `HexAddress` | Yes | Payment destination |
-| `network` | `NetworkId` | Yes | Blockchain network |
-| `token_contract` | `HexAddress` | No | USDC contract address |
+| Field                | Type           | Required | Description                |
+| -------------------- | -------------- | -------- | -------------------------- |
+| `price_usdc`         | `number`       | Yes      | Quoted price in USDC (> 0) |
+| `estimated_delivery` | `ISOTimestamp` | Yes      | Estimated delivery time    |
+| `payment_address`    | `HexAddress`   | Yes      | Payment destination        |
+| `network`            | `NetworkId`    | Yes      | Blockchain network         |
+| `token_contract`     | `HexAddress`   | No       | USDC contract address      |
 
 ### `QuoteTerms`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `payment_timeout` | `integer` | No | Timeout in seconds (> 0) |
-| `revision_policy` | `string` | No | Revision policy text |
-| `refund_policy` | `string` | No | Refund policy text |
+| Field             | Type      | Required | Description              |
+| ----------------- | --------- | -------- | ------------------------ |
+| `payment_timeout` | `integer` | No       | Timeout in seconds (> 0) |
+| `revision_policy` | `string`  | No       | Revision policy text     |
+| `refund_policy`   | `string`  | No       | Refund policy text       |
 
 ---
 
@@ -229,27 +229,27 @@ Every IVXP message includes a `message_type` field for routing:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `protocol` | `ProtocolVersion` | Yes | Must be `"IVXP/1.0"` |
-| `message_type` | `"delivery_request"` | Yes | Message discriminator |
-| `timestamp` | `ISOTimestamp` | Yes | Request timestamp |
-| `order_id` | `string` | Yes | Order ID from quote |
-| `payment_proof` | `PaymentProof` | Yes | On-chain payment proof |
-| `delivery_endpoint` | `string` (URL) | No | P2P push endpoint |
-| `signature` | `HexSignature` | Yes | EIP-191 signature |
-| `signed_message` | `string` | Yes | Signed message text |
+| Field               | Type                 | Required | Description            |
+| ------------------- | -------------------- | -------- | ---------------------- |
+| `protocol`          | `ProtocolVersion`    | Yes      | Must be `"IVXP/1.0"`   |
+| `message_type`      | `"delivery_request"` | Yes      | Message discriminator  |
+| `timestamp`         | `ISOTimestamp`       | Yes      | Request timestamp      |
+| `order_id`          | `string`             | Yes      | Order ID from quote    |
+| `payment_proof`     | `PaymentProof`       | Yes      | On-chain payment proof |
+| `delivery_endpoint` | `string` (URL)       | No       | P2P push endpoint      |
+| `signature`         | `HexSignature`       | Yes      | EIP-191 signature      |
+| `signed_message`    | `string`             | Yes      | Signed message text    |
 
 ### `PaymentProof`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `tx_hash` | `HexHash` | Yes | Transaction hash |
-| `from_address` | `HexAddress` | Yes | Sender wallet |
-| `network` | `NetworkId` | Yes | Payment network |
-| `to_address` | `HexAddress` | No | Recipient wallet |
-| `amount_usdc` | `string` | No | Raw USDC amount (6 decimals) |
-| `block_number` | `integer` | No | Block number |
+| Field          | Type         | Required | Description                  |
+| -------------- | ------------ | -------- | ---------------------------- |
+| `tx_hash`      | `HexHash`    | Yes      | Transaction hash             |
+| `from_address` | `HexAddress` | Yes      | Sender wallet                |
+| `network`      | `NetworkId`  | Yes      | Payment network              |
+| `to_address`   | `HexAddress` | No       | Recipient wallet             |
+| `amount_usdc`  | `string`     | No       | Raw USDC amount (6 decimals) |
+| `block_number` | `integer`    | No       | Block number                 |
 
 ### Signed Message Format
 
@@ -276,11 +276,11 @@ The `nonce` is a unique random string (min 16 chars) generated per request to pr
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `status` | `"accepted"` | Yes | Always `"accepted"` |
-| `order_id` | `string` | Yes | Order identifier |
-| `message` | `string` | Yes | Human-readable message |
+| Field      | Type         | Required | Description            |
+| ---------- | ------------ | -------- | ---------------------- |
+| `status`   | `"accepted"` | Yes      | Always `"accepted"`    |
+| `order_id` | `string`     | Yes      | Order identifier       |
+| `message`  | `string`     | Yes      | Human-readable message |
 
 ---
 
@@ -301,13 +301,13 @@ The `nonce` is a unique random string (min 16 chars) generated per request to pr
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `order_id` | `string` | Yes | Order identifier |
-| `status` | `OrderStatus` | Yes | Current status |
-| `created_at` | `ISOTimestamp` | Yes | Creation timestamp |
-| `service_type` | `string` | Yes | Service type |
-| `price_usdc` | `number` | Yes | Quoted price |
+| Field          | Type           | Required | Description        |
+| -------------- | -------------- | -------- | ------------------ |
+| `order_id`     | `string`       | Yes      | Order identifier   |
+| `status`       | `OrderStatus`  | Yes      | Current status     |
+| `created_at`   | `ISOTimestamp` | Yes      | Creation timestamp |
+| `service_type` | `string`       | Yes      | Service type       |
+| `price_usdc`   | `number`       | Yes      | Quoted price       |
 
 Status values: `"quoted"`, `"paid"`, `"processing"`, `"delivered"`, `"delivery_failed"`
 
@@ -341,27 +341,27 @@ Status values: `"quoted"`, `"paid"`, `"processing"`, `"delivered"`, `"delivery_f
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `protocol` | `ProtocolVersion` | Yes | Must be `"IVXP/1.0"` |
-| `message_type` | `"service_delivery"` | Yes | Message discriminator |
-| `timestamp` | `ISOTimestamp` | Yes | Delivery timestamp |
-| `order_id` | `string` | Yes | Order identifier |
-| `status` | `"completed"` | Yes | Always `"completed"` |
-| `provider_agent` | `DeliveryProviderAgent` | Yes | Provider info |
-| `deliverable` | `Deliverable` | Yes | The deliverable payload |
-| `content_hash` | `string` | No | SHA-256 integrity hash |
-| `delivered_at` | `ISOTimestamp` | No | Production timestamp |
-| `signature` | `HexSignature` | No | Provider's EIP-191 signature |
-| `signed_message` | `string` | No | Signed message text |
+| Field            | Type                    | Required | Description                  |
+| ---------------- | ----------------------- | -------- | ---------------------------- |
+| `protocol`       | `ProtocolVersion`       | Yes      | Must be `"IVXP/1.0"`         |
+| `message_type`   | `"service_delivery"`    | Yes      | Message discriminator        |
+| `timestamp`      | `ISOTimestamp`          | Yes      | Delivery timestamp           |
+| `order_id`       | `string`                | Yes      | Order identifier             |
+| `status`         | `"completed"`           | Yes      | Always `"completed"`         |
+| `provider_agent` | `DeliveryProviderAgent` | Yes      | Provider info                |
+| `deliverable`    | `Deliverable`           | Yes      | The deliverable payload      |
+| `content_hash`   | `string`                | No       | SHA-256 integrity hash       |
+| `delivered_at`   | `ISOTimestamp`          | No       | Production timestamp         |
+| `signature`      | `HexSignature`          | No       | Provider's EIP-191 signature |
+| `signed_message` | `string`                | No       | Signed message text          |
 
 ### `Deliverable`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `type` | `string` | Yes | Content type identifier |
-| `format` | `string` | No | Content format |
-| `content` | `unknown` | Yes | Content (varies by service) |
+| Field     | Type      | Required | Description                 |
+| --------- | --------- | -------- | --------------------------- |
+| `type`    | `string`  | Yes      | Content type identifier     |
+| `format`  | `string`  | No       | Content format              |
+| `content` | `unknown` | Yes      | Content (varies by service) |
 
 ---
 
@@ -379,11 +379,11 @@ All endpoints may return an `ErrorResponse`:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `error` | `IVXPErrorCode` | Yes | Error code (SCREAMING_SNAKE_CASE) |
-| `message` | `string` | Yes | Human-readable error message |
-| `details` | `object` | No | Additional error context |
+| Field     | Type            | Required | Description                       |
+| --------- | --------------- | -------- | --------------------------------- |
+| `error`   | `IVXPErrorCode` | Yes      | Error code (SCREAMING_SNAKE_CASE) |
+| `message` | `string`        | Yes      | Human-readable error message      |
+| `details` | `object`        | No       | Additional error context          |
 
 See [error-codes.md](./error-codes.md) for the complete error taxonomy.
 

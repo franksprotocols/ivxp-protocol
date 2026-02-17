@@ -22,10 +22,5 @@
       "@ivxp/test-utils": ["./packages/test-utils/src/index.ts"]
     }
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

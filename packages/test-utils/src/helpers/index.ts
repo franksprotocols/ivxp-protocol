@@ -3,12 +3,7 @@
  *
  * Re-exports all helper utilities from a single entry point.
  */
-export {
-  delay,
-  flushMicrotasks,
-  waitFor,
-  type WaitForOptions,
-} from "./wait.js";
+export { delay, flushMicrotasks, waitFor, type WaitForOptions } from "./wait.js";
 
 export {
   assertHexAddress,

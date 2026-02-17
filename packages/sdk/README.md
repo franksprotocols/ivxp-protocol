@@ -11,17 +11,17 @@ npm install @ivxp/sdk
 ## Quick Start
 
 ```typescript
-import { createIVXPClient } from '@ivxp/sdk';
+import { createIVXPClient } from "@ivxp/sdk";
 
 const client = createIVXPClient({
-  privateKey: '0x...',
-  network: 'base-sepolia',
+  privateKey: "0x...",
+  network: "base-sepolia",
 });
 
 const result = await client.requestService({
-  providerUrl: 'https://provider.example.com',
-  serviceType: 'market-analysis',
-  description: 'Analyze USDC/ETH trading pair',
+  providerUrl: "https://provider.example.com",
+  serviceType: "market-analysis",
+  description: "Analyze USDC/ETH trading pair",
   budgetUsdc: 10,
 });
 
@@ -31,10 +31,10 @@ console.log(result.deliverable);
 ## Subpath Imports
 
 ```typescript
-import { CryptoService } from '@ivxp/sdk/crypto';
-import { PaymentService } from '@ivxp/sdk/payment';
-import { IVXPClient } from '@ivxp/sdk/core';
-import { IVXPError } from '@ivxp/sdk/errors';
+import { CryptoService } from "@ivxp/sdk/crypto";
+import { PaymentService } from "@ivxp/sdk/payment";
+import { IVXPClient } from "@ivxp/sdk/core";
+import { IVXPError } from "@ivxp/sdk/errors";
 ```
 
 ## Features

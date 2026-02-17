@@ -7,9 +7,7 @@ import { renderWithProviders } from "@/test/test-utils";
 describe("ServiceSearch", () => {
   it("renders search input", () => {
     renderWithProviders(<ServiceSearch value="" onChange={vi.fn()} />);
-    expect(
-      screen.getByRole("searchbox", { name: /search services/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: /search services/i })).toBeInTheDocument();
   });
 
   it("displays the current value", () => {
@@ -29,8 +27,6 @@ describe("ServiceSearch", () => {
 
   it("shows placeholder text", () => {
     renderWithProviders(<ServiceSearch value="" onChange={vi.fn()} />);
-    expect(
-      screen.getByPlaceholderText("Search services..."),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search services...")).toBeInTheDocument();
   });
 });

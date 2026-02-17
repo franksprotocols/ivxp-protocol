@@ -13,14 +13,7 @@
   "includeVersion": true,
   "categorizeByGroup": true,
   "sort": ["source-order"],
-  "kindSortOrder": [
-    "Function",
-    "Class",
-    "Interface",
-    "TypeAlias",
-    "Variable",
-    "Enum"
-  ],
+  "kindSortOrder": ["Function", "Class", "Interface", "TypeAlias", "Variable", "Enum"],
   "navigation": {
     "includeCategories": true,
     "includeGroups": true

@@ -3,12 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-  ANVIL_CHAIN_ID,
-  ANVIL_RPC_URL,
-  MOCK_USDC_ADDRESS,
-  TEST_ACCOUNTS,
-} from "./wallets.js";
+import { ANVIL_CHAIN_ID, ANVIL_RPC_URL, MOCK_USDC_ADDRESS, TEST_ACCOUNTS } from "./wallets.js";
 
 describe("wallet fixtures", () => {
   describe("TEST_ACCOUNTS", () => {

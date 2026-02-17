@@ -21,17 +21,17 @@ Client                    Base L2                   Provider
 
 ## Networks and Contract Addresses
 
-| Network | Chain ID | USDC Contract |
-|---------|----------|---------------|
-| Base Mainnet | 8453 | Published in `USDC_CONTRACT_ADDRESSES` |
-| Base Sepolia | 84532 | Published in `USDC_CONTRACT_ADDRESSES` |
+| Network      | Chain ID | USDC Contract                          |
+| ------------ | -------- | -------------------------------------- |
+| Base Mainnet | 8453     | Published in `USDC_CONTRACT_ADDRESSES` |
+| Base Sepolia | 84532    | Published in `USDC_CONTRACT_ADDRESSES` |
 
 Access contract addresses from the SDK:
 
 ```typescript
-import { USDC_CONTRACT_ADDRESSES, USDC_DECIMALS } from '@ivxp/sdk';
+import { USDC_CONTRACT_ADDRESSES, USDC_DECIMALS } from "@ivxp/sdk";
 
-console.log('USDC decimals:', USDC_DECIMALS); // 6
+console.log("USDC decimals:", USDC_DECIMALS); // 6
 ```
 
 ## Client: Sending Payment
@@ -44,10 +44,11 @@ const payment = await client.submitPayment(providerUrl, orderId, {
   paymentAddress: quote.quote.paymentAddress as `0x${string}`,
 });
 
-console.log('TX Hash:', payment.txHash);
+console.log("TX Hash:", payment.txHash);
 ```
 
 The SDK handles:
+
 - USDC amount formatting (6 decimal places)
 - On-chain transfer via `PaymentService.send()`
 - EIP-191 signed payment proof creation
@@ -110,20 +111,20 @@ The SDK creates a signed payment proof in IVXP/1.0 wire format:
 
 ### Payment Errors
 
-| Error | Code | When |
-|-------|------|------|
-| `InsufficientBalanceError` | `INSUFFICIENT_BALANCE` | Wallet has insufficient USDC |
-| `TransactionError` | `TRANSACTION_FAILED` | On-chain tx reverted |
-| `TransactionSubmissionError` | `TRANSACTION_SUBMISSION_FAILED` | TX rejected by network |
-| `PartialSuccessError` | `PARTIAL_SUCCESS` | Payment sent but notification failed |
+| Error                        | Code                            | When                                 |
+| ---------------------------- | ------------------------------- | ------------------------------------ |
+| `InsufficientBalanceError`   | `INSUFFICIENT_BALANCE`          | Wallet has insufficient USDC         |
+| `TransactionError`           | `TRANSACTION_FAILED`            | On-chain tx reverted                 |
+| `TransactionSubmissionError` | `TRANSACTION_SUBMISSION_FAILED` | TX rejected by network               |
+| `PartialSuccessError`        | `PARTIAL_SUCCESS`               | Payment sent but notification failed |
 
 ### Verification Errors
 
-| Error | Code | When |
-|-------|------|------|
-| `PaymentNotFoundError` | `PAYMENT_NOT_FOUND` | TX hash not found on-chain |
-| `PaymentPendingError` | `PAYMENT_PENDING` | TX not yet confirmed |
-| `PaymentFailedError` | `PAYMENT_FAILED` | TX confirmed but reverted |
+| Error                        | Code                      | When                       |
+| ---------------------------- | ------------------------- | -------------------------- |
+| `PaymentNotFoundError`       | `PAYMENT_NOT_FOUND`       | TX hash not found on-chain |
+| `PaymentPendingError`        | `PAYMENT_PENDING`         | TX not yet confirmed       |
+| `PaymentFailedError`         | `PAYMENT_FAILED`          | TX confirmed but reverted  |
 | `PaymentAmountMismatchError` | `PAYMENT_AMOUNT_MISMATCH` | Amount doesn't match quote |
 
 ### Recovery from PartialSuccessError
@@ -133,8 +134,8 @@ try {
   await client.submitPayment(providerUrl, orderId, quote);
 } catch (error) {
   if (error instanceof PartialSuccessError) {
-    console.log('Payment sent:', error.txHash);
-    console.log('Recoverable:', error.recoverable);
+    console.log("Payment sent:", error.txHash);
+    console.log("Recoverable:", error.recoverable);
     // Retry provider notification manually
   }
 }

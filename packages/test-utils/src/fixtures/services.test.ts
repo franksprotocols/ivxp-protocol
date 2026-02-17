@@ -102,8 +102,15 @@ describe("service fixtures", () => {
 
     it("should allow nested overrides", () => {
       const request = createMockServiceRequest({
-        client_agent: { name: "OverriddenClient", wallet_address: TEST_ACCOUNTS.thirdParty.address },
-        service_request: { type: "translation", description: "Translate to French", budget_usdc: 30 },
+        client_agent: {
+          name: "OverriddenClient",
+          wallet_address: TEST_ACCOUNTS.thirdParty.address,
+        },
+        service_request: {
+          type: "translation",
+          description: "Translate to French",
+          budget_usdc: 30,
+        },
       });
       expect(request.client_agent.name).toBe("OverriddenClient");
       expect(request.service_request.type).toBe("translation");

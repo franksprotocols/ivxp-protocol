@@ -16,10 +16,10 @@ node -e "console.log('0x' + require('crypto').randomBytes(32).toString('hex'))"
 Or using viem:
 
 ```typescript
-import { generatePrivateKey } from 'viem/accounts';
+import { generatePrivateKey } from "viem/accounts";
 
 const privateKey = generatePrivateKey();
-console.log('Private key:', privateKey);
+console.log("Private key:", privateKey);
 ```
 
 **Never commit private keys to source control.** Use environment variables:
@@ -32,25 +32,25 @@ IVXP_PRIVATE_KEY=0x...your_private_key_here...
 ### Get Your Wallet Address
 
 ```typescript
-import { createIVXPClient } from '@ivxp/sdk';
+import { createIVXPClient } from "@ivxp/sdk";
 
 const client = createIVXPClient({
   privateKey: process.env.IVXP_PRIVATE_KEY as `0x${string}`,
-  network: 'base-sepolia',
+  network: "base-sepolia",
 });
 
 const address = await client.getAddress();
-console.log('Wallet address:', address);
+console.log("Wallet address:", address);
 ```
 
 ## Base Network Configuration
 
 IVXP uses Base L2 for USDC payments. The SDK supports two networks:
 
-| Network | Chain ID | Use Case |
-|---------|----------|----------|
-| `base-sepolia` | 84532 | Development and testing |
-| `base-mainnet` | 8453 | Production |
+| Network        | Chain ID | Use Case                |
+| -------------- | -------- | ----------------------- |
+| `base-sepolia` | 84532    | Development and testing |
+| `base-mainnet` | 8453     | Production              |
 
 ### Get Testnet USDC
 
@@ -61,7 +61,7 @@ IVXP uses Base L2 for USDC payments. The SDK supports two networks:
 
 ```typescript
 const balance = await client.getBalance();
-console.log('USDC balance:', balance);
+console.log("USDC balance:", balance);
 // Output: "100.500000"
 ```
 

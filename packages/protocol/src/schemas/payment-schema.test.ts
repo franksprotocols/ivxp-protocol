@@ -17,8 +17,7 @@ import {
 
 const VALID_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const VALID_ADDRESS_2 = "0xabcdef1234567890abcdef1234567890abcdef12";
-const VALID_TX_HASH =
-  "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+const VALID_TX_HASH = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 const VALID_TIMESTAMP = "2026-02-05T12:00:00Z";
 
 // ============================================================================
@@ -147,9 +146,7 @@ describe("TransactionRefSchema", () => {
   });
 
   it("should reject negative amount", () => {
-    expect(() =>
-      TransactionRefSchema.parse({ ...validTxRef, amount_usdc: -1 }),
-    ).toThrow();
+    expect(() => TransactionRefSchema.parse({ ...validTxRef, amount_usdc: -1 })).toThrow();
   });
 
   it("should accept zero amount", () => {
@@ -207,15 +204,11 @@ describe("PaymentVerificationResultSchema", () => {
   });
 
   it("should reject missing verified", () => {
-    expect(() =>
-      PaymentVerificationResultSchema.parse({ tx_hash: VALID_TX_HASH }),
-    ).toThrow();
+    expect(() => PaymentVerificationResultSchema.parse({ tx_hash: VALID_TX_HASH })).toThrow();
   });
 
   it("should reject missing tx_hash", () => {
-    expect(() =>
-      PaymentVerificationResultSchema.parse({ verified: true }),
-    ).toThrow();
+    expect(() => PaymentVerificationResultSchema.parse({ verified: true })).toThrow();
   });
 
   it("should reject non-boolean verified", () => {
@@ -312,8 +305,6 @@ describe("IVXPErrorResponseSchema", () => {
   });
 
   it("should reject missing error field", () => {
-    expect(() =>
-      IVXPErrorResponseSchema.parse({ message: "test" }),
-    ).toThrow();
+    expect(() => IVXPErrorResponseSchema.parse({ message: "test" })).toThrow();
   });
 });

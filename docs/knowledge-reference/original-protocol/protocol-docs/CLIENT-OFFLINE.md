@@ -5,11 +5,13 @@
 **Scenario:** Provider completes service and tries to deliver, but client is offline.
 
 **Current IVXP Design:**
+
 ```
 Provider → POST http://client-endpoint/ivxp/receive → ???
 ```
 
 **If client is offline:**
+
 - ❌ HTTP request times out (30 seconds)
 - ❌ Provider marks status = 'delivery_failed'
 - ❌ Deliverable is NOT received by client
@@ -38,6 +40,7 @@ def deliver_to_client(order_id, deliverable):
 ```
 
 **Result:**
+
 - Order status = `'delivery_failed'`
 - Deliverable saved on provider side (in orders database)
 - Client doesn't receive anything
@@ -103,6 +106,7 @@ def deliver_to_client_with_retry(order_id, deliverable, max_retries=5):
 ```
 
 **Retry Schedule:**
+
 ```
 Attempt 1: Immediate
 Attempt 2: After 1 minute
@@ -113,11 +117,13 @@ Attempt 6: After 2 hours
 ```
 
 **Pros:**
+
 - ✅ Handles temporary offline
 - ✅ Client likely comes back online within retry window
 - ✅ Automatic recovery
 
 **Cons:**
+
 - ⏰ Delays delivery if client is long-term offline
 - 🔄 Multiple connection attempts
 
@@ -185,6 +191,7 @@ def download_deliverable(order_id):
 ```
 
 **Status Flow:**
+
 ```
 paid → processing → completed → ready_for_pickup
                               ↓
@@ -200,12 +207,14 @@ paid → processing → completed → ready_for_pickup
 ```
 
 **Pros:**
+
 - ✅ Client can be offline indefinitely
 - ✅ Client downloads when ready
 - ✅ No retry overhead
 - ✅ Best user experience
 
 **Cons:**
+
 - 💾 Provider must store deliverables longer
 
 ### Solution 3: Email Notification
@@ -258,11 +267,13 @@ while True:
 ```
 
 **Pros:**
+
 - ✅ Decentralized
 - ✅ Client can check anytime
 - ✅ No provider email needed
 
 **Cons:**
+
 - 💰 Gas costs
 - 🔧 Complex setup
 
@@ -326,6 +337,7 @@ Client Offline → Provider tries delivery → Timeout (30s) → 'delivery_faile
 ```
 
 **Problems:**
+
 - ❌ Client paid but got nothing
 - ❌ Provider did work but can't deliver
 - ❌ No way to recover
@@ -339,6 +351,7 @@ Client Online → Polls status → Downloads → Status: 'delivered'
 ```
 
 **Benefits:**
+
 - ✅ Client can be offline indefinitely
 - ✅ No wasted work
 - ✅ Client gets service when ready
@@ -368,29 +381,27 @@ T+2:00:16  Provider marks: 'delivered'
 ## Implementation Priority
 
 **Must Have:**
+
 1. ✅ Save deliverable before attempting delivery
 2. ✅ Provide /ivxp/download endpoint
 3. ✅ Status: 'ready_for_pickup' when P2P fails
 
-**Should Have:**
-4. ✅ Retry P2P delivery (2-3 times over 30 minutes)
-5. ✅ Email notification when client offline
+**Should Have:** 4. ✅ Retry P2P delivery (2-3 times over 30 minutes) 5. ✅ Email notification when client offline
 
-**Nice to Have:**
-6. ⭐ Expiry/cleanup after 7 days
-7. ⭐ On-chain event notification
-8. ⭐ Push notification service
+**Nice to Have:** 6. ⭐ Expiry/cleanup after 7 days 7. ⭐ On-chain event notification 8. ⭐ Push notification service
 
 ## Summary
 
 **Your Question: "What happens when client is not online?"**
 
 **Current (IVXP/1.0):**
+
 - Provider tries POST → Timeout → Status: 'delivery_failed'
 - Client loses their money, provider loses the delivery
 - **BAD USER EXPERIENCE**
 
 **Recommended (Store & Forward):**
+
 - Provider saves deliverable → Tries POST → If fails, status: 'ready_for_pickup'
 - Client polls when online → Downloads → Everyone happy
 - **GOOD USER EXPERIENCE**

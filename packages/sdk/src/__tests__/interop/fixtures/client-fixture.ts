@@ -6,11 +6,7 @@
  * option to use real services connected to Anvil.
  */
 
-import {
-  MockCryptoService,
-  MockPaymentService,
-  TEST_ACCOUNTS,
-} from "@ivxp/test-utils";
+import { MockCryptoService, MockPaymentService, TEST_ACCOUNTS } from "@ivxp/test-utils";
 import { IVXPClient, type IVXPClientConfig } from "../../../core/client.js";
 import { createHttpClient } from "../../../http/index.js";
 
@@ -47,9 +43,7 @@ export interface ClientFixtureConfig {
  * to the provider server. Mock crypto/payment services isolate from
  * blockchain interactions.
  */
-export function createClientFixture(
-  config: ClientFixtureConfig = {},
-): ClientFixture {
+export function createClientFixture(config: ClientFixtureConfig = {}): ClientFixture {
   const mockCrypto = new MockCryptoService({ address: CLIENT_ADDRESS });
   const mockPayment = new MockPaymentService();
 

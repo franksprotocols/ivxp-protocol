@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  useOrderStore,
-  TERMINAL_STATUSES,
-  type Order,
-} from "@/stores/order-store";
+import { useOrderStore, TERMINAL_STATUSES, type Order } from "@/stores/order-store";
 
 /** Polling configuration constants. */
 const INITIAL_INTERVAL_MS = 1_000;
@@ -23,14 +19,8 @@ export interface UseOrderStatusReturn {
  *
  * Accepts an optional `random` function for deterministic testing.
  */
-export function getBackoffInterval(
-  attempt: number,
-  random: () => number = Math.random,
-): number {
-  const base = Math.min(
-    INITIAL_INTERVAL_MS * Math.pow(2, attempt),
-    MAX_INTERVAL_MS,
-  );
+export function getBackoffInterval(attempt: number, random: () => number = Math.random): number {
+  const base = Math.min(INITIAL_INTERVAL_MS * Math.pow(2, attempt), MAX_INTERVAL_MS);
   const jitter = base * JITTER_FACTOR * (random() * 2 - 1);
   return Math.max(INITIAL_INTERVAL_MS, Math.round(base + jitter));
 }
@@ -49,9 +39,7 @@ function isTerminalStatus(status: string): boolean {
 export function useOrderStatus(orderId: string): UseOrderStatusReturn {
   // Issue #4: inline selector instead of useCallback to avoid
   // unnecessary Zustand re-subscriptions
-  const order = useOrderStore(
-    (state) => state.orders.find((o) => o.orderId === orderId) ?? null,
-  );
+  const order = useOrderStore((state) => state.orders.find((o) => o.orderId === orderId) ?? null);
 
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,9 +83,7 @@ export function useOrderStatus(orderId: string): UseOrderStatusReturn {
         // Issue #3: orderId is captured from the closure that is
         // re-created on each effect run (orderId is in deps),
         // so stale closure is not possible here.
-        const currentOrder = useOrderStore
-          .getState()
-          .getOrder(orderId);
+        const currentOrder = useOrderStore.getState().getOrder(orderId);
 
         if (!currentOrder || isTerminalStatus(currentOrder.status)) {
           setIsPolling(false);

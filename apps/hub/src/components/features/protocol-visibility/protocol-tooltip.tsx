@@ -1,12 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ---------------------------------------------------------------------------
 // Educational descriptions for protocol fields
@@ -21,10 +16,8 @@ export const PROTOCOL_TOOLTIPS = {
     "An EIP-191 cryptographic signature proving your wallet authorized this order. The Provider verifies this before processing.",
   content_hash:
     "A SHA-256 hash of the deliverable content. Verify it to confirm the deliverable has not been tampered with.",
-  status:
-    "The current lifecycle stage of your order: Quoted, Paid, Processing, or Delivered.",
-  provider:
-    "The Ethereum address of the service provider fulfilling your order.",
+  status: "The current lifecycle stage of your order: Quoted, Paid, Processing, or Delivered.",
+  provider: "The Ethereum address of the service provider fulfilling your order.",
   signed_message:
     "The plaintext message that was signed with your wallet's private key for identity verification.",
 } as const;

@@ -67,8 +67,7 @@ function createMockedClient(opts?: {
   mockHttp: MockHttpClient;
 } {
   const mockCrypto =
-    opts?.mockCrypto ??
-    new MockCryptoService({ address: TEST_ACCOUNTS.client.address });
+    opts?.mockCrypto ?? new MockCryptoService({ address: TEST_ACCOUNTS.client.address });
   const mockPayment = opts?.mockPayment ?? new MockPaymentService();
   const mockHttp =
     opts?.mockHttp ??
@@ -152,11 +151,10 @@ describe("IVXPClient.submitPayment()", () => {
       const mockPayment = new MockPaymentService();
       const { client } = createMockedClient({ mockHttp, mockPayment });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        { priceUsdc: 8.5, paymentAddress: TEST_ACCOUNTS.provider.address },
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, {
+        priceUsdc: 8.5,
+        paymentAddress: TEST_ACCOUNTS.provider.address,
+      });
 
       const sendCalls = mockPayment.getSendCalls();
       expect(sendCalls).toHaveLength(1);
@@ -171,11 +169,7 @@ describe("IVXPClient.submitPayment()", () => {
       });
       const { client } = createMockedClient({ mockHttp });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       const postCalls = mockHttp.getPostCalls();
       expect(postCalls).toHaveLength(1);
@@ -189,11 +183,7 @@ describe("IVXPClient.submitPayment()", () => {
       });
       const { client } = createMockedClient({ mockHttp });
 
-      await client.submitPayment(
-        "http://provider.test///",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test///", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       const postCalls = mockHttp.getPostCalls();
       expect(postCalls[0].url).toBe(EXPECTED_PAYMENT_URL);
@@ -215,11 +205,7 @@ describe("IVXPClient.submitPayment()", () => {
       });
       const { client } = createMockedClient({ mockHttp, mockCrypto });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       const signCalls = mockCrypto.getSignCalls();
       expect(signCalls).toHaveLength(1);
@@ -235,11 +221,7 @@ describe("IVXPClient.submitPayment()", () => {
       });
       const { client } = createMockedClient({ mockHttp });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       const postCalls = mockHttp.getPostCalls();
       const body = postCalls[0].body as Record<string, unknown>;
@@ -259,11 +241,7 @@ describe("IVXPClient.submitPayment()", () => {
       });
       const { client } = createMockedClient({ mockHttp, mockPayment });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       const postCalls = mockHttp.getPostCalls();
       const body = postCalls[0].body as Record<string, unknown>;
@@ -291,11 +269,7 @@ describe("IVXPClient.submitPayment()", () => {
       });
       const { client } = createMockedClient({ mockHttp, mockCrypto });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       const signCalls = mockCrypto.getSignCalls();
       // Message format: "Order: {orderId} | Payment: {txHash} | Timestamp: {ISO8601}"
@@ -321,11 +295,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient({ mockHttp, mockPayment });
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(PartialSuccessError);
@@ -333,9 +303,7 @@ describe("IVXPClient.submitPayment()", () => {
         expect(partialError.txHash).toBe(DEFAULT_TX_HASH);
         expect(partialError.recoverable).toBe(true);
         expect(partialError.originalError).toBeInstanceOf(Error);
-        expect(partialError.originalError?.message).toContain(
-          "provider unreachable",
-        );
+        expect(partialError.originalError?.message).toContain("provider unreachable");
       }
     });
 
@@ -351,11 +319,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient({ mockHttp, mockPayment });
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(PartialSuccessError);
@@ -370,11 +334,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient({ mockHttp });
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(PartialSuccessError);
@@ -389,11 +349,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient({ mockHttp });
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(PartialSuccessError);
@@ -416,11 +372,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient({ mockPayment });
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         // Should NOT be PartialSuccessError since tx was never sent
@@ -438,11 +390,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient({ mockPayment, mockHttp });
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
       } catch {
         // Expected
       }
@@ -472,11 +420,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient();
 
       try {
-        await client.submitPayment(
-          "ftp://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("ftp://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(IVXPError);
@@ -488,11 +432,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient();
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          "",
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", "", DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(IVXPError);
@@ -505,11 +445,7 @@ describe("IVXPClient.submitPayment()", () => {
       const { client } = createMockedClient();
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          "ivxp-invalid|id",
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", "ivxp-invalid|id", DEFAULT_QUOTE);
         expect.unreachable("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(IVXPError);
@@ -648,11 +584,7 @@ describe("IVXPClient.submitPayment()", () => {
         sentEvents.push(payload);
       });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       expect(sentEvents).toHaveLength(1);
       expect(sentEvents[0].txHash).toBe(DEFAULT_TX_HASH);
@@ -675,11 +607,7 @@ describe("IVXPClient.submitPayment()", () => {
         paidEvents.push(payload);
       });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       expect(paidEvents).toHaveLength(1);
       expect(paidEvents[0].orderId).toBe(DEFAULT_ORDER_ID);
@@ -701,11 +629,7 @@ describe("IVXPClient.submitPayment()", () => {
       client.on("order.paid", (payload) => paidEvents.push(payload));
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
       } catch {
         // Expected: PartialSuccessError
       }
@@ -727,11 +651,7 @@ describe("IVXPClient.submitPayment()", () => {
       client.on("order.paid", (payload) => paidEvents.push(payload));
 
       try {
-        await client.submitPayment(
-          "http://provider.test",
-          DEFAULT_ORDER_ID,
-          DEFAULT_QUOTE,
-        );
+        await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
       } catch {
         // Expected
       }
@@ -824,11 +744,7 @@ describe("IVXPClient.submitPayment()", () => {
         httpClient: mockHttp,
       });
 
-      await client.submitPayment(
-        "http://provider.test",
-        DEFAULT_ORDER_ID,
-        DEFAULT_QUOTE,
-      );
+      await client.submitPayment("http://provider.test", DEFAULT_ORDER_ID, DEFAULT_QUOTE);
 
       const postCalls = mockHttp.getPostCalls();
       const body = postCalls[0].body as Record<string, unknown>;

@@ -84,10 +84,7 @@ export function RatingList({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div
-          className="flex items-center justify-between pt-2"
-          data-testid="rating-pagination"
-        >
+        <div className="flex items-center justify-between pt-2" data-testid="rating-pagination">
           <Button
             variant="outline"
             size="sm"

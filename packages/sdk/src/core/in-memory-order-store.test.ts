@@ -110,9 +110,7 @@ describe("InMemoryOrderStore", () => {
     });
 
     it("should throw IVXPError with INVALID_ORDER_ID for empty string (#7)", async () => {
-      await expect(
-        store.create(buildCreatePayload({ orderId: "" })),
-      ).rejects.toThrow(IVXPError);
+      await expect(store.create(buildCreatePayload({ orderId: "" }))).rejects.toThrow(IVXPError);
     });
 
     it("should throw IVXPError with ORDER_ALREADY_EXISTS for duplicate (#10)", async () => {
@@ -199,11 +197,7 @@ describe("InMemoryOrderStore", () => {
     it("should succeed when expectedUpdatedAt matches (#1)", async () => {
       const created = await store.create(buildCreatePayload());
 
-      const updated = await store.update(
-        VALID_ORDER_ID,
-        { status: "paid" },
-        created.updatedAt,
-      );
+      const updated = await store.update(VALID_ORDER_ID, { status: "paid" }, created.updatedAt);
 
       expect(updated.status).toBe("paid");
     });

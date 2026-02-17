@@ -1,4 +1,4 @@
-import type { NextRequest} from "next/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { loadProviders } from "@/lib/registry/loader";
 import { verifySingleProvider, applyVerificationResult } from "@/lib/registry/verification-service";

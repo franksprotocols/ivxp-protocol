@@ -38,8 +38,7 @@ function createMockResponse(options: {
   body?: unknown;
   contentType?: string;
 }): Response {
-  const bodyText =
-    options.body !== undefined ? JSON.stringify(options.body) : "";
+  const bodyText = options.body !== undefined ? JSON.stringify(options.body) : "";
   const headers = new Headers();
   if (options.contentType !== undefined) {
     headers.set("Content-Type", options.contentType);
@@ -745,9 +744,9 @@ describe("HttpClient", () => {
 
       const client = new HttpClient();
 
-      await expect(
-        client.post("/order", { orderId: "test-123" }),
-      ).rejects.toThrow(PaymentVerificationError);
+      await expect(client.post("/order", { orderId: "test-123" })).rejects.toThrow(
+        PaymentVerificationError,
+      );
     });
 
     it("should ensure all HTTP errors are instances of IVXPError", async () => {
@@ -825,9 +824,7 @@ describe("HttpClient", () => {
       // Default is 30s but per-request is 50ms
       const client = new HttpClient({ timeout: 30000 });
 
-      await expect(client.get("/slow", { timeout: 50 })).rejects.toThrow(
-        ServiceUnavailableError,
-      );
+      await expect(client.get("/slow", { timeout: 50 })).rejects.toThrow(ServiceUnavailableError);
     });
 
     it("should compose external abort signal with internal controller (Issue #1)", async () => {
@@ -900,9 +897,9 @@ describe("HttpClient", () => {
 
       const client = new HttpClient();
 
-      await expect(
-        client.get("/test", { signal: externalController.signal }),
-      ).rejects.toThrow(ServiceUnavailableError);
+      await expect(client.get("/test", { signal: externalController.signal })).rejects.toThrow(
+        ServiceUnavailableError,
+      );
     });
 
     it("should clean up external signal listener after successful request (Issue #1)", async () => {
@@ -967,9 +964,9 @@ describe("HttpClient", () => {
       const client = new HttpClient({ timeout: 50 });
 
       // External signal is NOT aborted, but timeout should still fire
-      await expect(
-        client.get("/slow", { signal: externalController.signal }),
-      ).rejects.toThrow(ServiceUnavailableError);
+      await expect(client.get("/slow", { signal: externalController.signal })).rejects.toThrow(
+        ServiceUnavailableError,
+      );
     });
 
     it("should clear timeout on successful response", async () => {
@@ -1137,10 +1134,7 @@ describe("createHttpClient", () => {
     const client = createHttpClient({ baseUrl: "https://api.example.com" });
     await client.get("/endpoint");
 
-    expect(fetchSpy).toHaveBeenCalledWith(
-      "https://api.example.com/endpoint",
-      expect.any(Object),
-    );
+    expect(fetchSpy).toHaveBeenCalledWith("https://api.example.com/endpoint", expect.any(Object));
   });
 
   it("should work with no arguments (replaces createDefaultHttpClient)", () => {

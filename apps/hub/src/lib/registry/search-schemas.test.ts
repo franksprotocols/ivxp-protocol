@@ -34,38 +34,26 @@ describe("searchServicesQuerySchema", () => {
   });
 
   it("rejects page < 1", () => {
-    expect(() =>
-      searchServicesQuerySchema.parse({ page: "0" }),
-    ).toThrow();
+    expect(() => searchServicesQuerySchema.parse({ page: "0" })).toThrow();
   });
 
   it("rejects page_size > 100", () => {
-    expect(() =>
-      searchServicesQuerySchema.parse({ page_size: "101" }),
-    ).toThrow();
+    expect(() => searchServicesQuerySchema.parse({ page_size: "101" })).toThrow();
   });
 
   it("rejects invalid sort_by value", () => {
-    expect(() =>
-      searchServicesQuerySchema.parse({ sort_by: "invalid" }),
-    ).toThrow();
+    expect(() => searchServicesQuerySchema.parse({ sort_by: "invalid" })).toThrow();
   });
 
   it("rejects search query longer than 200 chars", () => {
-    expect(() =>
-      searchServicesQuerySchema.parse({ q: "a".repeat(201) }),
-    ).toThrow();
+    expect(() => searchServicesQuerySchema.parse({ q: "a".repeat(201) })).toThrow();
   });
 
   it("rejects negative min_price", () => {
-    expect(() =>
-      searchServicesQuerySchema.parse({ min_price: "-1" }),
-    ).toThrow();
+    expect(() => searchServicesQuerySchema.parse({ min_price: "-1" })).toThrow();
   });
 
   it("rejects non-numeric max_price", () => {
-    expect(() =>
-      searchServicesQuerySchema.parse({ max_price: "abc" }),
-    ).toThrow();
+    expect(() => searchServicesQuerySchema.parse({ max_price: "abc" })).toThrow();
   });
 });

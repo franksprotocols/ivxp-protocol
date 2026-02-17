@@ -5,12 +5,7 @@
  * All wire protocol fields use snake_case for Python compatibility.
  */
 
-import type {
-  DeliveryFormat,
-  HexAddress,
-  ISOTimestamp,
-  ProtocolVersion,
-} from "./common.js";
+import type { DeliveryFormat, HexAddress, ISOTimestamp, ProtocolVersion } from "./common.js";
 
 // ---------------------------------------------------------------------------
 // Service Definition (used within ServiceCatalog)

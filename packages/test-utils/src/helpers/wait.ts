@@ -63,8 +63,7 @@ export const waitFor = async (
 ): Promise<void> => {
   const timeout = options.timeout ?? 5000;
   const interval = options.interval ?? 50;
-  const timeoutMessage =
-    options.timeoutMessage ?? `waitFor timed out after ${timeout}ms`;
+  const timeoutMessage = options.timeoutMessage ?? `waitFor timed out after ${timeout}ms`;
 
   const startTime = Date.now();
 

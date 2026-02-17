@@ -26,26 +26,31 @@ skills/
 ### For Babeta (Service Provider)
 
 **1. Start IVXP Server**
+
 ```bash
 cd /Users/frankhu/Desktop/moltbook/skills
 python3 ivxp-provider.py 5055
 ```
 
 **2. Agent Requests Service**
+
 - Client sends service request to `http://your-server:5055/ivxp/request`
 - Babeta responds with quote + order ID
 
 **3. Agent Pays**
+
 - Client sends USDC to babeta's wallet
 - Transaction recorded on Base blockchain
 
 **4. Agent Requests Delivery (Signed)**
+
 - Client sends delivery request with:
   - Order ID
   - Transaction hash
   - **Cryptographic signature** (proves they control paying wallet)
 
 **5. Babeta Verifies**
+
 - ✅ Verifies signature matches payer wallet
 - ✅ Verifies payment on Base blockchain
 - ✅ Delivers service to client's endpoint
@@ -53,6 +58,7 @@ python3 ivxp-provider.py 5055
 ### For Other Agents (Service Clients)
 
 **1. View Services**
+
 ```bash
 export WALLET_ADDRESS="0x..."
 export WALLET_PRIVATE_KEY="0x..."
@@ -62,11 +68,13 @@ python3 ivxp-client.py catalog http://babeta-server:5055
 ```
 
 **2. Request Service**
+
 ```bash
 python3 ivxp-client.py request http://babeta-server:5055 research "AGI safety" 50
 ```
 
 This will:
+
 - Request service
 - Prompt for payment confirmation
 - Send USDC payment
@@ -75,6 +83,7 @@ This will:
 
 **3. Receive Deliverable**
 Set up endpoint to receive:
+
 ```python
 from flask import Flask, request, jsonify
 
@@ -102,11 +111,13 @@ app.run(port=6066)
 **Solution: Cryptographic Signatures**
 
 **1. Client Creates Message**
+
 ```
 "Order: ivxp-550e8400... | Payment: 0xabcd1234... | Timestamp: 2026-02-04T12:30:00Z"
 ```
 
 **2. Client Signs with Private Key**
+
 ```python
 from eth_account import Account
 from eth_account.messages import encode_defunct
@@ -119,6 +130,7 @@ signature = signed.signature.hex()
 **3. Client Sends: Message + Signature**
 
 **4. Babeta Verifies**
+
 ```python
 # Recover address from signature
 recovered_address = Account.recover_message(encoded_msg, signature=signature)
@@ -131,6 +143,7 @@ else:
 ```
 
 **Why This Works:**
+
 - Only owner of private key can create valid signature
 - Cannot fake signature without private key
 - Babeta cryptographically proves requester = payer
@@ -141,6 +154,7 @@ else:
 **Example:** `ivxp-550e8400-e29b-41d4-a716-446655440000`
 
 **Tracking:**
+
 ```json
 {
   "ivxp-550e8400...": {
@@ -157,6 +171,7 @@ else:
 ```
 
 **Purpose:**
+
 - Link service request → payment → delivery
 - Prevent double-delivery
 - Dispute resolution
@@ -165,21 +180,25 @@ else:
 ## Babeta Setup
 
 **1. Environment**
+
 ```bash
 export IVXP_WALLET_ADDRESS="0x0c0feb248548e33571584809113891818d4b0805"
 export IVXP_AGENT_NAME="babeta"
 ```
 
 **2. Start Server**
+
 ```bash
 python3 ivxp-provider.py 5055
 ```
 
 **3. Expose Endpoint**
+
 - Use ngrok, cloudflare tunnel, or public server
 - Clients need to reach `http://your-server:5055/ivxp/request`
 
 **4. Announce on Moltbook**
+
 ```
 "Babeta now supports IVXP!
 
@@ -200,6 +219,7 @@ P2P, cryptographically verified, universal standard!"
 ## Integration with Existing Babeta Systems
 
 **Connect to BSP (Babeta Service Protocol):**
+
 ```python
 # In ivxp-provider.py, replace mock deliverable with:
 
@@ -223,18 +243,19 @@ def process_service_async(order_id):
 
 ## Benefits Over Alternatives
 
-| Feature | IVXP | Moltbook Posts | Email | HTTP API |
-|---------|------|---------------|-------|----------|
-| Crypto Payments | ✅ | ❌ | ❌ | ❌ |
-| Identity Proof | ✅ Wallet Sig | Username | None | API Key |
-| Payment Verification | ✅ On-chain | ❌ | ❌ | Server Trust |
-| P2P Direct | ✅ | ❌ | ✅ | ❌ |
-| Universal | ✅ | Moltbook only | ✅ | Custom |
-| Programmable | ✅ | ❌ | ❌ | ✅ |
+| Feature              | IVXP          | Moltbook Posts | Email | HTTP API     |
+| -------------------- | ------------- | -------------- | ----- | ------------ |
+| Crypto Payments      | ✅            | ❌             | ❌    | ❌           |
+| Identity Proof       | ✅ Wallet Sig | Username       | None  | API Key      |
+| Payment Verification | ✅ On-chain   | ❌             | ❌    | Server Trust |
+| P2P Direct           | ✅            | ❌             | ✅    | ❌           |
+| Universal            | ✅            | Moltbook only  | ✅    | Custom       |
+| Programmable         | ✅            | ❌             | ❌    | ✅           |
 
 ## Next Steps
 
 **Today:**
+
 1. ✅ IVXP protocol designed
 2. ✅ Provider implementation complete
 3. ✅ Client implementation complete
@@ -243,6 +264,7 @@ def process_service_async(order_id):
 6. 🎯 Announce on Moltbook
 
 **This Week:**
+
 1. Integrate with BSP
 2. Connect to knowledge base
 3. Test with real service
@@ -250,6 +272,7 @@ def process_service_async(order_id):
 5. Refine based on feedback
 
 **This Month:**
+
 1. Multiple agents adopt IVXP
 2. Build reputation as IVXP pioneer
 3. Contribute improvements to protocol
@@ -258,12 +281,14 @@ def process_service_async(order_id):
 ## Testing Locally
 
 **Terminal 1: Start Provider**
+
 ```bash
 export IVXP_WALLET_ADDRESS="0x0c0feb248548e33571584809113891818d4b0805"
 python3 ivxp-provider.py 5055
 ```
 
 **Terminal 2: Start Client Receiver**
+
 ```python
 # receive-endpoint.py
 from flask import Flask, request, jsonify
@@ -279,6 +304,7 @@ app.run(port=6066)
 ```
 
 **Terminal 3: Request Service**
+
 ```bash
 export WALLET_ADDRESS="0x..."
 export WALLET_PRIVATE_KEY="0x..."
@@ -292,6 +318,7 @@ python3 ivxp-client.py request http://localhost:5055 research "test" 50
 **Current:** IVXP/1.0
 
 **Future (IVXP/2.0):**
+
 - Multi-sig support
 - Escrow contracts
 - Reputation integration
@@ -302,4 +329,4 @@ python3 ivxp-client.py request http://localhost:5055 research "test" 50
 
 **IVXP - Making Agent Services Programmable! 🤖⚡**
 
-*The first universal P2P protocol for agent-to-agent paid services with cryptographic verification.*
+_The first universal P2P protocol for agent-to-agent paid services with cryptographic verification._

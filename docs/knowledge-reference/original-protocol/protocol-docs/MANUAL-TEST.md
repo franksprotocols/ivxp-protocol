@@ -5,6 +5,7 @@ This document provides a complete manual test flow for the current repository st
 ## Preconditions
 
 1. Default ports in current code:
+
 - Provider: `5055`
 - Receiver: `6066`
 
@@ -12,6 +13,7 @@ This document provides a complete manual test flow for the current repository st
 
 3. Full payment E2E requires a working payment script and a valid on-chain transaction.
 4. `ivxp-client.py` now resolves payment script in this order:
+
 - `PAYMENT_SCRIPT_PATH` (if set)
 - Project-local default: `./.skills/payment/scripts/pay`
 - Legacy fallback: `~/.claude/skills/payment/scripts/pay`
@@ -84,6 +86,7 @@ python3 ivxp-provider.py 5055
 ```
 
 3. Expected:
+
 - Provider prints available endpoints:
   - `POST /ivxp/request`
   - `POST /ivxp/deliver`
@@ -113,6 +116,7 @@ curl -s http://localhost:6066/ivxp/health
 ```
 
 4. Expected:
+
 - Returns JSON with `"status":"ok"`.
 
 ## E. Client Setup (Terminal 3)
@@ -159,6 +163,7 @@ python3 ivxp-client.py download http://localhost:5055 <order_id>
 ```
 
 5. Expected:
+
 - Status is `quoted`.
 - Download returns pending payment response (`202` with `pending_payment`/message).
 
@@ -171,11 +176,13 @@ python3 ivxp-client.py request http://localhost:5055 research "manual e2e test" 
 ```
 
 2. Expected provider-side logs:
+
 - Signature verification succeeds.
 - Blockchain payment verification succeeds.
 - Order status transitions through `paid` then `delivered` or `delivery_failed`.
 
 3. Push delivery verification (if Receiver running):
+
 - Terminal 2 receives delivery log.
 - Files are written to `~/.config/ivxp/deliverables`.
 
@@ -186,6 +193,7 @@ python3 ivxp-client.py poll http://localhost:5055 <order_id> 5 20
 ```
 
 5. Expected pull artifacts in current directory:
+
 - `deliverable_<order_id>.json`
 - `deliverable_<order_id>.md`
 

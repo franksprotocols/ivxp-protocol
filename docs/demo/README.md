@@ -134,6 +134,7 @@ You've completed the IVXP Protocol demo. You now understand:
 - Protocol transparency and verification via content hashing
 
 **Next Steps**:
+
 - Try the Playground page for a streamlined testing experience
 - Explore the advanced scenarios below (error handling, concurrent orders)
 - Use the SDK for programmatic access (`@ivxp/sdk`)
@@ -147,23 +148,23 @@ You've completed the IVXP Protocol demo. You now understand:
 
 You need an EVM-compatible browser wallet:
 
-| Wallet | Install Link | Notes |
-|--------|-------------|-------|
-| MetaMask | [metamask.io/download](https://metamask.io/download/) | Most widely used |
-| Rainbow | [rainbow.me](https://rainbow.me/) | Mobile-first, clean UX |
-| Coinbase Wallet | [coinbase.com/wallet](https://www.coinbase.com/wallet) | Good for beginners |
+| Wallet          | Install Link                                           | Notes                  |
+| --------------- | ------------------------------------------------------ | ---------------------- |
+| MetaMask        | [metamask.io/download](https://metamask.io/download/)  | Most widely used       |
+| Rainbow         | [rainbow.me](https://rainbow.me/)                      | Mobile-first, clean UX |
+| Coinbase Wallet | [coinbase.com/wallet](https://www.coinbase.com/wallet) | Good for beginners     |
 
 ### Add Base Sepolia Network Manually
 
 If automatic network switching doesn't work:
 
-| Field | Value |
-|-------|-------|
-| Network Name | Base Sepolia |
-| RPC URL | `https://sepolia.base.org` |
-| Chain ID | `84532` |
-| Currency Symbol | ETH |
-| Block Explorer | `https://sepolia.basescan.org` |
+| Field           | Value                          |
+| --------------- | ------------------------------ |
+| Network Name    | Base Sepolia                   |
+| RPC URL         | `https://sepolia.base.org`     |
+| Chain ID        | `84532`                        |
+| Currency Symbol | ETH                            |
+| Block Explorer  | `https://sepolia.basescan.org` |
 
 In MetaMask: Settings > Networks > Add Network > fill in the values above.
 
@@ -236,24 +237,25 @@ The Protocol Inspector on the Playground page shows:
 
 ### Faucets
 
-| Resource | URL |
-|----------|-----|
+| Resource      | URL                                          |
+| ------------- | -------------------------------------------- |
 | ETH (Alchemy) | https://www.alchemy.com/faucets/base-sepolia |
-| USDC (Circle) | https://faucet.circle.com |
+| USDC (Circle) | https://faucet.circle.com                    |
 
 ### URLs
 
 > **Note**: The URLs below are placeholders. Replace them with your actual deployment URLs,
 > or use `--local` mode with the setup scripts to run everything on localhost.
 
-| Service | URL |
-|---------|-----|
-| Hub (local) | http://localhost:3000 |
-| Demo Provider (local) | http://localhost:3001 |
-| Playground (local) | http://localhost:3000/playground |
-| Provider Health (local) | http://localhost:3001/health |
+| Service                 | URL                              |
+| ----------------------- | -------------------------------- |
+| Hub (local)             | http://localhost:3000            |
+| Demo Provider (local)   | http://localhost:3001            |
+| Playground (local)      | http://localhost:3000/playground |
+| Provider Health (local) | http://localhost:3001/health     |
 
 Set environment variables to override:
+
 ```bash
 export HUB_URL="https://your-hub-deployment.vercel.app"
 export DEMO_PROVIDER_URL="https://your-provider-deployment.railway.app"
@@ -261,26 +263,26 @@ export DEMO_PROVIDER_URL="https://your-provider-deployment.railway.app"
 
 ### Service Prices
 
-| Service | Price | Delivery Time |
-|---------|-------|---------------|
-| Text Echo | 0.10 USDC | ~5 seconds |
-| Image Gen | 1.50 USDC | ~10 seconds |
+| Service   | Price     | Delivery Time |
+| --------- | --------- | ------------- |
+| Text Echo | 0.10 USDC | ~5 seconds    |
+| Image Gen | 1.50 USDC | ~10 seconds   |
 
 ### Demo Inputs
 
-| Service | Suggested Input |
-|---------|----------------|
+| Service   | Suggested Input        |
+| --------- | ---------------------- |
 | Text Echo | `Hello IVXP Protocol!` |
-| Image Gen | `IVXP Protocol Logo` |
+| Image Gen | `IVXP Protocol Logo`   |
 
 ### Base Sepolia Network
 
-| Field | Value |
-|-------|-------|
-| Chain ID | 84532 |
-| RPC URL | https://sepolia.base.org |
-| Block Explorer | https://sepolia.basescan.org |
-| USDC Contract | 0x036CbD53842c5426634e7929541eC2318f3dCF7e |
+| Field          | Value                                      |
+| -------------- | ------------------------------------------ |
+| Chain ID       | 84532                                      |
+| RPC URL        | https://sepolia.base.org                   |
+| Block Explorer | https://sepolia.basescan.org               |
+| USDC Contract  | 0x036CbD53842c5426634e7929541eC2318f3dCF7e |
 
 ---
 
@@ -300,6 +302,7 @@ export DEMO_PROVIDER_URL="https://your-provider-deployment.railway.app"
 
 **Problem**: Gas estimation failed or transaction reverted.
 **Solution**:
+
 1. Check you have enough ETH for gas (> 0.001 ETH)
 2. Ensure USDC approval was successful (check wallet activity)
 3. Try again -- testnet can be flaky
@@ -318,6 +321,7 @@ export DEMO_PROVIDER_URL="https://your-provider-deployment.railway.app"
 
 **Problem**: "Connect Wallet" button doesn't respond.
 **Solution**:
+
 1. Ensure your wallet extension is unlocked
 2. Try refreshing the page
 3. Clear browser cache and reconnect

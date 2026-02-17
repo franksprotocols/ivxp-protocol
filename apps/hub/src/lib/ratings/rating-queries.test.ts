@@ -38,21 +38,13 @@ describe("calculateAverage", () => {
   });
 
   it("calculates average rounded to 1 decimal", () => {
-    const ratings = [
-      makeRating({ stars: 5 }),
-      makeRating({ stars: 4 }),
-      makeRating({ stars: 3 }),
-    ];
+    const ratings = [makeRating({ stars: 5 }), makeRating({ stars: 4 }), makeRating({ stars: 3 })];
     // (5+4+3)/3 = 4.0
     expect(calculateAverage(ratings)).toBe(4);
   });
 
   it("rounds correctly for non-integer averages", () => {
-    const ratings = [
-      makeRating({ stars: 5 }),
-      makeRating({ stars: 4 }),
-      makeRating({ stars: 4 }),
-    ];
+    const ratings = [makeRating({ stars: 5 }), makeRating({ stars: 4 }), makeRating({ stars: 4 })];
     // (5+4+4)/3 = 4.333... → 4.3
     expect(calculateAverage(ratings)).toBe(4.3);
   });
@@ -65,7 +57,11 @@ describe("calculateAverage", () => {
 describe("calculateDistribution", () => {
   it("returns all zeros for empty array", () => {
     expect(calculateDistribution([])).toEqual({
-      1: 0, 2: 0, 3: 0, 4: 0, 5: 0,
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
     });
   });
 
@@ -77,7 +73,11 @@ describe("calculateDistribution", () => {
       makeRating({ stars: 1 }),
     ];
     expect(calculateDistribution(ratings)).toEqual({
-      1: 1, 2: 0, 3: 1, 4: 0, 5: 2,
+      1: 1,
+      2: 0,
+      3: 1,
+      4: 0,
+      5: 2,
     });
   });
 });
@@ -163,9 +163,7 @@ describe("queryProviderRatings", () => {
   });
 
   it("returns empty result for unknown provider", () => {
-    mockLoadRatings.mockReturnValue([
-      makeRating({ provider_address: "0xAAA" }),
-    ]);
+    mockLoadRatings.mockReturnValue([makeRating({ provider_address: "0xAAA" })]);
 
     const result = queryProviderRatings("0xZZZ");
     expect(result.rating_count).toBe(0);
@@ -202,7 +200,11 @@ describe("queryProviderRatings", () => {
 
     const result = queryProviderRatings("0xAAA");
     expect(result.rating_distribution).toEqual({
-      1: 0, 2: 0, 3: 1, 4: 0, 5: 2,
+      1: 0,
+      2: 0,
+      3: 1,
+      4: 0,
+      5: 2,
     });
   });
 });

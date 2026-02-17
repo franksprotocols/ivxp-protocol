@@ -43,10 +43,7 @@ export {
   type TestChainConfig,
 } from "./chain.js";
 
-export {
-  MockUSDC,
-  type MockUSDCDeployConfig,
-} from "./usdc.js";
+export { MockUSDC, type MockUSDCDeployConfig } from "./usdc.js";
 
 export {
   MockProvider,

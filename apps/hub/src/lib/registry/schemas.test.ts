@@ -38,33 +38,23 @@ describe("listProvidersQuerySchema", () => {
   });
 
   it("rejects page_size > 100", () => {
-    expect(() =>
-      listProvidersQuerySchema.parse({ page_size: "101" }),
-    ).toThrow();
+    expect(() => listProvidersQuerySchema.parse({ page_size: "101" })).toThrow();
   });
 
   it("rejects page_size < 1", () => {
-    expect(() =>
-      listProvidersQuerySchema.parse({ page_size: "0" }),
-    ).toThrow();
+    expect(() => listProvidersQuerySchema.parse({ page_size: "0" })).toThrow();
   });
 
   it("rejects invalid sort_by value", () => {
-    expect(() =>
-      listProvidersQuerySchema.parse({ sort_by: "invalid" }),
-    ).toThrow();
+    expect(() => listProvidersQuerySchema.parse({ sort_by: "invalid" })).toThrow();
   });
 
   it("rejects invalid sort_order value", () => {
-    expect(() =>
-      listProvidersQuerySchema.parse({ sort_order: "random" }),
-    ).toThrow();
+    expect(() => listProvidersQuerySchema.parse({ sort_order: "random" })).toThrow();
   });
 
   it("rejects search query longer than 200 chars", () => {
-    expect(() =>
-      listProvidersQuerySchema.parse({ q: "a".repeat(201) }),
-    ).toThrow();
+    expect(() => listProvidersQuerySchema.parse({ q: "a".repeat(201) })).toThrow();
   });
 
   it("accepts search query of exactly 200 chars", () => {
@@ -73,8 +63,6 @@ describe("listProvidersQuerySchema", () => {
   });
 
   it("rejects invalid status value", () => {
-    expect(() =>
-      listProvidersQuerySchema.parse({ status: "unknown" }),
-    ).toThrow();
+    expect(() => listProvidersQuerySchema.parse({ status: "unknown" })).toThrow();
   });
 });
