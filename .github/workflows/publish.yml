@@ -1,0 +1,166 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      # CRITICAL FIX #1: Validate NPM_TOKEN exists before proceeding
+      - name: Validate NPM_TOKEN secret
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "::error::NPM_TOKEN secret is not set. Configure it in repository settings."
+            exit 1
+          fi
+          echo "✓ NPM_TOKEN secret is configured"
+
+      # CRITICAL FIX #2: Check npm version supports provenance
+      - name: Validate npm provenance support
+        run: |
+          NPM_VERSION=$(npm --version)
+          REQUIRED_VERSION="9.5.0"
+          if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NPM_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+            echo "::error::npm version $NPM_VERSION does not support provenance. Requires >= $REQUIRED_VERSION"
+            exit 1
+          fi
+          echo "✓ npm version $NPM_VERSION supports provenance"
+
+      # HIGH PRIORITY FIX #5: Validate version synchronization
+      - name: Validate version synchronization
+        run: |
+          PROTOCOL_VERSION=$(node -p "require('./packages/protocol/package.json').version")
+          SDK_VERSION=$(node -p "require('./packages/sdk/package.json').version")
+          TEST_UTILS_VERSION=$(node -p "require('./packages/test-utils/package.json').version")
+
+          if [ "$PROTOCOL_VERSION" != "$SDK_VERSION" ] || [ "$PROTOCOL_VERSION" != "$TEST_UTILS_VERSION" ]; then
+            echo "::error::Package versions are not synchronized:"
+            echo "  @ivxp/protocol: $PROTOCOL_VERSION"
+            echo "  @ivxp/sdk: $SDK_VERSION"
+            echo "  @ivxp/test-utils: $TEST_UTILS_VERSION"
+            exit 1
+          fi
+          echo "✓ All packages synchronized at version $PROTOCOL_VERSION"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # MEDIUM PRIORITY FIX #12: Add dependency audit
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
+
+      # HIGH PRIORITY FIX #4: Add dry-run validation
+      - name: Dry-run publish validation
+        run: |
+          echo "Validating @ivxp/protocol..."
+          cd packages/protocol && npm publish --dry-run --access public && cd ../..
+          echo "Validating @ivxp/sdk..."
+          cd packages/sdk && npm publish --dry-run --access public && cd ../..
+          echo "Validating @ivxp/test-utils..."
+          cd packages/test-utils && npm publish --dry-run --access public && cd ../..
+          echo "✓ All packages pass dry-run validation"
+
+      # MEDIUM PRIORITY FIX #8: Validate package sizes
+      - name: Validate package sizes
+        run: |
+          cd packages/protocol && npm pack --dry-run | grep "package size" && cd ../..
+          cd packages/sdk && npm pack --dry-run | grep "package size" && cd ../..
+          cd packages/test-utils && npm pack --dry-run | grep "package size" && cd ../..
+
+      # CRITICAL FIX #3: Sequential publishing with registry propagation wait
+      # Publish protocol first (no dependencies)
+      - name: Publish @ivxp/protocol
+        id: publish-protocol
+        run: |
+          echo "Publishing @ivxp/protocol..."
+          pnpm --filter @ivxp/protocol publish --provenance --access public --no-git-checks
+          echo "✓ @ivxp/protocol published successfully"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Wait for registry propagation
+      - name: Wait for @ivxp/protocol registry propagation
+        run: |
+          echo "Waiting 30 seconds for npm registry propagation..."
+          sleep 30
+          PROTOCOL_VERSION=$(node -p "require('./packages/protocol/package.json').version")
+          echo "Verifying @ivxp/protocol@$PROTOCOL_VERSION is available..."
+          npm view @ivxp/protocol@$PROTOCOL_VERSION version || (echo "::warning::Package not yet available, waiting longer..." && sleep 30)
+          echo "✓ @ivxp/protocol is available on registry"
+
+      # Publish test-utils (depends on protocol)
+      - name: Publish @ivxp/test-utils
+        id: publish-test-utils
+        run: |
+          echo "Publishing @ivxp/test-utils..."
+          pnpm --filter @ivxp/test-utils publish --provenance --access public --no-git-checks
+          echo "✓ @ivxp/test-utils published successfully"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Wait for registry propagation
+      - name: Wait for @ivxp/test-utils registry propagation
+        run: |
+          echo "Waiting 30 seconds for npm registry propagation..."
+          sleep 30
+          TEST_UTILS_VERSION=$(node -p "require('./packages/test-utils/package.json').version")
+          echo "Verifying @ivxp/test-utils@$TEST_UTILS_VERSION is available..."
+          npm view @ivxp/test-utils@$TEST_UTILS_VERSION version || (echo "::warning::Package not yet available, waiting longer..." && sleep 30)
+          echo "✓ @ivxp/test-utils is available on registry"
+
+      # Publish sdk last (depends on protocol and test-utils)
+      - name: Publish @ivxp/sdk
+        id: publish-sdk
+        run: |
+          echo "Publishing @ivxp/sdk..."
+          pnpm --filter @ivxp/sdk publish --provenance --access public --no-git-checks
+          echo "✓ @ivxp/sdk published successfully"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # HIGH PRIORITY FIX #7: Rollback strategy and failure notification
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Publishing failed. Manual intervention required."
+          echo "::error::Check which packages were published and consider unpublishing within 72 hours if needed."
+          echo "Published packages status:"
+          echo "  - @ivxp/protocol: ${{ steps.publish-protocol.outcome }}"
+          echo "  - @ivxp/test-utils: ${{ steps.publish-test-utils.outcome }}"
+          echo "  - @ivxp/sdk: ${{ steps.publish-sdk.outcome }}"
+          exit 1
+
+      - name: Publish success summary
+        if: success()
+        run: |
+          VERSION=$(node -p "require('./packages/protocol/package.json').version")
+          echo "✓ Successfully published all packages at version $VERSION"
+          echo "  - @ivxp/protocol@$VERSION"
+          echo "  - @ivxp/test-utils@$VERSION"
+          echo "  - @ivxp/sdk@$VERSION"

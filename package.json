@@ -21,7 +21,9 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
     "typecheck": "pnpm -r typecheck",
     "dev": "pnpm -r --parallel dev",
-    "clean": "pnpm -r exec rm -rf dist node_modules && rm -rf node_modules"
+    "clean": "pnpm -r exec rm -rf dist node_modules && rm -rf node_modules",
+    "publish:dry": "pnpm -r --filter './packages/*' publish --dry-run --access public --no-git-checks",
+    "publish": "pnpm -r --filter './packages/*' publish --provenance --access public"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

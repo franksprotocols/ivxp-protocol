@@ -1,7 +1,6 @@
 {
   "name": "@ivxp/sdk",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "TypeScript SDK for IVXP Protocol - Client library for the Intelligence Value Exchange Protocol",
   "sideEffects": false,
@@ -36,8 +35,13 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -51,7 +55,10 @@
     "test:interop:ts-ts": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/junit.xml src/__tests__/interop/ts-ts.test.ts",
     "test:interop:ts-python": "vitest run --reporter=verbose src/__tests__/interop/ts-python.test.ts",
     "test:interop:python-ts": "vitest run --reporter=verbose src/__tests__/interop/python-ts.test.ts",
-    "test:interop:python": "vitest run --reporter=verbose src/__tests__/interop/ts-python.test.ts src/__tests__/interop/python-ts.test.ts"
+    "test:interop:python": "vitest run --reporter=verbose src/__tests__/interop/ts-python.test.ts src/__tests__/interop/python-ts.test.ts",
+    "prepublishOnly": "pnpm build && pnpm test",
+    "publish:dry": "npm publish --dry-run",
+    "publish": "npm publish --provenance --access public"
   },
   "dependencies": {
     "@ivxp/protocol": "workspace:*",
@@ -70,18 +77,26 @@
     "ivxp",
     "protocol",
     "sdk",
+    "typescript",
     "web3",
+    "blockchain",
     "usdc",
     "agent",
+    "ai-agent",
     "base",
     "eip-191",
     "crypto",
-    "payment"
+    "payment",
+    "p2p"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/franksprotocols/ivxp-protocol.git",
     "directory": "packages/sdk"
   },
+  "bugs": {
+    "url": "https://github.com/franksprotocols/ivxp-protocol/issues"
+  },
+  "homepage": "https://github.com/franksprotocols/ivxp-protocol/tree/main/packages/sdk#readme",
   "license": "MIT"
 }

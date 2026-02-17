@@ -1,9 +1,8 @@
 {
   "name": "@ivxp/protocol",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "IVXP Protocol types, schemas, and constants",
+  "description": "IVXP Protocol types, schemas, and constants for the Intelligence Value Exchange Protocol",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,15 +14,50 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build && pnpm test",
+    "publish:dry": "npm publish --dry-run",
+    "publish": "npm publish --provenance --access public"
   },
+  "keywords": [
+    "ivxp",
+    "protocol",
+    "types",
+    "schemas",
+    "typescript",
+    "web3",
+    "blockchain",
+    "usdc",
+    "base",
+    "eip-191",
+    "agent",
+    "ai-agent",
+    "p2p"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/franksprotocols/ivxp-protocol.git",
+    "directory": "packages/protocol"
+  },
+  "bugs": {
+    "url": "https://github.com/franksprotocols/ivxp-protocol/issues"
+  },
+  "homepage": "https://github.com/franksprotocols/ivxp-protocol/tree/main/packages/protocol#readme",
   "devDependencies": {
     "tsup": "^8.0.0"
   },
