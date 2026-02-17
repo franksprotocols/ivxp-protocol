@@ -30,6 +30,8 @@ export interface Order {
   readonly blockNumber?: bigint;
   readonly signedMessage?: string;
   readonly signature?: `0x${string}`;
+  /** True when the provider has verified the EIP-191 signature. */
+  readonly signatureVerified?: boolean;
   readonly contentHash?: string;
   readonly errorMessage?: string;
 }
@@ -48,6 +50,15 @@ interface OrderStoreActions {
     payment: {
       readonly txHash?: `0x${string}`;
       readonly blockNumber?: bigint;
+      readonly status?: OrderStatus;
+    },
+  ) => void;
+  readonly updateOrderSignature: (
+    orderId: string,
+    fields: {
+      readonly signature: `0x${string}`;
+      readonly signedMessage: string;
+      readonly signatureVerified: boolean;
       readonly status?: OrderStatus;
     },
   ) => void;
@@ -88,6 +99,23 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
           ...(payment.txHash !== undefined ? { txHash: payment.txHash } : {}),
           ...(payment.blockNumber !== undefined ? { blockNumber: payment.blockNumber } : {}),
           ...(payment.status !== undefined ? { status: payment.status } : {}),
+          updatedAt: Date.now(),
+        };
+      }),
+    }));
+  },
+
+  updateOrderSignature: (orderId, fields) => {
+    set((state) => ({
+      orders: state.orders.map((o) => {
+        if (o.orderId !== orderId) return o;
+
+        return {
+          ...o,
+          signature: fields.signature,
+          signedMessage: fields.signedMessage,
+          signatureVerified: fields.signatureVerified,
+          ...(fields.status !== undefined ? { status: fields.status } : {}),
           updatedAt: Date.now(),
         };
       }),

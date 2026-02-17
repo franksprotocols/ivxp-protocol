@@ -1,13 +1,26 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Copy, Check, ExternalLink, Terminal } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Check,
+  ExternalLink,
+  Terminal,
+  ShieldCheck,
+} from "lucide-react";
 import { useChainId } from "wagmi";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useProtocolEvents } from "@/hooks/use-protocol-events";
 import { useUiStore } from "@/stores/ui-store";
 import { copyToClipboard, getBlockExplorerTxUrl, toWireFormat } from "@/lib/utils";
 import type { Order } from "@/stores/order-store";
+import {
+  ProtocolTooltip,
+  type ProtocolField,
+} from "@/components/features/protocol-visibility/protocol-tooltip";
 import { EventLog } from "./event-log";
 import { StateMachine } from "./state-machine";
 import { RawJsonViewer } from "./raw-json-viewer";
@@ -28,10 +41,14 @@ function CopyField({
   label,
   value,
   explorerUrl,
+  tooltipField,
+  verified,
 }: {
   readonly label: string;
   readonly value: string | undefined;
   readonly explorerUrl?: string;
+  readonly tooltipField?: ProtocolField;
+  readonly verified?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,8 +78,24 @@ function CopyField({
 
   return (
     <div className="flex items-center gap-2 py-1">
-      <span className="w-28 shrink-0 text-xs text-zinc-400">{label}</span>
+      <span className="w-28 shrink-0 text-xs text-zinc-400 flex items-center gap-1">
+        {label}
+        {tooltipField && <ProtocolTooltip field={tooltipField} />}
+      </span>
       <code className="min-w-0 flex-1 truncate font-mono text-xs text-zinc-200">{value}</code>
+      {verified !== undefined && (
+        <Badge
+          data-testid={`verified-${label}`}
+          className={
+            verified
+              ? "gap-1 bg-green-900 text-green-200 text-[10px] px-1.5 py-0"
+              : "gap-1 bg-red-900 text-red-200 text-[10px] px-1.5 py-0"
+          }
+        >
+          <ShieldCheck className="h-2.5 w-2.5" aria-hidden="true" />
+          {verified ? "Verified" : "Unverified"}
+        </Badge>
+      )}
       <Button
         variant="ghost"
         size="icon"
@@ -139,13 +172,27 @@ export function ProtocolInspector({ order }: ProtocolInspectorProps) {
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
               Protocol Fields
             </h3>
-            <CopyField label="order_id" value={order.orderId} />
-            <CopyField label="tx_hash" value={order.txHash} explorerUrl={explorerUrl} />
-            <CopyField label="signed_message" value={order.signedMessage} />
-            <CopyField label="signature" value={order.signature} />
-            <CopyField label="content_hash" value={order.contentHash} />
-            <CopyField label="status" value={order.status} />
-            <CopyField label="provider" value={order.providerAddress} />
+            <CopyField label="order_id" value={order.orderId} tooltipField="order_id" />
+            <CopyField
+              label="tx_hash"
+              value={order.txHash}
+              explorerUrl={explorerUrl}
+              tooltipField="tx_hash"
+            />
+            <CopyField
+              label="signed_message"
+              value={order.signedMessage}
+              tooltipField="signed_message"
+            />
+            <CopyField
+              label="signature"
+              value={order.signature}
+              tooltipField="signature"
+              verified={order.signatureVerified}
+            />
+            <CopyField label="content_hash" value={order.contentHash} tooltipField="content_hash" />
+            <CopyField label="status" value={order.status} tooltipField="status" />
+            <CopyField label="provider" value={order.providerAddress} tooltipField="provider" />
           </section>
 
           {/* State Machine */}

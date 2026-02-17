@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useIVXPClient } from "./use-ivxp-client";
+import { verifyContentHash } from "@/lib/verify-content-hash";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -118,11 +119,10 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
     try {
       const response = await client.downloadDeliverable(orderId);
 
-      // Verify content hash
-      const computed = await computeContentHash(response.content);
-      const isValid = computed === response.contentHash;
+      // Verify content hash using shared utility
+      const result = await verifyContentHash(response.content, response.contentHash);
 
-      if (isValid) {
+      if (result.verified) {
         setContent(response.content);
         setContentType(response.contentType);
         setFileName(response.fileName ?? null);

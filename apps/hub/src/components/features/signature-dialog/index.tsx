@@ -9,7 +9,7 @@
  */
 
 import { useMemo } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,11 +19,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   useIdentitySignature,
   SIGNATURE_ERROR_CODES,
   type SignatureStep,
 } from "@/hooks/use-identity-signature";
+import { CopyButton } from "@/components/features/protocol-visibility/copy-button";
+import { ProtocolTooltip } from "@/components/features/protocol-visibility/protocol-tooltip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -92,6 +95,35 @@ export function SignatureDialog({ open, onOpenChange, orderId, txHash }: Signatu
         >
           {previewMessage}
         </div>
+
+        {/* Signature display with verification indicator */}
+        {signature && (
+          <div data-testid="signature-display" className="space-y-2 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium flex items-center gap-1">
+                EIP-191 Signature
+                <ProtocolTooltip field="signature" />
+              </span>
+              {step === "submitted" ? (
+                <Badge className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                  Verified
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="gap-1">
+                  <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                  Signed
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <code className="flex-1 font-mono text-xs break-all text-muted-foreground">
+                {signature}
+              </code>
+              <CopyButton value={signature} label="signature" />
+            </div>
+          </div>
+        )}
 
         {error && (
           <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">

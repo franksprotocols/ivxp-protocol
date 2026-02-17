@@ -240,7 +240,7 @@ export function createPaymentMocks(): PaymentMocks {
 export interface SignatureMocks {
   readonly signMessageAsync: ReturnType<typeof vi.fn>;
   readonly requestDelivery: ReturnType<typeof vi.fn>;
-  readonly updateOrderStatus: ReturnType<typeof vi.fn>;
+  readonly updateOrderSignature: ReturnType<typeof vi.fn>;
   readonly push: ReturnType<typeof vi.fn>;
 }
 
@@ -250,10 +250,10 @@ export function createSignatureMocks(): SignatureMocks {
     order_id: MOCK_QUOTE.order_id,
     status: "processing",
   });
-  const updateOrderStatus = vi.fn();
+  const updateOrderSignature = vi.fn();
   const push = vi.fn();
 
-  return { signMessageAsync, requestDelivery, updateOrderStatus, push };
+  return { signMessageAsync, requestDelivery, updateOrderSignature, push };
 }
 
 // ---------------------------------------------------------------------------
@@ -272,7 +272,7 @@ export function resetPaymentMocks(mocks: PaymentMocks): void {
 export function resetSignatureMocks(mocks: SignatureMocks): void {
   mocks.signMessageAsync.mockReset();
   mocks.requestDelivery.mockReset();
-  mocks.updateOrderStatus.mockReset();
+  mocks.updateOrderSignature.mockReset();
   mocks.push.mockReset();
 }
 

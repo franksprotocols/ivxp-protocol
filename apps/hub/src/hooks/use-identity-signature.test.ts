@@ -33,10 +33,10 @@ vi.mock("@/lib/api/delivery", () => ({
 // Mock order store
 // ---------------------------------------------------------------------------
 
-const mockUpdateOrderStatus = vi.fn();
+const mockUpdateOrderSignature = vi.fn();
 vi.mock("@/stores/order-store", () => ({
   useOrderStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({ updateOrderStatus: mockUpdateOrderStatus }),
+    selector({ updateOrderSignature: mockUpdateOrderSignature }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -118,7 +118,14 @@ describe("useIdentitySignature", () => {
     expect(result.current.error).toBeNull();
     expect(result.current.errorCode).toBeNull();
     expect(mockRequestDelivery).toHaveBeenCalledTimes(1);
-    expect(mockUpdateOrderStatus).toHaveBeenCalledWith(ORDER_ID, "processing");
+    expect(mockUpdateOrderSignature).toHaveBeenCalledWith(
+      ORDER_ID,
+      expect.objectContaining({
+        signature: FAKE_SIGNATURE,
+        signatureVerified: true,
+        status: "processing",
+      }),
+    );
     expect(mockPush).toHaveBeenCalledWith(`/orders/${ORDER_ID}`);
   });
 

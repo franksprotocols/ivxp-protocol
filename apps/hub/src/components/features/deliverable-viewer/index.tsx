@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Download, Loader2, CheckCircle2, AlertTriangle, RefreshCw, FileDown } from "lucide-react";
+import {
+  Download,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
+  FileDown,
+  ShieldCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +20,8 @@ import {
   triggerDownload,
 } from "@/hooks/use-deliverable";
 import type { OrderStatus } from "@/stores/order-store";
+import { CopyButton } from "@/components/features/protocol-visibility/copy-button";
+import { ProtocolTooltip } from "@/components/features/protocol-visibility/protocol-tooltip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -113,24 +123,46 @@ function HashStatusBadge({
 }) {
   if (status === "verified") {
     return (
-      <div className="flex items-center gap-2">
-        <Badge className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-          <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-          Verified
-        </Badge>
-        {hash && <code className="text-xs text-muted-foreground">{hash.slice(0, 16)}...</code>}
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <Badge className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+            Verified
+          </Badge>
+          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            Content Hash (SHA-256)
+            <ProtocolTooltip field="content_hash" />
+          </span>
+        </div>
+        {hash && (
+          <div className="flex items-center gap-1">
+            <code className="text-xs text-muted-foreground">{hash}</code>
+            <CopyButton value={hash} label="content hash" />
+          </div>
+        )}
       </div>
     );
   }
 
   if (status === "failed") {
     return (
-      <div className="flex items-center gap-2">
-        <Badge variant="destructive" className="gap-1">
-          <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-          Hash Mismatch
-        </Badge>
-        {hash && <code className="text-xs text-muted-foreground">{hash.slice(0, 16)}...</code>}
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <Badge variant="destructive" className="gap-1">
+            <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+            Hash Mismatch
+          </Badge>
+          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            Content Hash
+            <ProtocolTooltip field="content_hash" />
+          </span>
+        </div>
+        {hash && (
+          <div className="flex items-center gap-1">
+            <code className="text-xs text-muted-foreground">{hash}</code>
+            <CopyButton value={hash} label="content hash" />
+          </div>
+        )}
       </div>
     );
   }

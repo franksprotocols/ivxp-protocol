@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { truncateAddress } from "@/lib/address";
 import { formatPrice } from "@/lib/api/services";
 import { copyToClipboard } from "@/lib/utils";
+import { CopyButton } from "@/components/features/protocol-visibility/copy-button";
+import { ProtocolTooltip } from "@/components/features/protocol-visibility/protocol-tooltip";
 
 interface QuoteDetailsProps {
   readonly orderId: string;
@@ -47,7 +49,11 @@ export function QuoteDetails({
   return (
     <div className="space-y-3">
       <DetailRow label="Order ID">
-        <span className="font-mono text-sm">{orderId}</span>
+        <span className="flex items-center gap-1">
+          <span className="font-mono text-sm">{orderId}</span>
+          <CopyButton value={orderId} label="order ID" />
+          <ProtocolTooltip field="order_id" />
+        </span>
       </DetailRow>
       <Separator />
       <DetailRow label="Service">
