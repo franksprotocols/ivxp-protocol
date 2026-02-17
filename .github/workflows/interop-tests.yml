@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build packages
+        run: pnpm --filter @ivxp/protocol build && pnpm --filter @ivxp/test-utils build
+
       - name: Start Anvil in background
         run: |
           anvil --silent &
