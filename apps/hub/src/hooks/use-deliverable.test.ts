@@ -230,9 +230,9 @@ describe("useDeliverable", () => {
   });
 
   it("resets state when orderId changes during active download", async () => {
-    let resolveDownload: (value: DeliverableResponse) => void;
+    let _resolveDownload: (value: DeliverableResponse) => void;
     const downloadPromise = new Promise<DeliverableResponse>((resolve) => {
-      resolveDownload = resolve;
+      _resolveDownload = resolve;
     });
     mockDownloadDeliverable.mockReturnValue(downloadPromise);
 

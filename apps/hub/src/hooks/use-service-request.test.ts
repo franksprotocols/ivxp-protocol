@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useServiceRequest } from "./use-service-request";
 
@@ -107,7 +107,7 @@ describe("useServiceRequest", () => {
     await act(async () => {
       quote = (await result.current.submitRequest("text_echo", "https://provider.example.com", {
         text: "hello",
-      })) as Record<string, unknown>;
+      })) as unknown as Record<string, unknown>;
     });
 
     // Verify wire format uses snake_case

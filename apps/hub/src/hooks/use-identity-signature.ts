@@ -158,7 +158,6 @@ export function useIdentitySignature({
         setErrorCode(SIGNATURE_ERROR_CODES.DELIVERY_FAILED);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- addressRef is a stable ref, intentionally omitted
     [orderId, txHash, network, updateOrderStatus, router],
   );
 

@@ -92,7 +92,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/api/delivery", () => ({
-  requestDelivery: (...args: unknown[]) => mockRefs.requestDelivery(...args),
+  requestDelivery: mockRefs.requestDelivery,
 }));
 
 vi.mock("@/hooks/use-ivxp-client", () => ({

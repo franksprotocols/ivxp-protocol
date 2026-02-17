@@ -134,8 +134,7 @@ export async function requestDelivery(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(validated),
     });
-  } catch (err) {
-    console.error("Delivery fetch failed:", err);
+  } catch {
     throw new DeliveryError(
       "Unable to reach the provider. Please check your connection and try again.",
       DELIVERY_ERROR_CODES.NETWORK_ERROR,

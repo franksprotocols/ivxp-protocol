@@ -10,7 +10,7 @@ const mockSwitchChain = vi.fn();
 let mockIsPending = false;
 
 vi.mock("wagmi", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("wagmi")>();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
     useChainId: () => mockUseChainId(),

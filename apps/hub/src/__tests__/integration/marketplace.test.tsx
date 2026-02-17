@@ -20,14 +20,14 @@ const mockRef: MockRef<WagmiMocks> = vi.hoisted(() => ({
 }));
 
 vi.mock("wagmi", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("wagmi")>();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    useAccount: (...args: unknown[]) => mockRef.current.useAccount(...args),
-    useConnect: (...args: unknown[]) => mockRef.current.useConnect(...args),
-    useDisconnect: (...args: unknown[]) => mockRef.current.useDisconnect(...args),
-    useChainId: (...args: unknown[]) => mockRef.current.useChainId(...args),
-    useSwitchChain: (...args: unknown[]) => mockRef.current.useSwitchChain(...args),
+    useAccount: () => mockRef.current.useAccount(),
+    useConnect: () => mockRef.current.useConnect(),
+    useDisconnect: () => mockRef.current.useDisconnect(),
+    useChainId: () => mockRef.current.useChainId(),
+    useSwitchChain: () => mockRef.current.useSwitchChain(),
   };
 });
 

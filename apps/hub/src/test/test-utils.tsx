@@ -8,7 +8,7 @@ import { mock } from "wagmi/connectors";
 import { MOCK_ADDRESS } from "@/__tests__/e2e/helpers/mocks";
 
 export function createTestConfig(options: { connected?: boolean } = {}) {
-  const { connected = false } = options;
+  const { connected: _connected = false } = options;
   return createConfig({
     chains: [base, baseSepolia],
     connectors: [

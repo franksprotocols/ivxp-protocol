@@ -95,14 +95,12 @@ export function OrderList() {
   const fetchOrders = useOrderStore((s) => s.fetchOrders);
   const getOrdersByWallet = useOrderStore((s) => s.getOrdersByWallet);
 
-  // Issue 1 fix: fetchOrders is a stable Zustand action reference,
-  // omit from deps to avoid infinite re-render loop.
+  // Keep order list in sync with wallet connection changes.
   useEffect(() => {
     if (isConnected && address) {
       fetchOrders(address as Address);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address]);
+  }, [isConnected, address, fetchOrders]);
 
   if (!isConnected) {
     return <DisconnectedState />;

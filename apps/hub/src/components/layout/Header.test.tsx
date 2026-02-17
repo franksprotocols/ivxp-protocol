@@ -18,14 +18,14 @@ const mockUseSwitchChain = vi.fn();
 const mockUseChainId = vi.fn();
 
 vi.mock("wagmi", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("wagmi")>();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    useAccount: (...args: unknown[]) => mockUseAccount(...args),
-    useConnect: (...args: unknown[]) => mockUseConnect(...args),
-    useDisconnect: (...args: unknown[]) => mockUseDisconnect(...args),
-    useSwitchChain: (...args: unknown[]) => mockUseSwitchChain(...args),
-    useChainId: (...args: unknown[]) => mockUseChainId(...args),
+    useAccount: () => mockUseAccount(),
+    useConnect: () => mockUseConnect(),
+    useDisconnect: () => mockUseDisconnect(),
+    useSwitchChain: () => mockUseSwitchChain(),
+    useChainId: () => mockUseChainId(),
   };
 });
 
