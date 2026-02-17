@@ -15,7 +15,8 @@ export interface VerificationResult {
  * Compute SHA-256 hex digest of an ArrayBuffer.
  */
 export async function computeSha256(data: ArrayBuffer): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  // Wrap in Uint8Array to avoid ArrayBuffer realm mismatch in jsdom/CI environments.
+  const hashBuffer = await crypto.subtle.digest("SHA-256", new Uint8Array(data));
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -31,9 +32,7 @@ export async function verifyContentHash(
   const computedHash = await computeSha256(content);
 
   // Normalize: strip "sha256:" prefix if present
-  const normalizedClaimed = claimedHash.startsWith("sha256:")
-    ? claimedHash.slice(7)
-    : claimedHash;
+  const normalizedClaimed = claimedHash.startsWith("sha256:") ? claimedHash.slice(7) : claimedHash;
 
   return {
     verified: computedHash === normalizedClaimed,
