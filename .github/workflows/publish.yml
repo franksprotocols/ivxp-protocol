@@ -111,7 +111,7 @@ jobs:
           sleep 30
           PROTOCOL_VERSION=$(node -p "require('./packages/protocol/package.json').version")
           echo "Verifying @ivxp/protocol@$PROTOCOL_VERSION is available..."
-          npm view @ivxp/protocol@$PROTOCOL_VERSION version || (echo "::warning::Package not yet available, waiting longer..." && sleep 30)
+          npm view "@ivxp/protocol@${PROTOCOL_VERSION}" version || (echo "::warning::Package not yet available, waiting longer..." && sleep 30)
           echo "✓ @ivxp/protocol is available on registry"
 
       # Publish test-utils (depends on protocol)
@@ -131,7 +131,7 @@ jobs:
           sleep 30
           TEST_UTILS_VERSION=$(node -p "require('./packages/test-utils/package.json').version")
           echo "Verifying @ivxp/test-utils@$TEST_UTILS_VERSION is available..."
-          npm view @ivxp/test-utils@$TEST_UTILS_VERSION version || (echo "::warning::Package not yet available, waiting longer..." && sleep 30)
+          npm view "@ivxp/test-utils@${TEST_UTILS_VERSION}" version || (echo "::warning::Package not yet available, waiting longer..." && sleep 30)
           echo "✓ @ivxp/test-utils is available on registry"
 
       # Publish sdk last (depends on protocol and test-utils)

@@ -1,0 +1,181 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Check formatting
+        run: pnpm format:check
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages (required for cross-package types)
+        run: pnpm --filter @ivxp/protocol build && pnpm --filter @ivxp/test-utils build
+
+      - name: Run type checking
+        run: pnpm typecheck
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm --filter @ivxp/protocol build && pnpm --filter @ivxp/test-utils build
+
+      - name: Run unit tests with coverage
+        run: pnpm -r test
+
+      - name: Run Hub coverage report
+        run: pnpm --filter hub test:coverage
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            apps/hub/coverage/
+            packages/*/coverage/
+          retention-days: 14
+
+      - name: Validate Codecov token
+        if: always()
+        run: |
+          if [ -z "${{ secrets.CODECOV_TOKEN }}" ]; then
+            echo "::warning::CODECOV_TOKEN secret is not set. Skipping coverage upload."
+            echo "SKIP_CODECOV=true" >> "$GITHUB_ENV"
+          else
+            echo "SKIP_CODECOV=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Post coverage to Codecov
+        if: always() && env.SKIP_CODECOV == 'false'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm --filter @ivxp/protocol build && pnpm --filter @ivxp/test-utils build
+
+      - name: Setup Anvil
+        uses: ./.github/actions/setup-anvil
+
+      - name: Run interop tests
+        run: pnpm test:interop:ts-ts
+
+      - name: Stop Anvil
+        if: always()
+        run: |
+          if [ -n "$ANVIL_PID" ]; then
+            kill "$ANVIL_PID" 2>/dev/null || true
+          fi
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: packages/sdk/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    if: always()
+    steps:
+      - name: Check CI results
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.typecheck.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ]; then
+            echo "::error::One or more CI checks failed"
+            echo "  lint: ${{ needs.lint.result }}"
+            echo "  typecheck: ${{ needs.typecheck.result }}"
+            echo "  test: ${{ needs.test.result }}"
+            exit 1
+          fi
+          echo "All CI checks passed"

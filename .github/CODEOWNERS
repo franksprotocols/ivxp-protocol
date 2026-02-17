@@ -1,0 +1,19 @@
+# CODEOWNERS - Auto-assign reviewers for pull requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @zhengwang
+
+# SDK packages
+packages/protocol/ @zhengwang
+packages/sdk/ @zhengwang
+packages/test-utils/ @zhengwang
+
+# Hub application
+apps/hub/ @zhengwang
+
+# Demo provider
+apps/demo-provider/ @zhengwang
+
+# CI/CD workflows
+.github/ @zhengwang

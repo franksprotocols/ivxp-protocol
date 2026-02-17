@@ -1,0 +1,42 @@
+name: Setup Anvil
+description: Install Foundry and start Anvil local testnet with health check
+
+runs:
+  using: composite
+  steps:
+    - name: Install Foundry (Anvil)
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: stable
+
+    - name: Verify Anvil installation
+      shell: bash
+      run: anvil --version
+
+    - name: Start Anvil in background
+      shell: bash
+      run: |
+        anvil --silent &
+        ANVIL_PID=$!
+        echo "ANVIL_PID=$ANVIL_PID" >> "$GITHUB_ENV"
+
+        echo "Waiting for Anvil to start..."
+        READY=false
+        for i in $(seq 1 30); do
+          if curl -sf http://127.0.0.1:8545 -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+            > /dev/null 2>&1; then
+            echo "Anvil is ready (attempt $i)"
+            READY=true
+            break
+          fi
+          echo "Waiting for Anvil... (attempt $i/30)"
+          sleep 1
+        done
+
+        if [ "$READY" = "false" ]; then
+          echo "::error::Anvil failed to start after 30 seconds"
+          kill "$ANVIL_PID" 2>/dev/null || true
+          exit 1
+        fi

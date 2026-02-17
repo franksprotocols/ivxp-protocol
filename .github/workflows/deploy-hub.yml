@@ -1,0 +1,68 @@
+name: Deploy Hub
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - preview
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Vercel secrets
+        run: |
+          MISSING=""
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then MISSING="$MISSING VERCEL_TOKEN"; fi
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then MISSING="$MISSING VERCEL_ORG_ID"; fi
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then MISSING="$MISSING VERCEL_PROJECT_ID"; fi
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing secrets:$MISSING"
+            exit 1
+          fi
+
+      - name: Deploy to Vercel
+        # amondnet/vercel-action@v41.1.4
+        uses: amondnet/vercel-action@888da851026e0573da056b061931bcb765a915c4
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: "--prod"
+          working-directory: apps/hub
+
+      - name: Health check
+        if: success()
+        run: |
+          echo "Deployment successful. Configure health check URL in repository variables."
+          if [ -n "${{ vars.HUB_URL }}" ]; then
+            MAX_RETRIES=10
+            RETRY_DELAY=10
+            for i in $(seq 1 $MAX_RETRIES); do
+              STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "${{ vars.HUB_URL }}" || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "✓ Health check passed (attempt $i/$MAX_RETRIES)"
+                exit 0
+              fi
+              echo "Health check attempt $i/$MAX_RETRIES: HTTP $STATUS"
+              sleep $RETRY_DELAY
+            done
+            echo "::warning::Health check did not return 200 after $MAX_RETRIES attempts"
+          fi
