@@ -14,7 +14,7 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const { app, provider, logger } = createServer({ config });
+  const { app, provider, logger, shutdown: shutdownDb } = createServer({ config });
 
   const address = await provider.getAddress();
   logger.info({ network: config.network, address }, "provider wallet");
@@ -22,7 +22,16 @@ async function main(): Promise<void> {
   const server = app.listen(config.port, () => {
     logger.info({ port: config.port }, "IVXP Demo Provider listening");
     logger.info(
-      { endpoints: ["/health", "/ivxp/catalog", "/ivxp/request", "/ivxp/deliver", "/ivxp/status/:id", "/ivxp/download/:id"] },
+      {
+        endpoints: [
+          "/health",
+          "/ivxp/catalog",
+          "/ivxp/request",
+          "/ivxp/deliver",
+          "/ivxp/status/:id",
+          "/ivxp/download/:id",
+        ],
+      },
       "available endpoints",
     );
   });
@@ -47,6 +56,7 @@ async function main(): Promise<void> {
 
     server.close((err) => {
       clearTimeout(forceTimer);
+      shutdownDb();
       if (err) {
         logger.error({ error: err }, "error during server close");
         process.exit(1);

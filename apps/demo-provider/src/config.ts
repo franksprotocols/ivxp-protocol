@@ -21,6 +21,12 @@ const DEFAULT_RATE_LIMIT_MAX = 100;
 /** Default rate limit window: 60 seconds. */
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
 
+/** Default database path. */
+const DEFAULT_DB_PATH = "./orders.db";
+
+/** Default order TTL: 7 days in seconds. */
+const DEFAULT_ORDER_TTL_SECONDS = 7 * 24 * 60 * 60;
+
 /**
  * Validated configuration for the demo provider.
  */
@@ -33,6 +39,10 @@ export interface ProviderConfig {
   readonly providerName: string;
   readonly rateLimitWindowMs: number;
   readonly rateLimitMax: number;
+  /** Path to the SQLite database file. Use ":memory:" for in-memory. */
+  readonly dbPath: string;
+  /** Order TTL in seconds (default: 7 days). */
+  readonly orderTtlSeconds: number;
 }
 
 /**
@@ -54,9 +64,7 @@ export function loadConfig(): ProviderConfig {
   // PROVIDER_PRIVATE_KEY (required)
   const privateKey = process.env["PROVIDER_PRIVATE_KEY"] ?? "";
   if (!PRIVATE_KEY_REGEX.test(privateKey)) {
-    errors.push(
-      "PROVIDER_PRIVATE_KEY must be a 0x-prefixed 64-character hex string (32 bytes)",
-    );
+    errors.push("PROVIDER_PRIVATE_KEY must be a 0x-prefixed 64-character hex string (32 bytes)");
   }
 
   // CORS_ALLOWED_ORIGINS (optional, comma-separated)
@@ -89,10 +97,21 @@ export function loadConfig(): ProviderConfig {
   }
 
   // RATE_LIMIT_WINDOW_MS (optional, default 60000)
-  const rawRateLimitWindowMs = process.env["RATE_LIMIT_WINDOW_MS"] ?? String(DEFAULT_RATE_LIMIT_WINDOW_MS);
+  const rawRateLimitWindowMs =
+    process.env["RATE_LIMIT_WINDOW_MS"] ?? String(DEFAULT_RATE_LIMIT_WINDOW_MS);
   const rateLimitWindowMs = parseInt(rawRateLimitWindowMs, 10);
   if (isNaN(rateLimitWindowMs) || rateLimitWindowMs < 1000) {
     errors.push(`RATE_LIMIT_WINDOW_MS must be an integer >= 1000, got: ${rawRateLimitWindowMs}`);
+  }
+
+  // DB_PATH (optional, default "./orders.db")
+  const dbPath = process.env["DB_PATH"] ?? DEFAULT_DB_PATH;
+
+  // ORDER_TTL_SECONDS (optional, default 7 days)
+  const rawOrderTtl = process.env["ORDER_TTL_SECONDS"] ?? String(DEFAULT_ORDER_TTL_SECONDS);
+  const orderTtlSeconds = parseInt(rawOrderTtl, 10);
+  if (isNaN(orderTtlSeconds) || orderTtlSeconds < 60) {
+    errors.push(`ORDER_TTL_SECONDS must be an integer >= 60, got: ${rawOrderTtl}`);
   }
 
   if (errors.length > 0) {
@@ -108,5 +127,7 @@ export function loadConfig(): ProviderConfig {
     providerName,
     rateLimitWindowMs,
     rateLimitMax,
+    dbPath,
+    orderTtlSeconds,
   };
 }

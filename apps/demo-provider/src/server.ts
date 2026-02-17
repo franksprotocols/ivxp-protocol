@@ -24,6 +24,8 @@ import { DEMO_SERVICES } from "./catalog.js";
 import { createServiceHandlers } from "./handlers.js";
 import { createLogger, type Logger } from "./logger.js";
 import { ServiceRequestBodySchema, DeliveryRequestBodySchema } from "./schemas.js";
+import { initializeDatabase, DEFAULT_CLEANUP_INTERVAL_MS } from "./db/index.js";
+import { OrderRepository } from "./db/orders.js";
 
 /**
  * Maximum JSON body size accepted by Express.
@@ -47,12 +49,17 @@ export interface ServerDependencies {
   readonly logger?: Logger;
   /** Optional: inject a pre-configured provider (for testing). */
   readonly provider?: IVXPProvider;
+  /** Optional: inject a pre-configured order repository (for testing). */
+  readonly orderRepository?: OrderRepository;
 }
 
 export interface ServerInstance {
   readonly app: express.Express;
   readonly provider: IVXPProvider;
   readonly logger: Logger;
+  readonly orderRepository: OrderRepository;
+  /** Close the database connection and stop cleanup scheduler. */
+  readonly shutdown: () => void;
 }
 
 /**
@@ -63,6 +70,20 @@ export interface ServerInstance {
 export function createServer(deps: ServerDependencies): ServerInstance {
   const { config } = deps;
   const logger = deps.logger ?? createLogger(config.logLevel);
+
+  // Initialize SQLite database and order repository
+  const dbInstance = initializeDatabase({
+    dbPath: config.dbPath,
+    verbose: config.logLevel === "debug" || config.logLevel === "trace",
+  });
+
+  const orderRepository =
+    deps.orderRepository ?? new OrderRepository(dbInstance.db, config.orderTtlSeconds);
+
+  // Start periodic cleanup of expired orders
+  orderRepository.startCleanupScheduler(DEFAULT_CLEANUP_INTERVAL_MS, (deletedCount) => {
+    logger.info({ deletedCount }, "cleaned up expired orders");
+  });
 
   const provider =
     deps.provider ??
@@ -75,6 +96,7 @@ export function createServer(deps: ServerDependencies): ServerInstance {
       providerName: config.providerName,
       serviceHandlers: createServiceHandlers(),
       allowPrivateDeliveryUrls: true,
+      orderStore: orderRepository,
     });
 
   const app = express();
@@ -195,7 +217,7 @@ export function createServer(deps: ServerDependencies): ServerInstance {
   app.get("/ivxp/status/:orderId", async (req: Request, res: Response) => {
     try {
       const rawParam = req.params["orderId"];
-      const orderId = Array.isArray(rawParam) ? rawParam[0] ?? "" : rawParam ?? "";
+      const orderId = Array.isArray(rawParam) ? (rawParam[0] ?? "") : (rawParam ?? "");
       const status = await provider.handleStatusRequest(orderId);
       res.json(status);
     } catch (error: unknown) {
@@ -207,7 +229,7 @@ export function createServer(deps: ServerDependencies): ServerInstance {
   app.get("/ivxp/download/:orderId", async (req: Request, res: Response) => {
     try {
       const rawParam = req.params["orderId"];
-      const orderId = Array.isArray(rawParam) ? rawParam[0] ?? "" : rawParam ?? "";
+      const orderId = Array.isArray(rawParam) ? (rawParam[0] ?? "") : (rawParam ?? "");
       const download = await provider.handleDownloadRequest(orderId);
       res.json(download);
     } catch (error: unknown) {
@@ -215,7 +237,12 @@ export function createServer(deps: ServerDependencies): ServerInstance {
     }
   });
 
-  return { app, provider, logger };
+  const shutdown = (): void => {
+    orderRepository.stopCleanupScheduler();
+    dbInstance.close();
+  };
+
+  return { app, provider, logger, orderRepository, shutdown };
 }
 
 // ---------------------------------------------------------------------------
