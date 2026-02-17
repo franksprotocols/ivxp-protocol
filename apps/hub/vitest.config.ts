@@ -19,7 +19,7 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     server: {
       deps: {
-        inline: [/radix-ui/, /@radix-ui/],
+        inline: [/radix-ui/, /@radix-ui/, /swr/, /use-sync-external-store/],
       },
     },
     coverage: {

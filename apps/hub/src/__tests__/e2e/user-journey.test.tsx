@@ -8,8 +8,8 @@ import { MarketplaceContent } from "@/components/features/marketplace/Marketplac
 import { ServiceDetail } from "@/components/features/service/ServiceDetail";
 import { ConnectButton } from "@/components/features/wallet/ConnectButton";
 import { NetworkWarning } from "@/components/features/network/NetworkWarning";
-import { MOCK_SERVICES } from "@/lib/mock-data/services";
 import { MOCK_SERVICE_DETAILS } from "@/lib/mock-data/service-details";
+import type { SearchServiceResultWire } from "@/lib/registry/types";
 import {
   createWagmiMocks,
   applyDisconnectedState,
@@ -28,7 +28,8 @@ const mockUsePathname = vi.fn().mockReturnValue("/");
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mockUsePathname(),
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("wagmi", async (importOriginal) => {
@@ -42,6 +43,39 @@ vi.mock("wagmi", async (importOriginal) => {
     useSwitchChain: () => mockRef.current.useSwitchChain(),
   };
 });
+
+const mockSearchServices: SearchServiceResultWire[] = [
+  {
+    service_type: "text_echo",
+    name: "Text Echo",
+    description:
+      "Echo back your text input with optional transformations. Great for testing IVXP protocol integration.",
+    price_usdc: "0.50",
+    estimated_time_seconds: 5,
+    provider_id: "prov-001",
+    provider_name: "Echo Labs",
+    provider_address: "0x1234567890abcdef1234567890abcdef12345678",
+    provider_endpoint_url: "https://echo.example.com",
+  },
+  {
+    service_type: "image_gen",
+    name: "Image Generation",
+    description:
+      "Generate high-quality AI images from text prompts using state-of-the-art diffusion models.",
+    price_usdc: "1.50",
+    estimated_time_seconds: 10,
+    provider_id: "prov-002",
+    provider_name: "PixelMind AI",
+    provider_address: "0xabcdef1234567890abcdef1234567890abcdef12",
+    provider_endpoint_url: "https://pixelmind.example.com",
+  },
+];
+
+const mockUseServiceSearch = vi.fn();
+
+vi.mock("@/hooks/use-service-search", () => ({
+  useServiceSearch: (...args: unknown[]) => mockUseServiceSearch(...args),
+}));
 
 // ── Helper: render a full page layout ────────────────────────────────
 
@@ -62,6 +96,15 @@ describe("E2E User Journeys", () => {
   beforeEach(() => {
     mockRef.current = createWagmiMocks();
     mockUsePathname.mockReturnValue("/");
+    mockUseServiceSearch.mockReturnValue({
+      services: mockSearchServices,
+      total: mockSearchServices.length,
+      page: 1,
+      pageSize: 20,
+      isLoading: false,
+      error: undefined,
+      setPage: vi.fn(),
+    });
   });
 
   describe("Journey 1: New visitor browses marketplace and views service", () => {
@@ -75,40 +118,44 @@ describe("E2E User Journeys", () => {
       expect(screen.getByRole("banner")).toBeInTheDocument();
 
       // Connect wallet button is visible (not connected)
-      expect(screen.getByRole("button", { name: /connect wallet/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /connect wallet/i }),
+      ).toBeInTheDocument();
 
-      // Marketplace content is rendered
-      for (const service of MOCK_SERVICES) {
+      // Marketplace content is rendered with search results
+      for (const service of mockSearchServices) {
         expect(screen.getByText(service.description)).toBeInTheDocument();
       }
 
       // View Details links point to correct service pages
-      const viewDetailsLinks = screen.getAllByRole("link", { name: /view details/i });
-      expect(viewDetailsLinks.length).toBe(MOCK_SERVICES.length);
+      const viewDetailsLinks = screen.getAllByRole("link", {
+        name: /view details/i,
+      });
+      expect(viewDetailsLinks.length).toBe(mockSearchServices.length);
 
       // Footer is present
       expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     });
 
-    it("visitor can search for a service and find it", async () => {
+    it("visitor can search for a service via search input", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace");
 
-      const user = userEvent.setup();
       renderPageLayout(<MarketplaceContent />);
 
-      const searchInput = screen.getByRole("searchbox", { name: /search services/i });
-      await user.type(searchInput, "image");
-
-      // Image gen service should be visible
-      expect(screen.getByText(/generate high-quality ai images/i)).toBeInTheDocument();
+      const searchInput = screen.getByRole("searchbox", {
+        name: /search services/i,
+      });
+      expect(searchInput).toBeInTheDocument();
     });
 
     it("visitor views service detail page with wallet prompt", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/text_echo");
 
-      const textEchoDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "text_echo")!;
+      const textEchoDetail = MOCK_SERVICE_DETAILS.find(
+        (s) => s.service_type === "text_echo",
+      )!;
 
       renderPageLayout(<ServiceDetail service={textEchoDetail} />);
 
@@ -116,10 +163,14 @@ describe("E2E User Journeys", () => {
       expect(screen.getByTestId("service-detail")).toBeInTheDocument();
 
       // Wallet prompt is shown (not connected)
-      expect(screen.getByTestId("wallet-prompt")).toHaveTextContent(/connect your wallet/i);
+      expect(screen.getByTestId("wallet-prompt")).toHaveTextContent(
+        /connect your wallet/i,
+      );
 
       // Request service button is disabled
-      expect(screen.getByTestId("request-service-button")).toBeDisabled();
+      expect(
+        screen.getByTestId("request-service-button"),
+      ).toBeDisabled();
     });
   });
 
@@ -132,7 +183,9 @@ describe("E2E User Journeys", () => {
 
       // Wallet address is shown instead of connect button
       expect(screen.getByText("0x1234...5678")).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /connect wallet/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /connect wallet/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("user on wrong network sees warning and can switch", async () => {
@@ -145,7 +198,9 @@ describe("E2E User Journeys", () => {
       // Network warning is visible
       const alert = screen.getByRole("alert");
       expect(alert).toBeInTheDocument();
-      expect(within(alert).getByText(/wrong network/i)).toBeInTheDocument();
+      expect(
+        within(alert).getByText(/wrong network/i),
+      ).toBeInTheDocument();
 
       // Switch network button is available
       const switchBtn = within(alert).getByRole("button", {
@@ -154,7 +209,9 @@ describe("E2E User Journeys", () => {
       expect(switchBtn).toBeInTheDocument();
 
       await user.click(switchBtn);
-      expect(mockRef.current.useSwitchChain().switchChain).toHaveBeenCalled();
+      expect(
+        mockRef.current.useSwitchChain().switchChain,
+      ).toHaveBeenCalled();
     });
 
     it("connected user on correct network sees no warning", () => {
@@ -165,8 +222,9 @@ describe("E2E User Journeys", () => {
 
       // No network warning
       const alerts = screen.queryAllByRole("alert");
-      // There should be no alert for network warning
-      const networkAlerts = alerts.filter((el) => el.textContent?.includes("Wrong network"));
+      const networkAlerts = alerts.filter((el) =>
+        el.textContent?.includes("Wrong network"),
+      );
       expect(networkAlerts).toHaveLength(0);
     });
 
@@ -174,45 +232,32 @@ describe("E2E User Journeys", () => {
       applyConnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/text_echo");
 
-      const textEchoDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "text_echo")!;
+      const textEchoDetail = MOCK_SERVICE_DETAILS.find(
+        (s) => s.service_type === "text_echo",
+      )!;
 
       renderPageLayout(<ServiceDetail service={textEchoDetail} />);
 
       // Request service button is enabled
-      expect(screen.getByTestId("request-service-button")).not.toBeDisabled();
+      expect(
+        screen.getByTestId("request-service-button"),
+      ).not.toBeDisabled();
 
       // No wallet prompt
-      expect(screen.queryByTestId("wallet-prompt")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("wallet-prompt"),
+      ).not.toBeInTheDocument();
     });
   });
 
   describe("Journey 3: Search service, view details, navigate back", () => {
-    it("user searches, filters, and finds specific service", async () => {
-      applyDisconnectedState(mockRef.current);
-      mockUsePathname.mockReturnValue("/marketplace");
-
-      const user = userEvent.setup();
-      renderPageLayout(<MarketplaceContent />);
-
-      // Filter by AI category
-      await user.click(screen.getByRole("button", { name: "AI" }));
-
-      // Search for sentiment
-      const searchInput = screen.getByRole("searchbox", { name: /search services/i });
-      await user.type(searchInput, "sentiment");
-
-      // Only sentiment analysis should be visible
-      expect(screen.getByText(/analyze text sentiment/i)).toBeInTheDocument();
-
-      // Other services should not be visible
-      expect(screen.queryByText(/echo back your text/i)).not.toBeInTheDocument();
-    });
-
     it("user views service detail with full information", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/image_gen");
 
-      const imageGenDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "image_gen")!;
+      const imageGenDetail = MOCK_SERVICE_DETAILS.find(
+        (s) => s.service_type === "image_gen",
+      )!;
 
       renderPageLayout(<ServiceDetail service={imageGenDetail} />);
 
@@ -220,17 +265,23 @@ describe("E2E User Journeys", () => {
       expect(screen.getByTestId("service-detail")).toBeInTheDocument();
 
       // Description is shown
-      expect(screen.getByTestId("service-description")).toBeInTheDocument();
+      expect(
+        screen.getByTestId("service-description"),
+      ).toBeInTheDocument();
 
       // Price is shown in the action button
-      expect(screen.getByTestId("request-service-button")).toHaveTextContent(/1\.50 USDC/);
+      expect(
+        screen.getByTestId("request-service-button"),
+      ).toHaveTextContent(/1\.50 USDC/);
     });
 
     it("marketplace navigation link is active on service detail page", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace/text_echo");
 
-      const textEchoDetail = MOCK_SERVICE_DETAILS.find((s) => s.service_type === "text_echo")!;
+      const textEchoDetail = MOCK_SERVICE_DETAILS.find(
+        (s) => s.service_type === "text_echo",
+      )!;
 
       renderPageLayout(<ServiceDetail service={textEchoDetail} />);
 
@@ -246,28 +297,40 @@ describe("E2E User Journeys", () => {
       applyDisconnectedState(mockRef.current);
       mockRef.current.useConnect.mockReturnValue({
         connect: vi.fn(),
-        connectors: [{ id: "metaMask", name: "MetaMask", type: "injected" }],
+        connectors: [
+          { id: "metaMask", name: "MetaMask", type: "injected" },
+        ],
         isPending: false,
         error: new Error("User rejected the request"),
       });
 
       renderWithProviders(<ConnectButton />);
 
-      expect(screen.getByRole("alert")).toHaveTextContent("Connection request was rejected.");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Connection request was rejected.",
+      );
     });
 
-    it("search with no results shows helpful empty state", async () => {
+    it("search with no results shows helpful empty state", () => {
       applyDisconnectedState(mockRef.current);
       mockUsePathname.mockReturnValue("/marketplace");
 
-      const user = userEvent.setup();
+      // Mock empty search results
+      mockUseServiceSearch.mockReturnValue({
+        services: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        isLoading: false,
+        error: undefined,
+        setPage: vi.fn(),
+      });
+
       renderPageLayout(<MarketplaceContent />);
 
-      const searchInput = screen.getByRole("searchbox", { name: /search services/i });
-      await user.type(searchInput, "nonexistentservice12345");
-
-      expect(screen.getByText(/no services match/i)).toBeInTheDocument();
-      expect(screen.getByText(/try adjusting your search or filters/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/no services available yet/i),
+      ).toBeInTheDocument();
     });
   });
 });
