@@ -1,0 +1,57 @@
+{
+  "protocol_version": "IVXP/1.0",
+  "test_accounts": {
+    "client": {
+      "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "name": "InteropTestClient"
+    },
+    "provider": {
+      "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "name": "TestProvider"
+    }
+  },
+  "network": "base-sepolia",
+  "default_tx_hash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "default_signature": "0xabababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab01",
+  "services": [
+    {
+      "type": "text_echo",
+      "base_price_usdc": 1,
+      "estimated_delivery_hours": 0.01
+    },
+    {
+      "type": "json_transform",
+      "base_price_usdc": 5,
+      "estimated_delivery_hours": 0.1
+    }
+  ],
+  "wire_protocol_rules": {
+    "field_naming": "snake_case",
+    "timestamp_format": "ISO 8601",
+    "address_format": "0x-prefixed hex, 42 chars",
+    "signature_format": "0x-prefixed hex, 132 chars (65 bytes)",
+    "content_hash_format": "hex, 64 chars (SHA-256, no 0x prefix)"
+  },
+  "camel_case_blacklist": [
+    "serviceType",
+    "basePriceUsdc",
+    "walletAddress",
+    "messageType",
+    "estimatedDeliveryHours",
+    "providerAgent",
+    "orderId",
+    "priceUsdc",
+    "paymentAddress",
+    "contentHash",
+    "contentType",
+    "createdAt",
+    "txHash",
+    "fromAddress",
+    "toAddress",
+    "amountUsdc",
+    "signedMessage",
+    "deliveryEndpoint",
+    "budgetUsdc",
+    "clientAgent"
+  ]
+}
