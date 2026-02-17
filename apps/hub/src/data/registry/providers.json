@@ -1,0 +1,75 @@
+{
+  "providers": [
+    {
+      "provider_id": "prov-001",
+      "provider_address": "0x0c0feb248548e33571584809113891818d4b0805",
+      "name": "IVXP Demo Provider",
+      "description": "Official demo provider for testing the IVXP protocol flow",
+      "endpoint_url": "https://demo-provider.ivxp.dev",
+      "services": [
+        {
+          "service_type": "text_echo",
+          "name": "Text Echo Service",
+          "description": "Echoes back the input text for testing",
+          "price_usdc": "0.10",
+          "estimated_time_seconds": 5
+        },
+        {
+          "service_type": "image_gen",
+          "name": "Image Generation (Demo)",
+          "description": "Generates a placeholder image from a text prompt",
+          "price_usdc": "1.50",
+          "estimated_time_seconds": 10
+        }
+      ],
+      "status": "active",
+      "registered_at": "2025-01-15T00:00:00Z",
+      "updated_at": "2025-01-15T00:00:00Z"
+    },
+    {
+      "provider_id": "prov-002",
+      "provider_address": "0xA1B2C3D4E5F6789012345678901234567890ABCD",
+      "name": "Research Agent",
+      "description": "AI-powered research and analysis services",
+      "endpoint_url": "https://research.example.com",
+      "services": [
+        {
+          "service_type": "research",
+          "name": "Deep Research",
+          "description": "Comprehensive research on any topic",
+          "price_usdc": "50.00",
+          "estimated_time_seconds": 28800
+        },
+        {
+          "service_type": "code_review",
+          "name": "Code Review",
+          "description": "Detailed code review with suggestions",
+          "price_usdc": "50.00",
+          "estimated_time_seconds": 43200
+        }
+      ],
+      "status": "active",
+      "registered_at": "2025-02-01T00:00:00Z",
+      "updated_at": "2025-02-01T00:00:00Z"
+    },
+    {
+      "provider_id": "prov-003",
+      "provider_address": "0xDEADBEEF00000000000000000000000000000001",
+      "name": "Inactive Test Provider",
+      "description": "A provider that is currently offline",
+      "endpoint_url": "https://offline.example.com",
+      "services": [
+        {
+          "service_type": "consultation",
+          "name": "Consultation",
+          "description": "General consultation service",
+          "price_usdc": "25.00",
+          "estimated_time_seconds": 7200
+        }
+      ],
+      "status": "inactive",
+      "registered_at": "2025-01-20T00:00:00Z",
+      "updated_at": "2025-03-01T00:00:00Z"
+    }
+  ]
+}
