@@ -1,0 +1,106 @@
+name: Interoperability Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/sdk/**"
+      - "packages/protocol/**"
+      - "packages/test-utils/**"
+      - "pnpm-lock.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/sdk/**"
+      - "packages/protocol/**"
+      - "packages/test-utils/**"
+      - "pnpm-lock.yaml"
+
+jobs:
+  interop-ts-ts:
+    name: TS Client <-> TS Provider
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install Foundry (Anvil)
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Verify Anvil installation
+        run: anvil --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start Anvil in background
+        run: |
+          anvil --silent &
+          ANVIL_PID=$!
+          echo "ANVIL_PID=$ANVIL_PID" >> "$GITHUB_ENV"
+          # Wait for Anvil to be ready
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8545 -X POST \
+              -H "Content-Type: application/json" \
+              -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+              > /dev/null 2>&1; then
+              echo "Anvil is ready (attempt $i)"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run TS-TS interop tests
+        run: pnpm test:interop:ts-ts
+
+      - name: Stop Anvil
+        if: always()
+        run: |
+          if [ -n "$ANVIL_PID" ]; then
+            kill "$ANVIL_PID" 2>/dev/null || true
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interop-ts-ts-results
+          path: packages/sdk/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  interop-ts-ts-report:
+    name: Publish Test Report
+    needs: interop-ts-ts
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: interop-ts-ts-results
+          path: test-results/
+        continue-on-error: true
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        continue-on-error: true
+        with:
+          name: Interop TS-TS Results
+          path: "test-results/junit.xml"
+          reporter: java-junit
+          fail-on-error: false

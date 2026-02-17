@@ -46,7 +46,9 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:interop": "vitest run --reporter=verbose src/__tests__/interop/",
+    "test:interop:ts-ts": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/junit.xml src/__tests__/interop/ts-ts.test.ts"
   },
   "dependencies": {
     "@ivxp/protocol": "workspace:*",
