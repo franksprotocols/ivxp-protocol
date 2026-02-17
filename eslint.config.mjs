@@ -25,6 +25,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ["docs/sdk/examples/**/*.ts"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        fetch: "readonly",
+        self: "readonly",
+        TextEncoder: "readonly",
+        setTimeout: "readonly",
+        URLSearchParams: "readonly",
+        requestAnimationFrame: "readonly",
+        alert: "readonly",
+      },
+    },
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     ignores: [
       "**/dist/**",
       "**/node_modules/**",
@@ -33,6 +51,7 @@ export default tseslint.config(
       "_bmad/**",
       "_bmad-output/**",
       ".venv/**",
+      "**/.venv/**",
       ".agent/**",
     ],
   },
