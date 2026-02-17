@@ -152,10 +152,14 @@ export async function POST(
       status: "active",
       registered_at: now,
       updated_at: now,
+      verification_status: "pending",
+      last_verified_at: null,
+      last_check_at: null,
+      consecutive_failures: 0,
     };
 
     // addProvider checks for duplicates atomically
-    addProvider(newProvider);
+    await addProvider(newProvider);
 
     // 6. Return 201 Created
     const response: RegisterProviderResponseWire = {
