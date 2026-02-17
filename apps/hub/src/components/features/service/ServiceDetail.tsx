@@ -3,6 +3,7 @@ import { ServiceHeader } from "./ServiceHeader";
 import { ProviderInfo } from "./ProviderInfo";
 import { ServiceSchema } from "./ServiceSchema";
 import { ServiceActions } from "./ServiceActions";
+import { ProviderRatingsSection } from "@/components/features/rating/ProviderRatingsSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ServiceDetailProps {
@@ -70,6 +71,7 @@ export function ServiceDetail({ service }: ServiceDetailProps) {
         <div className="space-y-6">
           <ServiceActions service={service} />
           <ProviderInfo service={service} />
+          <ProviderRatingsSection providerAddress={service.provider_address} />
         </div>
       </div>
     </div>

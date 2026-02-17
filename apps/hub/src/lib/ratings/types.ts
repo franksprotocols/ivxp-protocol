@@ -50,3 +50,27 @@ export type RatingErrorCode =
   | "INTERNAL_ERROR"
   | "RATE_LIMITED"
   | "TIMESTAMP_EXPIRED";
+
+/** Distribution of star ratings (count per star level) */
+export interface RatingDistribution {
+  readonly 1: number;
+  readonly 2: number;
+  readonly 3: number;
+  readonly 4: number;
+  readonly 5: number;
+}
+
+/** Aggregated rating data for a provider */
+export interface ProviderRatingsWire {
+  readonly provider_address: string;
+  readonly average_rating: number;
+  readonly rating_count: number;
+  readonly rating_distribution: RatingDistribution;
+  readonly ratings: readonly RatingWire[];
+  readonly total: number;
+  readonly page: number;
+  readonly limit: number;
+}
+
+/** Sort options for rating lists */
+export type RatingSortOption = "newest" | "oldest" | "highest" | "lowest";
