@@ -1,0 +1,15 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "../../Dockerfile.demo-provider"
+
+[deploy]
+startCommand = "node apps/demo-provider/dist/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[deploy.envVars]
+PORT = "3001"
+NODE_ENV = "production"
+# PROVIDER_PRIVATE_KEY must be set via Railway dashboard (secret)
