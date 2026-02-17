@@ -44,11 +44,101 @@ export const MOCK_QUOTE = {
 // E2E infrastructure
 // ---------------------------------------------------------------------------
 
+interface MockUSDCAdapter {
+  readonly address: Address;
+  mint(to: Address, amount: bigint): Promise<`0x${string}`>;
+  balanceOf(account: Address): Promise<bigint>;
+  transferFromPrivateKey(
+    fromPrivateKey: `0x${string}`,
+    to: Address,
+    amount: bigint,
+  ): Promise<`0x${string}`>;
+  verifyTransfer(
+    txHash: `0x${string}`,
+    expectedTo: Address,
+    expectedAmount: bigint,
+  ): Promise<boolean>;
+}
+
+class InMemoryMockUSDC implements MockUSDCAdapter {
+  readonly address = "0x0000000000000000000000000000000000000001" as Address;
+  private readonly balances = new Map<string, bigint>();
+  private readonly transfers = new Map<string, { to: string; amount: bigint }>();
+  private txNonce = 1n;
+
+  private nextTxHash(): `0x${string}` {
+    const hex = this.txNonce.toString(16).padStart(64, "0");
+    this.txNonce += 1n;
+    return `0x${hex}` as `0x${string}`;
+  }
+
+  async mint(to: Address, amount: bigint): Promise<`0x${string}`> {
+    const key = to.toLowerCase();
+    const current = this.balances.get(key) ?? 0n;
+    this.balances.set(key, current + amount);
+    return this.nextTxHash();
+  }
+
+  async balanceOf(account: Address): Promise<bigint> {
+    return this.balances.get(account.toLowerCase()) ?? 0n;
+  }
+
+  async transferFromPrivateKey(
+    fromPrivateKey: `0x${string}`,
+    to: Address,
+    amount: bigint,
+  ): Promise<`0x${string}`> {
+    const from = privateKeyToAccount(fromPrivateKey).address.toLowerCase();
+    const toKey = to.toLowerCase();
+    const fromBalance = this.balances.get(from) ?? 0n;
+    if (fromBalance < amount) {
+      throw new Error("insufficient");
+    }
+
+    this.balances.set(from, fromBalance - amount);
+    this.balances.set(toKey, (this.balances.get(toKey) ?? 0n) + amount);
+
+    const txHash = this.nextTxHash();
+    this.transfers.set(txHash, { to: toKey, amount });
+    return txHash;
+  }
+
+  async verifyTransfer(
+    txHash: `0x${string}`,
+    expectedTo: Address,
+    expectedAmount: bigint,
+  ): Promise<boolean> {
+    const transfer = this.transfers.get(txHash);
+    if (!transfer) return false;
+    return transfer.to === expectedTo.toLowerCase() && transfer.amount === expectedAmount;
+  }
+}
+
+async function isAnvilAvailable(rpcUrl: string): Promise<boolean> {
+  try {
+    const response = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_chainId",
+        params: [],
+      }),
+    });
+    if (!response.ok) return false;
+    const payload = (await response.json()) as { result?: string };
+    return payload.result === "0x7a69";
+  } catch {
+    return false;
+  }
+}
+
 export interface E2ETestEnvironment {
   readonly testClient: ReturnType<typeof createTestChain>;
   readonly clientWallet: ReturnType<typeof createWalletClient>;
   readonly providerWallet: ReturnType<typeof createWalletClient>;
-  readonly mockUsdc: MockUSDC;
+  readonly mockUsdc: MockUSDCAdapter;
   readonly mockProvider: MockProvider;
   readonly accounts: {
     readonly client: typeof TEST_ACCOUNTS.client;
@@ -67,6 +157,7 @@ export interface E2ETestEnvironment {
  */
 export async function setupTestEnvironment(): Promise<E2ETestEnvironment> {
   const testClient = createTestChain();
+  const hasAnvil = await isAnvilAvailable(ANVIL_RPC_URL);
 
   const clientAccount = privateKeyToAccount(TEST_ACCOUNTS.client.privateKey as `0x${string}`);
   const providerAccount = privateKeyToAccount(TEST_ACCOUNTS.provider.privateKey as `0x${string}`);
@@ -83,7 +174,7 @@ export async function setupTestEnvironment(): Promise<E2ETestEnvironment> {
     transport: http(ANVIL_RPC_URL),
   });
 
-  const mockUsdc = await MockUSDC.deploy(testClient);
+  const mockUsdc = hasAnvil ? await MockUSDC.deploy(testClient) : new InMemoryMockUSDC();
   await mockUsdc.mint(TEST_WALLET_ADDRESS, 1_000_000_000n); // 1000 USDC (6 decimals)
 
   const mockProvider = await MockProvider.start({

@@ -24,7 +24,8 @@ export interface UseDeliverableReturn {
 // ---------------------------------------------------------------------------
 
 export async function computeContentHash(content: ArrayBuffer): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest("SHA-256", content);
+  // Normalize to a Uint8Array view to avoid BufferSource realm issues in CI/jsdom.
+  const hashBuffer = await crypto.subtle.digest("SHA-256", new Uint8Array(content));
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
