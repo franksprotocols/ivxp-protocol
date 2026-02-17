@@ -108,3 +108,8 @@ _bmad/*
 _bmad/
 _bmad-output/*
 _bmad-output/
+
+# ----------------------------------------
+# Generated docs (TypeDoc)
+# ----------------------------------------
+docs/sdk/api/
