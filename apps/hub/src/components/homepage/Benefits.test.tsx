@@ -27,32 +27,20 @@ describe("Benefits", () => {
 
   it("renders consumer benefit points", () => {
     renderWithProviders(<Benefits />);
-    expect(
-      screen.getByText(/browse a curated marketplace/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/pay with usdc/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/browse a curated marketplace/i)).toBeInTheDocument();
+    expect(screen.getByText(/pay with usdc/i)).toBeInTheDocument();
   });
 
   it("renders provider benefit points", () => {
     renderWithProviders(<Benefits />);
-    expect(
-      screen.getByText(/list your services/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/receive usdc payments/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/list your services/i)).toBeInTheDocument();
+    expect(screen.getByText(/receive usdc payments/i)).toBeInTheDocument();
   });
 
   it("renders developer benefit points", () => {
     renderWithProviders(<Benefits />);
-    expect(
-      screen.getByText(/typescript sdk/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/eip-191 wallet signature/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/typescript sdk/i)).toBeInTheDocument();
+    expect(screen.getByText(/eip-191 wallet signature/i)).toBeInTheDocument();
   });
 
   it("renders benefit lists with list role", () => {

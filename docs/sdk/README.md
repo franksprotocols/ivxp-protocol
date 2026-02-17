@@ -56,9 +56,9 @@ Or use the one-line convenience method:
 
 ```typescript
 const result = await client.requestService({
-  providerUrl: process.env.IVXP_PROVIDER_URL ?? 'http://localhost:3001',
-  serviceType: 'market-analysis',
-  description: 'Analyze USDC/ETH pair',
+  providerUrl: process.env.IVXP_PROVIDER_URL ?? "http://localhost:3001",
+  serviceType: "market-analysis",
+  description: "Analyze USDC/ETH pair",
   budgetUsdc: 10,
 });
 ```

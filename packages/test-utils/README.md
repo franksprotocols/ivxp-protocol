@@ -20,14 +20,14 @@ import {
   MockHttpClient,
   delay,
   assertHexAddress,
-} from '@ivxp/test-utils';
+} from "@ivxp/test-utils";
 
 // Use test wallet accounts (Anvil defaults)
 const { address, privateKey } = TEST_ACCOUNTS[0];
 
 // Create fixture data
-const order = createMockOrder({ serviceType: 'analysis' });
-const quote = createMockQuote({ priceUsdc: '5.00' });
+const order = createMockOrder({ serviceType: "analysis" });
+const quote = createMockQuote({ priceUsdc: "5.00" });
 
 // Mock service implementations
 const crypto = new MockCryptoService();

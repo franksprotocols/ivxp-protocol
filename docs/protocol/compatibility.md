@@ -7,15 +7,15 @@ This document describes wire format conventions and cross-implementation compati
 All IVXP/1.0 wire protocol messages use `snake_case` field names for cross-language compatibility, particularly with the Python reference implementation.
 
 | Wire Format (JSON) | TypeScript SDK (internal) |
-|---------------------|--------------------------|
-| `wallet_address` | `walletAddress` |
-| `message_type` | `messageType` |
-| `order_id` | `orderId` |
-| `base_price_usdc` | `basePriceUsdc` |
-| `payment_address` | `paymentAddress` |
-| `tx_hash` | `txHash` |
-| `from_address` | `fromAddress` |
-| `content_hash` | `contentHash` |
+| ------------------ | ------------------------- |
+| `wallet_address`   | `walletAddress`           |
+| `message_type`     | `messageType`             |
+| `order_id`         | `orderId`                 |
+| `base_price_usdc`  | `basePriceUsdc`           |
+| `payment_address`  | `paymentAddress`          |
+| `tx_hash`          | `txHash`                  |
+| `from_address`     | `fromAddress`             |
+| `content_hash`     | `contentHash`             |
 
 The TypeScript SDK uses Zod schemas to transform between wire format (`snake_case`) and internal format (`camelCase`). Implementations in other languages should use the wire format directly.
 
@@ -51,17 +51,17 @@ IVXP/1.0 supports optional extension fields that do not break existing implement
 
 ### Extension Fields in IVXP/1.0
 
-| Message | Field | Added In | Description |
-|---------|-------|----------|-------------|
-| `ServiceCatalog` | `message_type` | 1.0 | Optional discriminator |
-| `ServiceCatalog` | `timestamp` | 1.0 | Catalog generation time |
-| `ServiceQuote` | `terms` | 1.0 | Payment/service terms |
-| `DeliveryRequest` | `delivery_endpoint` | 1.0 | P2P push endpoint |
-| `DeliveryResponse` | `content_hash` | 1.0 | Integrity verification |
-| `DeliveryResponse` | `signature` | 1.0 | Provider signature |
-| `PaymentProof` | `to_address` | 1.0 | Recipient address |
-| `PaymentProof` | `amount_usdc` | 1.0 | Payment amount |
-| `PaymentProof` | `block_number` | 1.0 | Block number |
+| Message            | Field               | Added In | Description             |
+| ------------------ | ------------------- | -------- | ----------------------- |
+| `ServiceCatalog`   | `message_type`      | 1.0      | Optional discriminator  |
+| `ServiceCatalog`   | `timestamp`         | 1.0      | Catalog generation time |
+| `ServiceQuote`     | `terms`             | 1.0      | Payment/service terms   |
+| `DeliveryRequest`  | `delivery_endpoint` | 1.0      | P2P push endpoint       |
+| `DeliveryResponse` | `content_hash`      | 1.0      | Integrity verification  |
+| `DeliveryResponse` | `signature`         | 1.0      | Provider signature      |
+| `PaymentProof`     | `to_address`        | 1.0      | Recipient address       |
+| `PaymentProof`     | `amount_usdc`       | 1.0      | Payment amount          |
+| `PaymentProof`     | `block_number`      | 1.0      | Block number            |
 
 ## Timestamp Format
 
@@ -92,9 +92,9 @@ Both checksummed (EIP-55) and lowercase addresses are accepted on input.
 
 USDC amounts appear in two formats depending on context:
 
-| Context | Type | Example | Description |
-|---------|------|---------|-------------|
-| Quote/Catalog fields | `number` | `5.0` | Human-readable USDC amount |
+| Context                    | Type     | Example     | Description                      |
+| -------------------------- | -------- | ----------- | -------------------------------- |
+| Quote/Catalog fields       | `number` | `5.0`       | Human-readable USDC amount       |
 | `PaymentProof.amount_usdc` | `string` | `"5000000"` | Raw on-chain amount (6 decimals) |
 
 Conversion: `raw_amount = human_amount * 10^6`

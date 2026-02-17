@@ -203,8 +203,7 @@ sync_main() {
 
 # Print summary table
 print_summary() {
-  local -n results_ref=$1
-  local total="${#results_ref[@]}"
+  local total="$#"
   local succeeded=0
   local failed=0
   local failed_list=()
@@ -216,7 +215,7 @@ print_summary() {
   printf "%-45s %s\n" "Story" "Status"
   echo "─────────────────────────────────────────────────────────"
 
-  for entry in "${results_ref[@]}"; do
+  for entry in "$@"; do
     local sid="${entry%%:*}"
     local status="${entry#*:}"
     if [[ "$status" == "OK" ]]; then
@@ -352,7 +351,7 @@ main() {
         log ERROR "Stopping batch. Resume with:"
         log ERROR "  ./scripts/batch-story-dev.sh --resume $story_id --phase 2"
         log ERROR "  ./scripts/batch-story-dev.sh --start-from $story_id"
-        print_summary results
+        print_summary "${results[@]}"
         exit 1
       fi
     fi
@@ -370,7 +369,7 @@ main() {
 
   echo ""
   log INFO "Total time: ${minutes}m ${seconds}s"
-  print_summary results
+  print_summary "${results[@]}"
 }
 
 main "$@"

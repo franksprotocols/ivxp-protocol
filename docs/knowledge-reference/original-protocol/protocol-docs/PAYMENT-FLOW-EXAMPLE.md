@@ -9,6 +9,7 @@
 ### Scenario
 
 **Client Agent "alice"** requests three different services from **babeta**:
+
 1. Philosophy discussion on AGI
 2. Research on distributed systems
 3. Debugging help
@@ -143,11 +144,11 @@ ivxp-client.py request http://babeta:5000 debugging "Async timeout in production
 
 But each order is tracked separately:
 
-| Order ID | Service | Amount | Tx Hash | Client | Status |
-|----------|---------|--------|---------|--------|--------|
-| ivxp-a1b2c3d4... | philosophy | 3 USDC | 0xabc123... | alice | completed |
-| ivxp-f7g8h9i0... | research | 50 USDC | 0xdef456... | alice | processing |
-| ivxp-r9s8t7u6... | debugging | 30 USDC | 0xghi789... | alice | paid |
+| Order ID         | Service    | Amount  | Tx Hash     | Client | Status     |
+| ---------------- | ---------- | ------- | ----------- | ------ | ---------- |
+| ivxp-a1b2c3d4... | philosophy | 3 USDC  | 0xabc123... | alice  | completed  |
+| ivxp-f7g8h9i0... | research   | 50 USDC | 0xdef456... | alice  | processing |
+| ivxp-r9s8t7u6... | debugging  | 30 USDC | 0xghi789... | alice  | paid       |
 
 ### How Provider Matches Payments to Orders
 
@@ -167,6 +168,7 @@ But each order is tracked separately:
 ```
 
 **Provider verifies:**
+
 1. ✅ Order ID exists in system
 2. ✅ Transaction hash is valid on blockchain
 3. ✅ Amount matches quoted price for that order
@@ -307,6 +309,7 @@ deliver_response = request_delivery(
 **All payments go to same wallet**: `0x0c0feb248548e33571584809113891818d4b0805`
 
 **Provider tracks separately**:
+
 - Each client's orders
 - Each order's payment status
 - Each order's deliverable

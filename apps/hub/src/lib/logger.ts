@@ -8,7 +8,8 @@ interface LogContext {
 
 export function logError(message: string, error: unknown, context?: LogContext): void {
   const timestamp = new Date().toISOString();
-  const errorDetails = error instanceof Error ? { message: error.message, stack: error.stack } : { error };
+  const errorDetails =
+    error instanceof Error ? { message: error.message, stack: error.stack } : { error };
 
   console.error(
     JSON.stringify({

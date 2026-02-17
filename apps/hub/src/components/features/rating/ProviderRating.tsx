@@ -29,10 +29,7 @@ export function ProviderRating({
 }: ProviderRatingProps) {
   if (ratingCount === 0) {
     return (
-      <span
-        className={cn("text-xs text-muted-foreground", className)}
-        data-testid="no-ratings"
-      >
+      <span className={cn("text-xs text-muted-foreground", className)} data-testid="no-ratings">
         No ratings yet
       </span>
     );
@@ -45,25 +42,16 @@ export function ProviderRating({
         data-testid="provider-rating-compact"
       >
         <StarDisplay rating={averageRating} size="sm" />
-        <span className="text-sm font-medium">
-          {averageRating.toFixed(1)}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          ({ratingCount})
-        </span>
+        <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
+        <span className="text-xs text-muted-foreground">({ratingCount})</span>
       </div>
     );
   }
 
   return (
-    <div
-      className={cn("space-y-3", className)}
-      data-testid="provider-rating-full"
-    >
+    <div className={cn("space-y-3", className)} data-testid="provider-rating-full">
       <div className="flex items-center gap-2">
-        <span className="text-3xl font-bold">
-          {averageRating.toFixed(1)}
-        </span>
+        <span className="text-3xl font-bold">{averageRating.toFixed(1)}</span>
         <div>
           <StarDisplay rating={averageRating} size="lg" />
           <span className="text-sm text-muted-foreground">
@@ -71,12 +59,7 @@ export function ProviderRating({
           </span>
         </div>
       </div>
-      {distribution && (
-        <RatingDistribution
-          distribution={distribution}
-          totalCount={ratingCount}
-        />
-      )}
+      {distribution && <RatingDistribution distribution={distribution} totalCount={ratingCount} />}
     </div>
   );
 }

@@ -58,9 +58,7 @@ describe("event emission (AC #2)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider,
-    );
+    const client = await createFundedClient(testClient, mockUsdcAddress, mockProvider);
     const quotedEvents: Array<{ orderId: string; priceUsdc: string }> = [];
 
     client.on("order.quoted", (payload) => {
@@ -85,9 +83,7 @@ describe("event emission (AC #2)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider,
-    );
+    const client = await createFundedClient(testClient, mockUsdcAddress, mockProvider);
     const paymentSentEvents: Array<{ txHash: string }> = [];
 
     client.on("payment.sent", (payload) => {
@@ -111,9 +107,7 @@ describe("event emission (AC #2)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider,
-    );
+    const client = await createFundedClient(testClient, mockUsdcAddress, mockProvider);
     const deliveredEvents: Array<{ orderId: string; format: string }> = [];
 
     client.on("order.delivered", (payload) => {
@@ -137,9 +131,7 @@ describe("event emission (AC #2)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider,
-    );
+    const client = await createFundedClient(testClient, mockUsdcAddress, mockProvider);
     const confirmedEvents: Array<{ orderId: string; confirmedAt: string }> = [];
 
     client.on("order.confirmed", (payload) => {
@@ -164,9 +156,7 @@ describe("event emission (AC #2)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider,
-    );
+    const client = await createFundedClient(testClient, mockUsdcAddress, mockProvider);
 
     // Use timestamped entries for reliable ordering (Fix #5)
     const eventLog: TimestampedEvent[] = [];
@@ -194,9 +184,7 @@ describe("event emission (AC #2)", () => {
     });
 
     // Extract event names in timestamp order
-    const sortedNames = [...eventLog]
-      .sort((a, b) => a.timestamp - b.timestamp)
-      .map((e) => e.name);
+    const sortedNames = [...eventLog].sort((a, b) => a.timestamp - b.timestamp).map((e) => e.name);
 
     // Verify key events are present
     expect(sortedNames).toContain("order.quoted");
@@ -225,9 +213,7 @@ describe("event emission (AC #2)", () => {
       providerAddress: PROVIDER_ADDRESS,
       basePriceUsdc: 5,
     });
-    const client = await createFundedClient(
-      testClient, mockUsdcAddress, mockProvider,
-    );
+    const client = await createFundedClient(testClient, mockUsdcAddress, mockProvider);
     const eventNames: string[] = [];
 
     client.on("order.quoted", () => eventNames.push("order.quoted"));

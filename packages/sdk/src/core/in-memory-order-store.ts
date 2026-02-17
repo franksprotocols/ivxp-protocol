@@ -10,12 +10,7 @@
  * @see Story 3.15 - IVXPProvider Quote Endpoint
  */
 
-import type {
-  IOrderStorage,
-  OrderFilters,
-  OrderUpdates,
-  StoredOrder,
-} from "@ivxp/protocol";
+import type { IOrderStorage, OrderFilters, OrderUpdates, StoredOrder } from "@ivxp/protocol";
 import { IVXPError } from "../errors/base.js";
 
 // ---------------------------------------------------------------------------
@@ -23,8 +18,7 @@ import { IVXPError } from "../errors/base.js";
 // ---------------------------------------------------------------------------
 
 /** Regex for validating the ivxp-{uuid-v4} order ID format. */
-const ORDER_ID_REGEX =
-  /^ivxp-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ORDER_ID_REGEX = /^ivxp-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Default maximum results per list() query. */
 const DEFAULT_LIST_LIMIT = 100;
@@ -50,9 +44,7 @@ export class InMemoryOrderStore implements IOrderStorage {
    */
   private readonly store: Map<string, StoredOrder> = new Map();
 
-  async create(
-    order: Omit<StoredOrder, "createdAt" | "updatedAt">,
-  ): Promise<StoredOrder> {
+  async create(order: Omit<StoredOrder, "createdAt" | "updatedAt">): Promise<StoredOrder> {
     if (!ORDER_ID_REGEX.test(order.orderId)) {
       throw new IVXPError(
         `Invalid order ID format: ${order.orderId}. Expected: ivxp-{uuid-v4}`,
@@ -62,11 +54,9 @@ export class InMemoryOrderStore implements IOrderStorage {
     }
 
     if (this.store.has(order.orderId)) {
-      throw new IVXPError(
-        `Order already exists: ${order.orderId}`,
-        "ORDER_ALREADY_EXISTS",
-        { orderId: order.orderId },
-      );
+      throw new IVXPError(`Order already exists: ${order.orderId}`, "ORDER_ALREADY_EXISTS", {
+        orderId: order.orderId,
+      });
     }
 
     const now = new Date().toISOString();
@@ -103,11 +93,7 @@ export class InMemoryOrderStore implements IOrderStorage {
   ): Promise<StoredOrder> {
     const existing = this.store.get(orderId);
     if (!existing) {
-      throw new IVXPError(
-        `Order not found: ${orderId}`,
-        "ORDER_NOT_FOUND",
-        { orderId },
-      );
+      throw new IVXPError(`Order not found: ${orderId}`, "ORDER_NOT_FOUND", { orderId });
     }
 
     // Optimistic locking: reject if the stored updatedAt does not match
@@ -140,14 +126,10 @@ export class InMemoryOrderStore implements IOrderStorage {
       results = results.filter((o) => o.status === filters.status);
     }
     if (filters?.clientAddress) {
-      results = results.filter(
-        (o) => o.clientAddress === filters.clientAddress,
-      );
+      results = results.filter((o) => o.clientAddress === filters.clientAddress);
     }
     if (filters?.serviceType) {
-      results = results.filter(
-        (o) => o.serviceType === filters.serviceType,
-      );
+      results = results.filter((o) => o.serviceType === filters.serviceType);
     }
 
     const offset = filters?.offset ?? 0;

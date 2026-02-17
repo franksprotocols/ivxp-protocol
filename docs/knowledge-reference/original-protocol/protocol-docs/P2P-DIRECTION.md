@@ -52,11 +52,13 @@
 ### What This Means
 
 **Provider (Server):**
+
 - ✅ Has HTTP server on port 5055 (always listening)
 - ✅ Receives: service requests, delivery requests
 - ✅ **Initiates: HTTP POST to client's endpoint**
 
 **Client (Both Client AND Server!):**
+
 - ✅ Acts as HTTP client to provider (requests, payments)
 - ⚠️ **MUST also run HTTP server on port 6066** (to receive delivery)
 - ⚠️ **Must have publicly accessible endpoint**
@@ -64,6 +66,7 @@
 ### Code Example
 
 **Provider initiates delivery:**
+
 ```python
 # In ivxp-provider.py
 def deliver_to_client(order_id, deliverable):
@@ -79,6 +82,7 @@ def deliver_to_client(order_id, deliverable):
 ```
 
 **Client must be listening:**
+
 ```python
 # Client must run this server!
 from flask import Flask, request, jsonify
@@ -152,17 +156,20 @@ app.run(host='0.0.0.0', port=6066)  # Must be publicly accessible!
 ### Benefits of Polling Pattern
 
 **Provider:**
+
 - ✅ Only needs HTTP server (same as before)
 - ✅ Saves deliverable in database
 - ✅ Makes available via GET endpoint
 
 **Client:**
+
 - ✅ **NO server needed!**
 - ✅ Just HTTP client (like curl)
 - ✅ Downloads when ready
 - ✅ Can be offline when service completes
 
 **Code:**
+
 ```python
 # Client just polls (no server needed!)
 while True:
@@ -184,6 +191,7 @@ while True:
 ### Current (Provider POSTs to Client)
 
 **Requirements:**
+
 - ✅ Provider: HTTP server
 - ⚠️ Client: HTTP server + public URL
 - ⚠️ Client: Must be online when delivery happens
@@ -196,6 +204,7 @@ while True:
 ### Polling (Client GETs from Provider)
 
 **Requirements:**
+
 - ✅ Provider: HTTP server
 - ✅ Client: Just HTTP client (no server!)
 
@@ -211,11 +220,13 @@ while True:
 **Should also support:** Client → Provider (GET from provider)
 
 **Hybrid approach (best):**
+
 1. Provider saves deliverable (always)
 2. Provider tries POST to client (if endpoint provided)
 3. Client can also GET download (fallback/alternative)
 
 This way:
+
 - ✅ Real-time delivery when possible (provider POSTs)
 - ✅ Reliable delivery when client offline (client GETs)
 - ✅ Client doesn't need public server (optional)
@@ -227,16 +238,19 @@ This way:
 **Answer:**
 
 **Current IVXP/1.0 spec:**
+
 - **Provider POSTs to Client**
 - Client must run HTTP server
 - Provider initiates delivery connection
 
 **Better alternative (polling):**
+
 - **Client GETs from Provider**
 - Client doesn't need server
 - Client initiates download
 
 **Best solution:**
+
 - Support BOTH methods
 - Provider tries POST first (optimization)
 - Client can always GET (fallback)

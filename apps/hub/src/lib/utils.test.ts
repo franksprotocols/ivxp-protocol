@@ -13,21 +13,15 @@ import {
 
 describe("getBlockExplorerTxUrl", () => {
   it("returns Base Sepolia URL for chain 84532", () => {
-    expect(getBlockExplorerTxUrl("0xabc", 84532)).toBe(
-      "https://sepolia.basescan.org/tx/0xabc",
-    );
+    expect(getBlockExplorerTxUrl("0xabc", 84532)).toBe("https://sepolia.basescan.org/tx/0xabc");
   });
 
   it("returns Base Mainnet URL for chain 8453", () => {
-    expect(getBlockExplorerTxUrl("0xdef", 8453)).toBe(
-      "https://basescan.org/tx/0xdef",
-    );
+    expect(getBlockExplorerTxUrl("0xdef", 8453)).toBe("https://basescan.org/tx/0xdef");
   });
 
   it("defaults to Base Sepolia for unknown chain", () => {
-    expect(getBlockExplorerTxUrl("0x123", 1)).toBe(
-      "https://sepolia.basescan.org/tx/0x123",
-    );
+    expect(getBlockExplorerTxUrl("0x123", 1)).toBe("https://sepolia.basescan.org/tx/0x123");
   });
 });
 

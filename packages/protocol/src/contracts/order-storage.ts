@@ -63,10 +63,7 @@ export interface StoredOrder {
  * field is managed by the storage implementation and excluded here.
  */
 export type OrderUpdates = Partial<
-  Pick<
-    StoredOrder,
-    "status" | "txHash" | "deliveryEndpoint" | "contentHash"
-  >
+  Pick<StoredOrder, "status" | "txHash" | "deliveryEndpoint" | "contentHash">
 >;
 
 /**
@@ -121,9 +118,7 @@ export interface IOrderStorage {
    * @returns The created order with all fields populated
    * @throws If orderId format is invalid or order already exists
    */
-  create(
-    order: Omit<StoredOrder, "createdAt" | "updatedAt">,
-  ): Promise<StoredOrder>;
+  create(order: Omit<StoredOrder, "createdAt" | "updatedAt">): Promise<StoredOrder>;
 
   /**
    * Retrieve an order by its ID.

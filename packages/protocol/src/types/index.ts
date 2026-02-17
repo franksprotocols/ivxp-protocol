@@ -39,11 +39,7 @@ export type {
 export { ORDER_STATUSES } from "./order.js";
 
 // Payment types
-export type {
-  PaymentInfo,
-  PaymentVerificationResult,
-  TransactionRef,
-} from "./payment.js";
+export type { PaymentInfo, PaymentVerificationResult, TransactionRef } from "./payment.js";
 export { USDC_CONTRACT_ADDRESSES, USDC_DECIMALS } from "./payment.js";
 
 // Delivery types
@@ -58,9 +54,5 @@ export type {
 } from "./delivery.js";
 
 // Error types
-export type {
-  IVXPErrorCode,
-  IVXPErrorResponse,
-  IVXPMessageType,
-} from "./errors.js";
+export type { IVXPErrorCode, IVXPErrorResponse, IVXPMessageType } from "./errors.js";
 export { ERROR_CODES, MESSAGE_TYPES } from "./errors.js";

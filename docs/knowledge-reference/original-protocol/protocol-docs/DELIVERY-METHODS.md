@@ -5,6 +5,7 @@
 In IVXP, the provider needs to deliver the service to the client agent. But how does the client receive it?
 
 **Current Design**: P2P HTTP POST
+
 - Provider POSTs deliverable to client's endpoint
 - Client must have a publicly accessible HTTP server
 
@@ -19,29 +20,34 @@ The client runs a web server that the provider can reach.
 #### Option A: Cloud Server (DigitalOcean, AWS, etc.)
 
 **Setup:**
+
 ```bash
 # On your cloud server
 python3 ivxp-receiver.py 6066
 ```
 
 **Your endpoint:**
+
 ```
 https://your-agent-server.com/ivxp/receive
 ```
 
 **Pros:**
+
 - ✅ Always available
 - ✅ Professional setup
 - ✅ Secure with HTTPS
 - ✅ No port forwarding needed
 
 **Cons:**
+
 - 💰 Costs money (~$5-10/month)
 - 🔧 Requires server setup
 
 #### Option B: Ngrok (Quick Testing)
 
 **Setup:**
+
 ```bash
 # Terminal 1: Start receiver
 python3 ivxp-receiver.py 6066
@@ -51,17 +57,20 @@ ngrok http 6066
 ```
 
 **Your endpoint:**
+
 ```
 https://abc123.ngrok.io/ivxp/receive
 ```
 
 **Pros:**
+
 - ✅ Free for testing
 - ✅ Quick setup
 - ✅ HTTPS included
 - ✅ No cloud server needed
 
 **Cons:**
+
 - ❌ URL changes on restart
 - ❌ Free tier has limits
 - ❌ Not for production
@@ -69,6 +78,7 @@ https://abc123.ngrok.io/ivxp/receive
 #### Option C: Cloudflare Tunnel
 
 **Setup:**
+
 ```bash
 # Install cloudflared
 brew install cloudflare/cloudflare/cloudflared
@@ -81,12 +91,14 @@ cloudflared tunnel --url http://localhost:6066
 ```
 
 **Pros:**
+
 - ✅ Free
 - ✅ Secure HTTPS
 - ✅ No cloud server needed
 - ✅ Better than ngrok for long-term
 
 **Cons:**
+
 - 🔧 Requires cloudflare account
 - 📝 URL changes on restart (unless you configure permanent tunnel)
 
@@ -95,22 +107,26 @@ cloudflared tunnel --url http://localhost:6066
 Instead of P2P POST, the client polls the provider to check for delivery.
 
 **How it works:**
+
 1. Client requests service and pays
 2. Provider processes service
 3. **Client periodically checks**: `GET /ivxp/status/<order_id>`
 4. When status = "completed", client fetches: `GET /ivxp/download/<order_id>`
 
 **Pros:**
+
 - ✅ No server needed on client side
 - ✅ Works behind firewalls/NAT
 - ✅ Simple implementation
 - ✅ Client controls when to receive
 
 **Cons:**
+
 - ⏰ Not real-time (polling delay)
 - 🔄 More API calls
 
 **Implementation:**
+
 ```python
 import time
 import requests
@@ -153,16 +169,19 @@ def request_and_poll(provider_url, service_type, description, budget):
 Client provides email address instead of HTTP endpoint.
 
 **How it works:**
+
 1. Client includes email in service request
 2. Provider sends deliverable via email
 3. Client processes email
 
 **Pros:**
+
 - ✅ No server needed
 - ✅ Universal (everyone has email)
 - ✅ Built-in storage
 
 **Cons:**
+
 - ❌ Not real P2P
 - ❌ Email delivery delays
 - ❌ Attachment size limits
@@ -173,17 +192,20 @@ Client provides email address instead of HTTP endpoint.
 Provider uploads to decentralized storage, client downloads.
 
 **How it works:**
+
 1. Provider completes service
 2. Provider uploads to IPFS
 3. Provider sends client the IPFS hash
 4. Client downloads from IPFS
 
 **Pros:**
+
 - ✅ Truly decentralized
 - ✅ Permanent storage
 - ✅ No server needed
 
 **Cons:**
+
 - 🔧 Complex setup
 - 💰 Storage costs
 - ⏰ Upload/download time
@@ -193,16 +215,19 @@ Provider uploads to decentralized storage, client downloads.
 Use Moltbook's messaging system to deliver.
 
 **How it works:**
+
 1. Client provides Moltbook username
 2. Provider sends deliverable via DM
 3. Client reads from Moltbook API
 
 **Pros:**
+
 - ✅ No server needed
 - ✅ Uses existing platform
 - ✅ Notifications built-in
 
 **Cons:**
+
 - ❌ Platform-dependent
 - ❌ Not universal
 - ❌ Message size limits
@@ -210,6 +235,7 @@ Use Moltbook's messaging system to deliver.
 ## Recommended Approaches
 
 ### For Testing/Development
+
 **Use Polling** - Simplest, no server needed
 
 ```python
@@ -220,6 +246,7 @@ while not_complete:
 ```
 
 ### For Production (Small Scale)
+
 **Use Ngrok or Cloudflare Tunnel**
 
 ```bash
@@ -231,6 +258,7 @@ ngrok http 6066
 ```
 
 ### For Production (Professional)
+
 **Use Cloud Server with HTTPS**
 
 ```bash
@@ -281,10 +309,13 @@ The current IVXP spec assumes P2P HTTP POST. We should consider adding:
 1. Request service normally
 2. After payment, don't provide HTTP endpoint
 3. Poll the provider periodically:
+
 ```bash
 curl http://provider:5055/ivxp/status/ivxp-123...
 ```
+
 4. When complete, download:
+
 ```bash
 curl http://provider:5055/ivxp/download/ivxp-123...
 ```
@@ -351,6 +382,7 @@ The paid agent can receive the service in these ways:
 5. **Platform messaging** - Use Moltbook/Discord/etc.
 
 **Recommended for most agents: Polling**
+
 - No server needed
 - Works behind firewalls
 - Simple to implement

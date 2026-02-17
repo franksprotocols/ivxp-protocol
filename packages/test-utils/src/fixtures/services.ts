@@ -59,9 +59,7 @@ export const DEFAULT_SERVICE_DEFINITIONS: readonly ServiceDefinition[] = [
 /**
  * Create a mock ServiceCatalog with optional field overrides.
  */
-export const createMockServiceCatalog = (
-  overrides?: Partial<ServiceCatalog>,
-): ServiceCatalog => ({
+export const createMockServiceCatalog = (overrides?: Partial<ServiceCatalog>): ServiceCatalog => ({
   protocol: "IVXP/1.0",
   provider: "TestProvider",
   wallet_address: TEST_ACCOUNTS.provider.address,
@@ -78,9 +76,7 @@ export const createMockServiceCatalog = (
 /**
  * Create a mock ClientAgent with optional field overrides.
  */
-export const createMockClientAgent = (
-  overrides?: Partial<ClientAgent>,
-): ClientAgent => ({
+export const createMockClientAgent = (overrides?: Partial<ClientAgent>): ClientAgent => ({
   name: "TestClient",
   wallet_address: TEST_ACCOUNTS.client.address,
   ...overrides,
@@ -110,9 +106,7 @@ export const createMockServiceRequestDetails = (
 /**
  * Create a mock ServiceRequest with optional field overrides.
  */
-export const createMockServiceRequest = (
-  overrides?: Partial<ServiceRequest>,
-): ServiceRequest => ({
+export const createMockServiceRequest = (overrides?: Partial<ServiceRequest>): ServiceRequest => ({
   protocol: "IVXP/1.0",
   message_type: "service_request",
   timestamp: new Date().toISOString(),

@@ -766,9 +766,7 @@ describe("pollWithBackoff", () => {
         .mockResolvedValueOnce(null)
         .mockRejectedValueOnce(new Error("third call failed"));
 
-      await expect(
-        pollWithBackoff(fn, { initialDelay: 10 }),
-      ).rejects.toThrow("third call failed");
+      await expect(pollWithBackoff(fn, { initialDelay: 10 })).rejects.toThrow("third call failed");
 
       // Two null returns + one throw = 3 calls total, no retry after error
       expect(fn).toHaveBeenCalledTimes(3);

@@ -45,9 +45,7 @@ function InputSchemaSection({ schema }: { readonly schema: InputSchema }) {
   const requiredFields = new Set(schema.required ?? []);
 
   if (entries.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">No input parameters required.</p>
-    );
+    return <p className="text-sm text-muted-foreground">No input parameters required.</p>;
   }
 
   return (

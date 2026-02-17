@@ -32,8 +32,7 @@ export function hasDeepSnakeCaseFields(obj: unknown): boolean {
   if (Array.isArray(obj)) return obj.every(hasDeepSnakeCaseFields);
 
   return Object.entries(obj as Record<string, unknown>).every(
-    ([key, value]) =>
-      /^[a-z][a-z0-9_]*$/.test(key) && hasDeepSnakeCaseFields(value),
+    ([key, value]) => /^[a-z][a-z0-9_]*$/.test(key) && hasDeepSnakeCaseFields(value),
   );
 }
 
@@ -57,9 +56,7 @@ export function assertValidProtocolMessage(
 /**
  * Assert that a catalog response is well-formed.
  */
-export function assertValidCatalog(
-  catalog: Record<string, unknown>,
-): void {
+export function assertValidCatalog(catalog: Record<string, unknown>): void {
   assertValidProtocolMessage(catalog, "service_catalog");
   expect(typeof catalog.provider).toBe("string");
   expect(typeof catalog.wallet_address).toBe("string");
@@ -78,9 +75,7 @@ export function assertValidCatalog(
 /**
  * Assert that a quote response is well-formed.
  */
-export function assertValidQuote(
-  quote: Record<string, unknown>,
-): void {
+export function assertValidQuote(quote: Record<string, unknown>): void {
   assertValidProtocolMessage(quote, "service_quote");
   expect(typeof quote.order_id).toBe("string");
   expect((quote.order_id as string).startsWith("ivxp-")).toBe(true);
@@ -99,9 +94,7 @@ export function assertValidQuote(
 /**
  * Assert that a delivery accepted response is well-formed.
  */
-export function assertValidDeliveryAccepted(
-  response: Record<string, unknown>,
-): void {
+export function assertValidDeliveryAccepted(response: Record<string, unknown>): void {
   expect(response.status).toBe("accepted");
   expect(typeof response.order_id).toBe("string");
   expect(typeof response.message).toBe("string");

@@ -31,16 +31,16 @@ Error
 Every SDK error includes:
 
 ```typescript
-import { IVXPError } from '@ivxp/sdk';
+import { IVXPError } from "@ivxp/sdk";
 
 try {
   await client.requestQuote(providerUrl, params);
 } catch (error) {
   if (error instanceof IVXPError) {
-    console.log(error.message);  // Human-readable description
-    console.log(error.code);     // Machine-readable code (e.g. 'INSUFFICIENT_BALANCE')
-    console.log(error.details);  // Optional structured data
-    console.log(error.cause);    // Original error (if wrapped)
+    console.log(error.message); // Human-readable description
+    console.log(error.code); // Machine-readable code (e.g. 'INSUFFICIENT_BALANCE')
+    console.log(error.details); // Optional structured data
+    console.log(error.cause); // Original error (if wrapped)
     console.log(error.toJSON()); // Structured JSON for logging
   }
 }
@@ -50,45 +50,45 @@ try {
 
 ### Payment Errors
 
-| Error Class | Code | Description |
-|-------------|------|-------------|
-| `InsufficientBalanceError` | `INSUFFICIENT_BALANCE` | Wallet USDC balance too low |
-| `TransactionError` | `TRANSACTION_FAILED` | On-chain tx confirmed but reverted |
-| `TransactionSubmissionError` | `TRANSACTION_SUBMISSION_FAILED` | TX rejected before inclusion |
+| Error Class                  | Code                            | Description                        |
+| ---------------------------- | ------------------------------- | ---------------------------------- |
+| `InsufficientBalanceError`   | `INSUFFICIENT_BALANCE`          | Wallet USDC balance too low        |
+| `TransactionError`           | `TRANSACTION_FAILED`            | On-chain tx confirmed but reverted |
+| `TransactionSubmissionError` | `TRANSACTION_SUBMISSION_FAILED` | TX rejected before inclusion       |
 
 ### Verification Errors
 
-| Error Class | Code | Description |
-|-------------|------|-------------|
-| `PaymentNotFoundError` | `PAYMENT_NOT_FOUND` | TX hash not found on-chain |
-| `PaymentPendingError` | `PAYMENT_PENDING` | TX not yet confirmed |
-| `PaymentFailedError` | `PAYMENT_FAILED` | TX confirmed but reverted |
-| `PaymentAmountMismatchError` | `PAYMENT_AMOUNT_MISMATCH` | Transfer amount mismatch |
-| `SignatureVerificationError` | `SIGNATURE_INVALID` | EIP-191 signature invalid |
-| `PaymentVerificationError` | `PAYMENT_NOT_VERIFIED` | Payment could not be verified |
+| Error Class                  | Code                      | Description                   |
+| ---------------------------- | ------------------------- | ----------------------------- |
+| `PaymentNotFoundError`       | `PAYMENT_NOT_FOUND`       | TX hash not found on-chain    |
+| `PaymentPendingError`        | `PAYMENT_PENDING`         | TX not yet confirmed          |
+| `PaymentFailedError`         | `PAYMENT_FAILED`          | TX confirmed but reverted     |
+| `PaymentAmountMismatchError` | `PAYMENT_AMOUNT_MISMATCH` | Transfer amount mismatch      |
+| `SignatureVerificationError` | `SIGNATURE_INVALID`       | EIP-191 signature invalid     |
+| `PaymentVerificationError`   | `PAYMENT_NOT_VERIFIED`    | Payment could not be verified |
 
 ### Order Errors
 
-| Error Class | Code | Description |
-|-------------|------|-------------|
+| Error Class          | Code              | Description             |
+| -------------------- | ----------------- | ----------------------- |
 | `OrderNotFoundError` | `ORDER_NOT_FOUND` | Order ID does not exist |
-| `OrderExpiredError` | `ORDER_EXPIRED` | Order TTL exceeded |
+| `OrderExpiredError`  | `ORDER_EXPIRED`   | Order TTL exceeded      |
 
 ### Network Errors
 
-| Error Class | Code | Description |
-|-------------|------|-------------|
-| `ServiceUnavailableError` | `SERVICE_UNAVAILABLE` | Provider unreachable or 5xx |
-| `ProviderError` | `PROVIDER_ERROR` | Provider error with step context |
+| Error Class               | Code                  | Description                      |
+| ------------------------- | --------------------- | -------------------------------- |
+| `ServiceUnavailableError` | `SERVICE_UNAVAILABLE` | Provider unreachable or 5xx      |
+| `ProviderError`           | `PROVIDER_ERROR`      | Provider error with step context |
 
 ### Flow Errors
 
-| Error Class | Code | Description |
-|-------------|------|-------------|
-| `MaxPollAttemptsError` | `MAX_POLL_ATTEMPTS` | Polling exceeded max attempts |
-| `BudgetExceededError` | `BUDGET_EXCEEDED` | Quote price exceeds budget |
-| `TimeoutError` | `TIMEOUT` | requestService flow timed out |
-| `PartialSuccessError` | `PARTIAL_SUCCESS` | Payment sent but notification failed |
+| Error Class            | Code                | Description                          |
+| ---------------------- | ------------------- | ------------------------------------ |
+| `MaxPollAttemptsError` | `MAX_POLL_ATTEMPTS` | Polling exceeded max attempts        |
+| `BudgetExceededError`  | `BUDGET_EXCEEDED`   | Quote price exceeds budget           |
+| `TimeoutError`         | `TIMEOUT`           | requestService flow timed out        |
+| `PartialSuccessError`  | `PARTIAL_SUCCESS`   | Payment sent but notification failed |
 
 ## Common Error Patterns
 
@@ -101,31 +101,31 @@ import {
   TimeoutError,
   ProviderError,
   IVXPError,
-} from '@ivxp/sdk';
+} from "@ivxp/sdk";
 
 try {
   const result = await client.requestService(params);
 } catch (error) {
   if (error instanceof BudgetExceededError) {
     // Quote too expensive -- no USDC spent
-    console.log('Budget:', error.budgetUsdc);
-    console.log('Quoted:', error.quoteInfo.priceUsdc);
+    console.log("Budget:", error.budgetUsdc);
+    console.log("Quoted:", error.quoteInfo.priceUsdc);
   } else if (error instanceof PartialSuccessError) {
     // Payment sent but something failed after
-    console.log('TX Hash:', error.txHash);
-    console.log('Recoverable:', error.recoverable);
+    console.log("TX Hash:", error.txHash);
+    console.log("Recoverable:", error.recoverable);
   } else if (error instanceof TimeoutError) {
     // Flow timed out
-    console.log('Step:', error.step);
-    console.log('Partial state:', error.partialState);
+    console.log("Step:", error.step);
+    console.log("Partial state:", error.partialState);
   } else if (error instanceof ProviderError) {
     // Provider unreachable or returned error
-    console.log('Provider:', error.providerUrl);
-    console.log('Step:', error.step);
+    console.log("Provider:", error.providerUrl);
+    console.log("Step:", error.step);
   } else if (error instanceof IVXPError) {
     // Any other SDK error
-    console.log('Code:', error.code);
-    console.log('Details:', error.details);
+    console.log("Code:", error.code);
+    console.log("Details:", error.details);
   }
 }
 ```
@@ -138,17 +138,17 @@ try {
 } catch (error) {
   if (error instanceof IVXPError) {
     switch (error.code) {
-      case 'INSUFFICIENT_BALANCE':
-        console.log('Top up your wallet');
+      case "INSUFFICIENT_BALANCE":
+        console.log("Top up your wallet");
         break;
-      case 'PARTIAL_SUCCESS':
-        console.log('Payment sent, retry notification');
+      case "PARTIAL_SUCCESS":
+        console.log("Payment sent, retry notification");
         break;
-      case 'SERVICE_UNAVAILABLE':
-        console.log('Provider is down, try later');
+      case "SERVICE_UNAVAILABLE":
+        console.log("Provider is down, try later");
         break;
       default:
-        console.log('Unexpected error:', error.code);
+        console.log("Unexpected error:", error.code);
     }
   }
 }
@@ -164,7 +164,7 @@ try {
 } catch (error) {
   if (error instanceof PartialSuccessError) {
     // The USDC was sent on-chain. Save the txHash for recovery.
-    console.log('Payment TX:', error.txHash);
+    console.log("Payment TX:", error.txHash);
 
     // Option 1: Retry the notification manually
     // Option 2: Contact the provider with the txHash
@@ -184,11 +184,11 @@ try {
   });
 } catch (error) {
   if (error instanceof TimeoutError) {
-    console.log('Timed out at step:', error.step);
+    console.log("Timed out at step:", error.step);
 
     if (error.partialState.txHash) {
       // Payment was already sent
-      console.log('Payment TX:', error.partialState.txHash);
+      console.log("Payment TX:", error.partialState.txHash);
       // Resume from polling step
     }
   }

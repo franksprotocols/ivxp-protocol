@@ -7,8 +7,8 @@
  * (e.g. "/marketplace/some-service" activates "/marketplace").
  */
 export function isActiveLink(href: string, pathname: string): boolean {
-  if (href === '/') {
-    return pathname === '/';
+  if (href === "/") {
+    return pathname === "/";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

@@ -20,44 +20,18 @@ function makeRating(overrides: Partial<RatingWire> = {}): RatingWire {
 
 describe("RatingList", () => {
   it("shows empty state when no ratings", () => {
-    render(
-      <RatingList
-        ratings={[]}
-        total={0}
-        page={1}
-        limit={10}
-      />,
-    );
-    expect(screen.getByTestId("empty-ratings")).toHaveTextContent(
-      "No reviews yet",
-    );
+    render(<RatingList ratings={[]} total={0} page={1} limit={10} />);
+    expect(screen.getByTestId("empty-ratings")).toHaveTextContent("No reviews yet");
   });
 
   it("renders rating cards", () => {
-    const ratings = [
-      makeRating({ rating_id: "r-1" }),
-      makeRating({ rating_id: "r-2" }),
-    ];
-    render(
-      <RatingList
-        ratings={ratings}
-        total={2}
-        page={1}
-        limit={10}
-      />,
-    );
+    const ratings = [makeRating({ rating_id: "r-1" }), makeRating({ rating_id: "r-2" })];
+    render(<RatingList ratings={ratings} total={2} page={1} limit={10} />);
     expect(screen.getAllByTestId("rating-card")).toHaveLength(2);
   });
 
   it("renders sort buttons", () => {
-    render(
-      <RatingList
-        ratings={[makeRating()]}
-        total={1}
-        page={1}
-        limit={10}
-      />,
-    );
+    render(<RatingList ratings={[makeRating()]} total={1} page={1} limit={10} />);
     expect(screen.getByTestId("sort-newest")).toBeInTheDocument();
     expect(screen.getByTestId("sort-highest")).toBeInTheDocument();
     expect(screen.getByTestId("sort-lowest")).toBeInTheDocument();
@@ -80,30 +54,14 @@ describe("RatingList", () => {
   });
 
   it("shows pagination when multiple pages", () => {
-    render(
-      <RatingList
-        ratings={[makeRating()]}
-        total={25}
-        page={1}
-        limit={10}
-      />,
-    );
+    render(<RatingList ratings={[makeRating()]} total={25} page={1} limit={10} />);
     expect(screen.getByTestId("rating-pagination")).toBeInTheDocument();
     expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
   });
 
   it("does not show pagination for single page", () => {
-    render(
-      <RatingList
-        ratings={[makeRating()]}
-        total={5}
-        page={1}
-        limit={10}
-      />,
-    );
-    expect(
-      screen.queryByTestId("rating-pagination"),
-    ).not.toBeInTheDocument();
+    render(<RatingList ratings={[makeRating()]} total={5} page={1} limit={10} />);
+    expect(screen.queryByTestId("rating-pagination")).not.toBeInTheDocument();
   });
 
   it("calls onPageChange when next clicked", () => {
@@ -122,26 +80,12 @@ describe("RatingList", () => {
   });
 
   it("disables Previous on first page", () => {
-    render(
-      <RatingList
-        ratings={[makeRating()]}
-        total={25}
-        page={1}
-        limit={10}
-      />,
-    );
+    render(<RatingList ratings={[makeRating()]} total={25} page={1} limit={10} />);
     expect(screen.getByText("Previous")).toBeDisabled();
   });
 
   it("disables Next on last page", () => {
-    render(
-      <RatingList
-        ratings={[makeRating()]}
-        total={25}
-        page={3}
-        limit={10}
-      />,
-    );
+    render(<RatingList ratings={[makeRating()]} total={25} page={3} limit={10} />);
     expect(screen.getByText("Next")).toBeDisabled();
   });
 });

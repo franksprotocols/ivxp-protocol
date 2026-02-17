@@ -69,9 +69,5 @@ export interface IHttpClient {
    * @param options - Optional request configuration
    * @returns Parsed response body of type T
    */
-  post<T>(
-    url: string,
-    body: JsonSerializable,
-    options?: RequestOptions,
-  ): Promise<T>;
+  post<T>(url: string, body: JsonSerializable, options?: RequestOptions): Promise<T>;
 }

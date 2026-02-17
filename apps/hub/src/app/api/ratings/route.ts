@@ -1,14 +1,11 @@
-import type { NextRequest} from "next/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { submitRatingBodySchema } from "@/lib/ratings/schemas";
 import { submitRating } from "@/lib/ratings/rating-service";
 import { useOrderStore } from "@/stores/order-store";
 import { createRateLimiter } from "@/lib/ratings/rate-limiter";
-import type {
-  SubmitRatingResponseWire,
-  RatingErrorResponseWire,
-} from "@/lib/ratings/types";
+import type { SubmitRatingResponseWire, RatingErrorResponseWire } from "@/lib/ratings/types";
 
 /** 100 requests per minute per IP */
 const RATE_LIMIT_MAX_REQUESTS = 100;
@@ -38,9 +35,7 @@ function getOrderFromStore(orderId: string) {
   return useOrderStore.getState().getOrder(orderId);
 }
 
-function buildZodErrorDetails(
-  error: ZodError,
-): Record<string, string[]> {
+function buildZodErrorDetails(error: ZodError): Record<string, string[]> {
   const details: Record<string, string[]> = {};
   for (const issue of error.issues) {
     const key = issue.path.join(".");
@@ -67,9 +62,7 @@ function sanitizeErrorForLog(error: unknown): string {
 
 export async function POST(
   request: NextRequest,
-): Promise<
-  NextResponse<SubmitRatingResponseWire | RatingErrorResponseWire>
-> {
+): Promise<NextResponse<SubmitRatingResponseWire | RatingErrorResponseWire>> {
   // Rate limiting
   const clientIp = getClientIp(request);
   const rateCheck = rateLimiter.check(clientIp);
@@ -152,10 +145,7 @@ export async function POST(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
-    console.error(
-      "[Ratings API] POST error:",
-      sanitizeErrorForLog(error),
-    );
+    console.error("[Ratings API] POST error:", sanitizeErrorForLog(error));
 
     const errorResponse: RatingErrorResponseWire = {
       error: {

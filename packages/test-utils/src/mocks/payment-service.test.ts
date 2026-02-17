@@ -10,10 +10,7 @@ describe("MockPaymentService", () => {
   describe("send", () => {
     it("should return default tx hash", async () => {
       const service = new MockPaymentService();
-      const hash = await service.send(
-        TEST_ACCOUNTS.provider.address,
-        "10.00",
-      );
+      const hash = await service.send(TEST_ACCOUNTS.provider.address, "10.00");
       expect(hash).toMatch(/^0x/);
       expect(hash.length).toBe(66);
     });
@@ -24,10 +21,7 @@ describe("MockPaymentService", () => {
       const service = new MockPaymentService({
         txHashToReturn: customHash,
       });
-      const hash = await service.send(
-        TEST_ACCOUNTS.provider.address,
-        "10.00",
-      );
+      const hash = await service.send(TEST_ACCOUNTS.provider.address, "10.00");
       expect(hash).toBe(customHash);
     });
 
@@ -35,9 +29,9 @@ describe("MockPaymentService", () => {
       const service = new MockPaymentService({
         sendError: new Error("insufficient balance"),
       });
-      await expect(
-        service.send(TEST_ACCOUNTS.provider.address, "10.00"),
-      ).rejects.toThrow("insufficient balance");
+      await expect(service.send(TEST_ACCOUNTS.provider.address, "10.00")).rejects.toThrow(
+        "insufficient balance",
+      );
     });
 
     it("should record send calls", async () => {
@@ -55,27 +49,21 @@ describe("MockPaymentService", () => {
   describe("verify", () => {
     it("should return true by default", async () => {
       const service = new MockPaymentService();
-      const result = await service.verify(
-        "0x1234" as `0x${string}`,
-        {
-          from: TEST_ACCOUNTS.client.address,
-          to: TEST_ACCOUNTS.provider.address,
-          amount: "10.00",
-        },
-      );
+      const result = await service.verify("0x1234" as `0x${string}`, {
+        from: TEST_ACCOUNTS.client.address,
+        to: TEST_ACCOUNTS.provider.address,
+        amount: "10.00",
+      });
       expect(result).toBe(true);
     });
 
     it("should return false when configured", async () => {
       const service = new MockPaymentService({ verifyResult: false });
-      const result = await service.verify(
-        "0x1234" as `0x${string}`,
-        {
-          from: TEST_ACCOUNTS.client.address,
-          to: TEST_ACCOUNTS.provider.address,
-          amount: "10.00",
-        },
-      );
+      const result = await service.verify("0x1234" as `0x${string}`, {
+        from: TEST_ACCOUNTS.client.address,
+        to: TEST_ACCOUNTS.provider.address,
+        amount: "10.00",
+      });
       expect(result).toBe(false);
     });
 
@@ -95,9 +83,7 @@ describe("MockPaymentService", () => {
   describe("getBalance", () => {
     it("should return default balance", async () => {
       const service = new MockPaymentService();
-      const balance = await service.getBalance(
-        TEST_ACCOUNTS.client.address,
-      );
+      const balance = await service.getBalance(TEST_ACCOUNTS.client.address);
       expect(balance).toBe("1000.000000");
     });
 
@@ -105,18 +91,14 @@ describe("MockPaymentService", () => {
       const service = new MockPaymentService({
         defaultBalance: "500.000000",
       });
-      const balance = await service.getBalance(
-        TEST_ACCOUNTS.client.address,
-      );
+      const balance = await service.getBalance(TEST_ACCOUNTS.client.address);
       expect(balance).toBe("500.000000");
     });
 
     it("should return per-address balance when set", async () => {
       const service = new MockPaymentService();
       service.setBalance(TEST_ACCOUNTS.client.address, "42.000000");
-      const balance = await service.getBalance(
-        TEST_ACCOUNTS.client.address,
-      );
+      const balance = await service.getBalance(TEST_ACCOUNTS.client.address);
       expect(balance).toBe("42.000000");
     });
 
@@ -133,9 +115,9 @@ describe("MockPaymentService", () => {
       const service = new MockPaymentService({
         getBalanceError: new Error("network error"),
       });
-      await expect(
-        service.getBalance(TEST_ACCOUNTS.client.address),
-      ).rejects.toThrow("network error");
+      await expect(service.getBalance(TEST_ACCOUNTS.client.address)).rejects.toThrow(
+        "network error",
+      );
     });
   });
 

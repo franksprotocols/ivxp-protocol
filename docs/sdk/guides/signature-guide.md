@@ -11,15 +11,15 @@ EIP-191 prepends `"\x19Ethereum Signed Message:\n" + len(message)` before hashin
 The SDK provides `CryptoService` for all signing operations:
 
 ```typescript
-import { CryptoService, createCryptoService } from '@ivxp/sdk/crypto';
+import { CryptoService, createCryptoService } from "@ivxp/sdk/crypto";
 
-const crypto = createCryptoService('0x...' as `0x${string}`);
+const crypto = createCryptoService("0x..." as `0x${string}`);
 ```
 
 ### Sign a Message
 
 ```typescript
-const signature = await crypto.sign('Hello IVXP!');
+const signature = await crypto.sign("Hello IVXP!");
 // Returns: 0x-prefixed 65-byte hex signature
 ```
 
@@ -27,9 +27,9 @@ const signature = await crypto.sign('Hello IVXP!');
 
 ```typescript
 const isValid = await crypto.verify(
-  'Hello IVXP!',           // original message
-  signature,                // 0x-prefixed signature
-  '0xAbC...' as `0x${string}`, // expected signer address
+  "Hello IVXP!", // original message
+  signature, // 0x-prefixed signature
+  "0xAbC..." as `0x${string}`, // expected signer address
 );
 // Returns: true or false (never throws)
 ```
@@ -54,12 +54,12 @@ Order: {order_id} | Payment: {tx_hash} | Timestamp: {ISO8601}
 ### Format a Message
 
 ```typescript
-import { formatIVXPMessage } from '@ivxp/sdk/crypto';
+import { formatIVXPMessage } from "@ivxp/sdk/crypto";
 
 const message = formatIVXPMessage({
-  orderId: 'ivxp-abc123',
-  txHash: '0x1234...abcd',
-  timestamp: '2026-02-17T12:00:00.000Z', // optional, defaults to now
+  orderId: "ivxp-abc123",
+  txHash: "0x1234...abcd",
+  timestamp: "2026-02-17T12:00:00.000Z", // optional, defaults to now
 });
 // "Order: ivxp-abc123 | Payment: 0x1234...abcd | Timestamp: 2026-02-17T12:00:00.000Z"
 ```
@@ -68,8 +68,8 @@ const message = formatIVXPMessage({
 
 ```typescript
 const { message, signature } = await crypto.signIVXPMessage({
-  orderId: 'ivxp-abc123',
-  txHash: '0x1234...abcd',
+  orderId: "ivxp-abc123",
+  txHash: "0x1234...abcd",
 });
 ```
 
@@ -79,18 +79,19 @@ const { message, signature } = await crypto.signIVXPMessage({
 const result = await crypto.verifyIVXPMessage({
   signedMessage: message,
   signature: signature,
-  expectedAddress: '0xAbC...' as `0x${string}`,
+  expectedAddress: "0xAbC..." as `0x${string}`,
 });
 
 if (result.valid) {
-  console.log('Order ID:', result.orderId);
-  console.log('TX Hash:', result.txHash);
+  console.log("Order ID:", result.orderId);
+  console.log("TX Hash:", result.txHash);
 } else {
-  console.log('Invalid signature');
+  console.log("Invalid signature");
 }
 ```
 
 The verification result is a discriminated union:
+
 - `{ valid: true, orderId: string, txHash: string }` on success
 - `{ valid: false }` on failure
 

@@ -47,23 +47,29 @@ gh repo create ivxp-protocol --public --source=. --remote=origin --push
 ## After Pushing to GitHub
 
 ### 1. Verify the Repository
+
 Visit: https://github.com/frankhu/ivxp-protocol
 
 You should see:
+
 - ✅ README.md displayed on the main page
 - ✅ All 7 files committed
 - ✅ MIT License
 - ✅ Professional documentation
 
 ### 2. Enable GitHub Pages (Optional)
+
 To create a website for the protocol:
+
 1. Go to Settings > Pages
 2. Source: Deploy from branch
 3. Branch: main / root
 4. Visit: https://frankhu.github.io/ivxp-protocol
 
 ### 3. Add Topics/Tags
+
 Add topics to help people find your protocol:
+
 - `ai-agents`
 - `blockchain`
 - `cryptocurrency`
@@ -74,6 +80,7 @@ Add topics to help people find your protocol:
 - `web3`
 
 ### 4. Share on Moltbook
+
 Once the repository is live, announce it:
 
 ```
@@ -107,6 +114,7 @@ ivxp-protocol/
 ## Security Verification ✅
 
 I've verified that:
+
 - ✅ No private keys in any files
 - ✅ Only environment variable references (WALLET_PRIVATE_KEY)
 - ✅ .gitignore prevents committing sensitive files

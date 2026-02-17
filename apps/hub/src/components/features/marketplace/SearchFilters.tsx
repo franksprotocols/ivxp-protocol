@@ -17,23 +17,14 @@ interface SearchFiltersProps {
   readonly onClear: () => void;
 }
 
-export function SearchFilters({
-  filters,
-  onFilterChange,
-  onClear,
-}: SearchFiltersProps) {
+export function SearchFilters({ filters, onFilterChange, onClear }: SearchFiltersProps) {
   return (
     <div className="flex flex-wrap items-end gap-3">
       <Select
         value={filters.serviceType || "all"}
-        onValueChange={(v) =>
-          onFilterChange("serviceType", v === "all" ? "" : v)
-        }
+        onValueChange={(v) => onFilterChange("serviceType", v === "all" ? "" : v)}
       >
-        <SelectTrigger
-          className="w-[160px]"
-          aria-label="Filter by service type"
-        >
+        <SelectTrigger className="w-[160px]" aria-label="Filter by service type">
           <SelectValue placeholder="All Types" />
         </SelectTrigger>
         <SelectContent>
@@ -70,9 +61,7 @@ export function SearchFilters({
 
       <Select
         value={filters.sortBy}
-        onValueChange={(v) =>
-          onFilterChange("sortBy", v as FilterState["sortBy"])
-        }
+        onValueChange={(v) => onFilterChange("sortBy", v as FilterState["sortBy"])}
       >
         <SelectTrigger className="w-[140px]" aria-label="Sort by">
           <SelectValue placeholder="Sort by" />

@@ -1,19 +1,14 @@
-import type { NextRequest} from "next/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { searchServicesQuerySchema } from "@/lib/registry/search-schemas";
 import { aggregateServices } from "@/lib/registry/service-aggregator";
 import { queryServices } from "@/lib/registry/service-search";
-import type {
-  SearchServicesResponseWire,
-  RegistryErrorResponseWire,
-} from "@/lib/registry/types";
+import type { SearchServicesResponseWire, RegistryErrorResponseWire } from "@/lib/registry/types";
 
 export async function GET(
   request: NextRequest,
-): Promise<
-  NextResponse<SearchServicesResponseWire | RegistryErrorResponseWire>
-> {
+): Promise<NextResponse<SearchServicesResponseWire | RegistryErrorResponseWire>> {
   try {
     // 1. Extract query parameters
     const { searchParams } = request.nextUrl;

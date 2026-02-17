@@ -41,11 +41,7 @@ export function CopyButton({ value, label, className }: CopyButtonProps) {
   }, [value]);
 
   const ariaLabel =
-    state === "copied"
-      ? "Copied"
-      : state === "failed"
-        ? "Copy failed"
-        : `Copy ${label ?? "value"}`;
+    state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : `Copy ${label ?? "value"}`;
 
   return (
     <Button

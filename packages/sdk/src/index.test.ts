@@ -444,11 +444,7 @@ describe("export completeness", () => {
     const partialErr = new PartialSuccessError("test", validTxHash as `0x${string}`);
     expect(partialErr).toBeInstanceOf(IVXPError);
 
-    const budgetErr = new BudgetExceededError(
-      "test",
-      { orderId: "order-1", priceUsdc: 50 },
-      10,
-    );
+    const budgetErr = new BudgetExceededError("test", { orderId: "order-1", priceUsdc: 50 }, 10);
     expect(budgetErr).toBeInstanceOf(IVXPError);
 
     const timeoutErr = new TimeoutError("test", "payment");

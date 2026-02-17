@@ -459,7 +459,9 @@ describe("E2E: Complete Purchase Flow", () => {
   it("handles deliverable download failures and hash mismatch", async () => {
     const { result } = renderHook(() => useDeliverable("ord_dl_1"));
 
-    mockRefs.ivxpClient.current.downloadDeliverable.mockRejectedValueOnce(new Error("Network error"));
+    mockRefs.ivxpClient.current.downloadDeliverable.mockRejectedValueOnce(
+      new Error("Network error"),
+    );
     await act(async () => {
       await result.current.download();
     });
@@ -476,7 +478,11 @@ describe("E2E: Complete Purchase Flow", () => {
     await act(async () => {
       await result.current.download();
     });
-    assertDownloadHashMismatch(result.current.hashStatus, result.current.content, result.current.error);
+    assertDownloadHashMismatch(
+      result.current.hashStatus,
+      result.current.content,
+      result.current.error,
+    );
 
     mockRefs.ivxpClient.current.downloadDeliverable.mockRejectedValueOnce(
       new Error("Order not found. It may have expired or been cancelled."),

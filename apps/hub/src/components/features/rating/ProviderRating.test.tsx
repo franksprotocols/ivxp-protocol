@@ -4,22 +4,12 @@ import { ProviderRating } from "./ProviderRating";
 
 describe("ProviderRating", () => {
   it("shows 'No ratings yet' when count is 0", () => {
-    render(
-      <ProviderRating averageRating={0} ratingCount={0} />,
-    );
-    expect(screen.getByTestId("no-ratings")).toHaveTextContent(
-      "No ratings yet",
-    );
+    render(<ProviderRating averageRating={0} ratingCount={0} />);
+    expect(screen.getByTestId("no-ratings")).toHaveTextContent("No ratings yet");
   });
 
   it("renders compact variant with average and count", () => {
-    render(
-      <ProviderRating
-        averageRating={4.5}
-        ratingCount={12}
-        variant="compact"
-      />,
-    );
+    render(<ProviderRating averageRating={4.5} ratingCount={12} variant="compact" />);
     expect(screen.getByTestId("provider-rating-compact")).toBeInTheDocument();
     expect(screen.getByText("4.5")).toBeInTheDocument();
     expect(screen.getByText("(12)")).toBeInTheDocument();
@@ -42,13 +32,7 @@ describe("ProviderRating", () => {
   });
 
   it("shows singular 'rating' for count of 1", () => {
-    render(
-      <ProviderRating
-        averageRating={5.0}
-        ratingCount={1}
-        variant="full"
-      />,
-    );
+    render(<ProviderRating averageRating={5.0} ratingCount={1} variant="full" />);
     expect(screen.getByText("1 rating")).toBeInTheDocument();
   });
 });

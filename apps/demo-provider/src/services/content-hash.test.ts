@@ -44,8 +44,6 @@ describe("computeContentHash", () => {
     const hash = computeContentHash("");
     expect(hash).toHaveLength(64);
     // SHA-256 of empty string is well-known
-    expect(hash).toBe(
-      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    );
+    expect(hash).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
   });
 });

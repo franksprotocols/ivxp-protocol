@@ -18,20 +18,14 @@ export function RatingDistribution({
   className,
 }: RatingDistributionProps) {
   return (
-    <div
-      className={cn("space-y-1.5", className)}
-      data-testid="rating-distribution"
-    >
+    <div className={cn("space-y-1.5", className)} data-testid="rating-distribution">
       {STAR_LEVELS.map((level) => {
         const count = distribution[level];
-        const percentage =
-          totalCount > 0 ? (count / totalCount) * 100 : 0;
+        const percentage = totalCount > 0 ? (count / totalCount) * 100 : 0;
 
         return (
           <div key={level} className="flex items-center gap-2 text-sm">
-            <span className="w-3 text-right text-muted-foreground">
-              {level}
-            </span>
+            <span className="w-3 text-right text-muted-foreground">{level}</span>
             <div
               className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
               role="progressbar"
@@ -45,9 +39,7 @@ export function RatingDistribution({
                 style={{ width: `${percentage}%` }}
               />
             </div>
-            <span className="w-6 text-right text-xs text-muted-foreground">
-              {count}
-            </span>
+            <span className="w-6 text-right text-xs text-muted-foreground">{count}</span>
           </div>
         );
       })}

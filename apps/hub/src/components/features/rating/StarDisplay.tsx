@@ -22,20 +22,14 @@ const SIZE_MAP = {
  * Read-only star visualization component.
  * Renders filled, half-filled, and empty stars based on the rating value.
  */
-export function StarDisplay({
-  rating,
-  maxStars = 5,
-  size = "md",
-  className,
-}: StarDisplayProps) {
+export function StarDisplay({ rating, maxStars = 5, size = "md", className }: StarDisplayProps) {
   const clampedRating = Math.max(0, Math.min(rating, maxStars));
   const sizeClass = SIZE_MAP[size];
 
   const stars = Array.from({ length: maxStars }, (_, i) => {
     const starIndex = i + 1;
     const isFilled = clampedRating >= starIndex;
-    const isPartial =
-      !isFilled && clampedRating > starIndex - 1;
+    const isPartial = !isFilled && clampedRating > starIndex - 1;
 
     return (
       <Star

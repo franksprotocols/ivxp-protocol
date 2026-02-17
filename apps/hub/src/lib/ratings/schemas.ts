@@ -32,10 +32,7 @@ export const submitRatingBodySchema = z.object({
   signature: z
     .string()
     .regex(/^0x[a-fA-F0-9]{130}$/, "Invalid signature format (must be 0x + 130 hex chars)"),
-  timestamp: z
-    .number()
-    .int("timestamp must be an integer")
-    .positive("timestamp must be positive"),
+  timestamp: z.number().int("timestamp must be an integer").positive("timestamp must be positive"),
 });
 
 export type SubmitRatingBodyInput = z.input<typeof submitRatingBodySchema>;

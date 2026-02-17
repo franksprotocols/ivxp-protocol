@@ -4,7 +4,15 @@
   "title": "IVXP Download Response",
   "description": "Response from GET /ivxp/download/{order_id}. Returns the completed deliverable.",
   "type": "object",
-  "required": ["protocol", "message_type", "timestamp", "order_id", "status", "provider_agent", "deliverable"],
+  "required": [
+    "protocol",
+    "message_type",
+    "timestamp",
+    "order_id",
+    "status",
+    "provider_agent",
+    "deliverable"
+  ],
   "properties": {
     "protocol": {
       "type": "string",

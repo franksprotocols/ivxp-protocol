@@ -75,10 +75,7 @@ function generatePlaceholderSvg(
   height: number,
 ): string {
   // Escape THEN truncate to ensure no XSS via truncation boundary
-  const displayPrompt = truncateForDisplay(
-    escapeXml(prompt),
-    MAX_DISPLAY_PROMPT_LENGTH,
-  );
+  const displayPrompt = truncateForDisplay(escapeXml(prompt), MAX_DISPLAY_PROMPT_LENGTH);
   const shortOrderId =
     orderId.length > MAX_DISPLAY_ORDER_ID_LENGTH
       ? `${orderId.slice(0, MAX_DISPLAY_ORDER_ID_LENGTH)}...`
@@ -129,9 +126,7 @@ export async function executeImageGen(
   }
 
   if (!ORDER_ID_REGEX.test(orderId)) {
-    throw new Error(
-      `Invalid input: orderId must match format ivxp-{uuid-v4}, got: ${orderId}`,
-    );
+    throw new Error(`Invalid input: orderId must match format ivxp-{uuid-v4}, got: ${orderId}`);
   }
 
   // Validate description
@@ -149,12 +144,7 @@ export async function executeImageGen(
     );
   }
 
-  const svg = generatePlaceholderSvg(
-    description,
-    orderId,
-    DEFAULT_WIDTH,
-    DEFAULT_HEIGHT,
-  );
+  const svg = generatePlaceholderSvg(description, orderId, DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
   const contentHash = computeContentHash(svg);
 

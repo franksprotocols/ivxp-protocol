@@ -111,9 +111,7 @@ describe("Marketplace Integration", () => {
     it("renders category badge", () => {
       renderWithProviders(<ServiceCard service={testService} />);
 
-      expect(screen.getByTestId("service-category")).toHaveTextContent(
-        "Demo",
-      );
+      expect(screen.getByTestId("service-category")).toHaveTextContent("Demo");
     });
 
     it("renders View Details as a link when no onViewDetails callback", () => {
@@ -121,24 +119,16 @@ describe("Marketplace Integration", () => {
 
       const link = screen.getByRole("link", { name: /view details/i });
       expect(link).toHaveAttribute("href", "/marketplace/text_echo");
-      expect(
-        screen.queryByRole("button", { name: /view details/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /view details/i })).not.toBeInTheDocument();
     });
 
     it("renders View Details as a button when onViewDetails callback is provided", async () => {
       const onViewDetails = vi.fn();
       const user = userEvent.setup();
-      renderWithProviders(
-        <ServiceCard service={testService} onViewDetails={onViewDetails} />,
-      );
+      renderWithProviders(<ServiceCard service={testService} onViewDetails={onViewDetails} />);
 
-      expect(
-        screen.queryByRole("link", { name: /view details/i }),
-      ).not.toBeInTheDocument();
-      await user.click(
-        screen.getByRole("button", { name: /view details/i }),
-      );
+      expect(screen.queryByRole("link", { name: /view details/i })).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: /view details/i }));
 
       expect(onViewDetails).toHaveBeenCalledWith(testService);
     });

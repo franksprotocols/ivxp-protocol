@@ -28,10 +28,7 @@ function EmptyState() {
   return (
     <Card className="mx-auto max-w-md text-center">
       <CardContent className="flex flex-col items-center gap-4 py-12">
-        <ShoppingBag
-          className="h-16 w-16 text-muted-foreground/50"
-          aria-hidden="true"
-        />
+        <ShoppingBag className="h-16 w-16 text-muted-foreground/50" aria-hidden="true" />
         <div>
           <p className="text-lg font-semibold">No orders yet.</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -50,13 +47,8 @@ function DisconnectedState() {
   return (
     <Card className="mx-auto max-w-md text-center">
       <CardContent className="flex flex-col items-center gap-4 py-12">
-        <Wallet
-          className="h-16 w-16 text-muted-foreground/50"
-          aria-hidden="true"
-        />
-        <p className="text-lg font-semibold">
-          Connect wallet to view orders
-        </p>
+        <Wallet className="h-16 w-16 text-muted-foreground/50" aria-hidden="true" />
+        <p className="text-lg font-semibold">Connect wallet to view orders</p>
       </CardContent>
     </Card>
   );
@@ -71,10 +63,7 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <Card className="mx-auto max-w-md border-destructive/50">
       <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-        <AlertTriangle
-          className="h-16 w-16 text-destructive/50"
-          aria-hidden="true"
-        />
+        <AlertTriangle className="h-16 w-16 text-destructive/50" aria-hidden="true" />
         <div>
           <p className="text-lg font-semibold">Failed to load orders</p>
           <p className="mt-1 text-sm text-muted-foreground">{message}</p>
@@ -123,9 +112,7 @@ export function OrderList() {
     );
   }
 
-  const sortedOrders = address
-    ? getOrdersByWallet(address as Address)
-    : [];
+  const sortedOrders = address ? getOrdersByWallet(address as Address) : [];
 
   if (sortedOrders.length === 0) {
     return <EmptyState />;

@@ -70,10 +70,7 @@ export interface ServiceResult {
  * @returns A ServiceResult with the deliverable content and hash
  * @throws Error if the input is invalid or processing fails
  */
-export type ServiceHandlerFn = (
-  orderId: string,
-  description: string,
-) => Promise<ServiceResult>;
+export type ServiceHandlerFn = (orderId: string, description: string) => Promise<ServiceResult>;
 
 /**
  * A registered service handler with its type identifier.

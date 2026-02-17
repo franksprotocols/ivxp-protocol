@@ -46,16 +46,16 @@ The SDK supports tree-shakeable subpath imports for advanced usage:
 
 ```typescript
 // Main entry (most common)
-import { createIVXPClient, createIVXPProvider } from '@ivxp/sdk';
+import { createIVXPClient, createIVXPProvider } from "@ivxp/sdk";
 
 // Subpath imports (advanced)
-import { CryptoService, createCryptoService } from '@ivxp/sdk/crypto';
-import { PaymentService } from '@ivxp/sdk/payment';
-import { IVXPClient } from '@ivxp/sdk/core';
-import { IVXPError } from '@ivxp/sdk/errors';
+import { CryptoService, createCryptoService } from "@ivxp/sdk/crypto";
+import { PaymentService } from "@ivxp/sdk/payment";
+import { IVXPClient } from "@ivxp/sdk/core";
+import { IVXPError } from "@ivxp/sdk/errors";
 
 // Type-only imports (zero runtime cost)
-import type { RequestServiceParams, SDKEventMap } from '@ivxp/sdk';
+import type { RequestServiceParams, SDKEventMap } from "@ivxp/sdk";
 ```
 
 ## Verify Installation
@@ -63,19 +63,19 @@ import type { RequestServiceParams, SDKEventMap } from '@ivxp/sdk';
 Create a quick test file to verify the SDK is installed correctly:
 
 ```typescript
-import { createIVXPClient } from '@ivxp/sdk';
+import { createIVXPClient } from "@ivxp/sdk";
 
 // This will throw if the private key is invalid,
 // confirming the SDK is loaded correctly.
 try {
   const client = createIVXPClient({
-    privateKey: '0x' + 'a'.repeat(64), // test key
-    network: 'base-sepolia',
+    privateKey: "0x" + "a".repeat(64), // test key
+    network: "base-sepolia",
   });
-  console.log('SDK installed successfully');
-  console.log('Network:', client.getNetwork());
+  console.log("SDK installed successfully");
+  console.log("Network:", client.getNetwork());
 } catch (error) {
-  console.error('Installation issue:', error);
+  console.error("Installation issue:", error);
 }
 ```
 

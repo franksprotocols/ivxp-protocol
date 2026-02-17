@@ -7,21 +7,21 @@
 
 ## Document Information
 
-| Attribute | Value |
-|------|-----|
-| Version | 2.0 |
-| Status | Draft |
-| Author | IVXP Team |
-| Created | 2026-02-08 |
-| Updated | 2026-02-09 |
+| Attribute | Value      |
+| --------- | ---------- |
+| Version   | 2.0        |
+| Status    | Draft      |
+| Author    | IVXP Team  |
+| Created   | 2026-02-08 |
+| Updated   | 2026-02-09 |
 
 ### Version History
 
-| Version | Date | Change Log |
-|------|------|----------|
-| 1.0 | 2026-02-08 | Initial version, defined the core protocol |
-| 2.0 | 2026-02-09 | Added: interaction mode design, tech stack selection, product architecture, SDK design |
-| 2.0.1 | 2026-02-09 | Fixed: state definitions and message formats aligned with the IVXP/1.0 reference implementation |
+| Version | Date       | Change Log                                                                                      |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-02-08 | Initial version, defined the core protocol                                                      |
+| 2.0     | 2026-02-09 | Added: interaction mode design, tech stack selection, product architecture, SDK design          |
+| 2.0.1   | 2026-02-09 | Fixed: state definitions and message formats aligned with the IVXP/1.0 reference implementation |
 
 ---
 
@@ -57,23 +57,23 @@
 
 ### 1.2 Core Value Proposition
 
-| Dimension | Traditional API Platform | IVXP Protocol |
-|----------|--------------|-----------|
-| **Platform Fee** | 15-30% take rate | 0% (Gas only) |
-| **Access Barrier** | Review and registration required | Open access |
-| **Payment Method** | Fiat, monthly settlement | Instant crypto |
-| **Trust Model** | Platform endorsement | Cryptographic verification |
-| **Intermediary** | Required | Not required |
+| Dimension          | Traditional API Platform         | IVXP Protocol              |
+| ------------------ | -------------------------------- | -------------------------- |
+| **Platform Fee**   | 15-30% take rate                 | 0% (Gas only)              |
+| **Access Barrier** | Review and registration required | Open access                |
+| **Payment Method** | Fiat, monthly settlement         | Instant crypto             |
+| **Trust Model**    | Platform endorsement             | Cryptographic verification |
+| **Intermediary**   | Required                         | Not required               |
 
 ### 1.3 What's New in v2.0
 
-| Module | Description |
-|------|------|
-| **Interaction Modes** | Agent↔Agent automation vs Human→Agent UI interaction |
-| **Service Categories** | Standard services vs custom services |
-| **Tech Stack** | TypeScript SDK first, Go for high-performance scenarios |
-| **Product Architecture** | IVXP Hub + SDK + Registry |
-| **SDK Design** | One-line service invocation |
+| Module                   | Description                                             |
+| ------------------------ | ------------------------------------------------------- |
+| **Interaction Modes**    | Agent↔Agent automation vs Human→Agent UI interaction    |
+| **Service Categories**   | Standard services vs custom services                    |
+| **Tech Stack**           | TypeScript SDK first, Go for high-performance scenarios |
+| **Product Architecture** | IVXP Hub + SDK + Registry                               |
+| **SDK Design**           | One-line service invocation                             |
 
 ### 1.4 v2.0 Scope and Compatibility Principles
 
@@ -145,14 +145,14 @@ Build foundational infrastructure for an Agent economy:
 
 ### 3.2 Problem Breakdown
 
-| Sub-problem | Challenge | IVXP Solution |
-|--------|------|---------------|
-| **Identity verification** | How to prove counterparty identity? | Wallet address + signature verification |
-| **Payment verification** | How to ensure payment is received? | On-chain transaction verification |
-| **Service delivery** | How to ensure delivery is received? | Store & Forward + signed delivery |
-| **Trust establishment** | How to trust unknown Agents? | Cryptographic proof > platform endorsement |
-| **Price negotiation** | How to determine price? | Quote confirmation mechanism |
-| **Dispute resolution** | What if something goes wrong? | Future: arbitration/refund mechanism |
+| Sub-problem               | Challenge                           | IVXP Solution                              |
+| ------------------------- | ----------------------------------- | ------------------------------------------ |
+| **Identity verification** | How to prove counterparty identity? | Wallet address + signature verification    |
+| **Payment verification**  | How to ensure payment is received?  | On-chain transaction verification          |
+| **Service delivery**      | How to ensure delivery is received? | Store & Forward + signed delivery          |
+| **Trust establishment**   | How to trust unknown Agents?        | Cryptographic proof > platform endorsement |
+| **Price negotiation**     | How to determine price?             | Quote confirmation mechanism               |
+| **Dispute resolution**    | What if something goes wrong?       | Future: arbitration/refund mechanism       |
 
 ---
 
@@ -240,16 +240,16 @@ Total cost: $90 USDC for a complex workflow
 
 ### 5.1 Terms
 
-| Term | Definition |
-|------|------|
-| **Provider** | Service-providing Agent running an HTTP server and receiving requests |
-| **Client** | Service-consuming Agent or human user |
-| **Service** | A specific capability provided by a Provider, with explicit pricing |
-| **Order** | One service transaction with a unique Order ID |
-| **Catalog** | Provider's service list |
-| **Deliverable** | Output delivered after service completion |
-| **Signature** | Wallet private-key signature proving identity |
-| **Registry** | Optional service discovery center |
+| Term            | Definition                                                            |
+| --------------- | --------------------------------------------------------------------- |
+| **Provider**    | Service-providing Agent running an HTTP server and receiving requests |
+| **Client**      | Service-consuming Agent or human user                                 |
+| **Service**     | A specific capability provided by a Provider, with explicit pricing   |
+| **Order**       | One service transaction with a unique Order ID                        |
+| **Catalog**     | Provider's service list                                               |
+| **Deliverable** | Output delivered after service completion                             |
+| **Signature**   | Wallet private-key signature proving identity                         |
+| **Registry**    | Optional service discovery center                                     |
 
 ### 5.2 Service Categories
 
@@ -393,6 +393,7 @@ State descriptions:
 ```
 
 **Important notes**:
+
 - `delivery_failed` does not mean service execution failed; it means P2P push failed.
 - Client can retrieve deliverables via `GET /ivxp/download/{order_id}`.
 - Store & Forward ensures delivery availability even if push fails.
@@ -432,15 +433,15 @@ State descriptions:
 
 ### 6.2 Mode Comparison
 
-| Dimension | Agent↔Agent | Human→Agent | Agent-on-behalf-of-Human |
-|------|-------------|-------------|----------------|
-| **Interaction** | SDK API calls | Web UI | SDK + authorization |
-| **UI required** | ❌ No | ✅ Yes | ❌ No |
-| **Requirement input** | inputSchema | Form/rich text | Preset rules |
-| **Payment method** | Automatic signed sending | Wallet popup confirmation | Pre-authorization/spending cap |
-| **Best-fit service type** | Standardized services | All types | Standardized services |
-| **Interaction time** | Seconds | Minutes | Seconds |
-| **Human involvement** | 0% | 100% | Only at approval |
+| Dimension                 | Agent↔Agent              | Human→Agent               | Agent-on-behalf-of-Human       |
+| ------------------------- | ------------------------ | ------------------------- | ------------------------------ |
+| **Interaction**           | SDK API calls            | Web UI                    | SDK + authorization            |
+| **UI required**           | ❌ No                    | ✅ Yes                    | ❌ No                          |
+| **Requirement input**     | inputSchema              | Form/rich text            | Preset rules                   |
+| **Payment method**        | Automatic signed sending | Wallet popup confirmation | Pre-authorization/spending cap |
+| **Best-fit service type** | Standardized services    | All types                 | Standardized services          |
+| **Interaction time**      | Seconds                  | Minutes                   | Seconds                        |
+| **Human involvement**     | 0%                       | 100%                      | Only at approval               |
 
 ### 6.3 Agent↔Agent Detailed Flow
 
@@ -449,9 +450,9 @@ State descriptions:
 ```typescript
 // Agent view: one line to purchase a service
 const result = await agent.callService({
-  provider: 'https://review-bot.example.com',
-  service: 'code_review',
-  input: { code: mySourceCode, language: 'python' }
+  provider: "https://review-bot.example.com",
+  service: "code_review",
+  input: { code: mySourceCode, language: "python" },
 });
 
 // Returns: { issues: [...], suggestions: [...], score: 8.5 }
@@ -516,48 +517,48 @@ Step 5: View deliverable
 
 ### 7.1 Provider Requirements
 
-| Function | Description | Priority |
-|------|------|--------|
-| **FR-P0 Wire protocol compatibility** | Backward-compatible with IVXP/1.0 reference fields and semantics | P0 |
-| **FR-P1 Service catalog** | Provide `/ivxp/catalog` endpoint returning available services | P0 |
-| **FR-P2 Service quoting** | Accept request and return quote (`order_id`, `price`) | P0 |
-| **FR-P3 Payment verification** | Verify authenticity of on-chain USDC transfer | P0 |
-| **FR-P4 Signature verification** | Verify Client signature; identity must equal payer | P0 |
-| **FR-P5 Service execution** | Execute service according to request content | P0 |
-| **FR-P6 Delivery management** | Store & Forward mode with downloadable deliverables | P0 |
-| **FR-P7 Status query** | Provide order status query endpoint | P0 |
-| **FR-P8 Push delivery** | Support proactive POST delivery to Client (optional) | P1 |
+| Function                              | Description                                                      | Priority |
+| ------------------------------------- | ---------------------------------------------------------------- | -------- |
+| **FR-P0 Wire protocol compatibility** | Backward-compatible with IVXP/1.0 reference fields and semantics | P0       |
+| **FR-P1 Service catalog**             | Provide `/ivxp/catalog` endpoint returning available services    | P0       |
+| **FR-P2 Service quoting**             | Accept request and return quote (`order_id`, `price`)            | P0       |
+| **FR-P3 Payment verification**        | Verify authenticity of on-chain USDC transfer                    | P0       |
+| **FR-P4 Signature verification**      | Verify Client signature; identity must equal payer               | P0       |
+| **FR-P5 Service execution**           | Execute service according to request content                     | P0       |
+| **FR-P6 Delivery management**         | Store & Forward mode with downloadable deliverables              | P0       |
+| **FR-P7 Status query**                | Provide order status query endpoint                              | P0       |
+| **FR-P8 Push delivery**               | Support proactive POST delivery to Client (optional)             | P1       |
 
 ### 7.2 Client Requirements
 
-| Function | Description | Priority |
-|------|------|--------|
-| **FR-C1 Service discovery** | Query Provider catalog | P0 |
-| **FR-C2 Service request** | Send request and receive quote | P0 |
-| **FR-C3 Payment sending** | Send USDC on-chain transfer | P0 |
-| **FR-C4 Identity signature** | Sign message to prove identity | P0 |
-| **FR-C5 Poll and download** | Poll status and download deliverable | P0 |
-| **FR-C6 Receive push** | Run server endpoint to receive push delivery (optional) | P2 |
+| Function                     | Description                                             | Priority |
+| ---------------------------- | ------------------------------------------------------- | -------- |
+| **FR-C1 Service discovery**  | Query Provider catalog                                  | P0       |
+| **FR-C2 Service request**    | Send request and receive quote                          | P0       |
+| **FR-C3 Payment sending**    | Send USDC on-chain transfer                             | P0       |
+| **FR-C4 Identity signature** | Sign message to prove identity                          | P0       |
+| **FR-C5 Poll and download**  | Poll status and download deliverable                    | P0       |
+| **FR-C6 Receive push**       | Run server endpoint to receive push delivery (optional) | P2       |
 
 ### 7.3 Registry Requirements (Optional)
 
-| Function | Description | Priority |
-|------|------|--------|
-| **FR-R1 Provider registration** | Allow Providers to register services | P1 |
-| **FR-R2 Service search** | Search by type and price | P1 |
-| **FR-R3 Endpoint verification** | Verify Provider endpoint availability | P2 |
-| **FR-R4 Rating system** | Collect and display ratings | P2 |
+| Function                        | Description                           | Priority |
+| ------------------------------- | ------------------------------------- | -------- |
+| **FR-R1 Provider registration** | Allow Providers to register services  | P1       |
+| **FR-R2 Service search**        | Search by type and price              | P1       |
+| **FR-R3 Endpoint verification** | Verify Provider endpoint availability | P2       |
+| **FR-R4 Rating system**         | Collect and display ratings           | P2       |
 
 ### 7.4 IVXP Hub Requirements (Web UI)
 
-| Function | Description | Priority |
-|------|------|--------|
-| **FR-H1 Wallet connection** | Support MetaMask/Rainbow and more | P0 |
-| **FR-H2 Service marketplace** | Browse and search Providers | P0 |
-| **FR-H3 Purchase flow** | Complete service purchase flow | P0 |
-| **FR-H4 Order tracking** | View order status and history | P0 |
-| **FR-H5 Provider registration** | Register new Providers | P1 |
-| **FR-H6 Playground** | Testnet experience playground | P1 |
+| Function                        | Description                       | Priority |
+| ------------------------------- | --------------------------------- | -------- |
+| **FR-H1 Wallet connection**     | Support MetaMask/Rainbow and more | P0       |
+| **FR-H2 Service marketplace**   | Browse and search Providers       | P0       |
+| **FR-H3 Purchase flow**         | Complete service purchase flow    | P0       |
+| **FR-H4 Order tracking**        | View order status and history     | P0       |
+| **FR-H5 Provider registration** | Register new Providers            | P1       |
+| **FR-H6 Playground**            | Testnet experience playground     | P1       |
 
 ---
 
@@ -610,12 +611,12 @@ Step 5: View deliverable
 
 ### 8.2 Component Descriptions
 
-| Component | Description | Tech Stack |
-|------|------|--------|
-| **@ivxp/sdk** | Agent integration SDK for one-line service invocation | TypeScript |
-| **IVXP Hub** | Web interface for human users | Next.js + shadcn/ui |
-| **IVXP Registry** | Optional service discovery center | Hono/Next.js API |
-| **Provider Agent** | Service-providing Agent | Any language + IVXP protocol |
+| Component          | Description                                           | Tech Stack                   |
+| ------------------ | ----------------------------------------------------- | ---------------------------- |
+| **@ivxp/sdk**      | Agent integration SDK for one-line service invocation | TypeScript                   |
+| **IVXP Hub**       | Web interface for human users                         | Next.js + shadcn/ui          |
+| **IVXP Registry**  | Optional service discovery center                     | Hono/Next.js API             |
+| **Provider Agent** | Service-providing Agent                               | Any language + IVXP protocol |
 
 ### 8.3 IVXP Hub Page Structure
 
@@ -638,20 +639,20 @@ Step 5: View deliverable
 
 ### 9.1 Protocol Specification
 
-| Item | Spec |
-|------|------|
+| Item                 | Spec     |
+| -------------------- | -------- |
 | **Protocol version** | IVXP/1.0 |
-| **Transport** | HTTPS |
-| **Data format** | JSON |
-| **Encoding** | UTF-8 |
+| **Transport**        | HTTPS    |
+| **Data format**      | JSON     |
+| **Encoding**         | UTF-8    |
 
 ### 9.2 Blockchain Specification
 
-| Item | Spec |
-|------|------|
-| **Supported networks** | Base Mainnet, Base Sepolia (test) |
-| **Payment token** | USDC (6 decimals) |
-| **USDC contract** | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Item                   | Spec                                         |
+| ---------------------- | -------------------------------------------- |
+| **Supported networks** | Base Mainnet, Base Sepolia (test)            |
+| **Payment token**      | USDC (6 decimals)                            |
+| **USDC contract**      | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
 | **Signature standard** | EIP-191 (MUST), EIP-712 (optional extension) |
 
 #### Signature Message Format
@@ -663,11 +664,13 @@ Order: {order_id} | Payment: {tx_hash} | Timestamp: {ISO8601_timestamp}
 ```
 
 Example:
+
 ```
 Order: ivxp-550e8400-e29b-41d4-a716-446655440000 | Payment: 0xabcd1234... | Timestamp: 2026-02-05T12:30:00Z
 ```
 
 Signature uses EIP-191 standard, Python implementation:
+
 ```python
 from eth_account.messages import encode_defunct
 from eth_account import Account
@@ -679,34 +682,35 @@ signature = signed.signature.hex()
 ```
 
 TypeScript implementation (viem):
-```typescript
-import { signMessage } from 'viem/accounts'
 
-const message = `Order: ${orderId} | Payment: ${txHash} | Timestamp: ${timestamp}`
-const signature = await signMessage({ message, privateKey })
+```typescript
+import { signMessage } from "viem/accounts";
+
+const message = `Order: ${orderId} | Payment: ${txHash} | Timestamp: ${timestamp}`;
+const signature = await signMessage({ message, privateKey });
 ```
 
 ### 9.3 API Endpoint Specs
 
-| Endpoint | Method | Description | Response Type |
-|------|------|------|----------|
-| `/ivxp/catalog` | GET | Get service catalog | `ServiceCatalog` |
-| `/ivxp/request` | POST | Request service and get quote | `ServiceQuote` |
-| `/ivxp/deliver` | POST | Request delivery | `DeliveryAccepted` |
-| `/ivxp/status/{order_id}` | GET | Query order status | `OrderStatusResponse` |
-| `/ivxp/download/{order_id}` | GET | Download deliverable | `DeliveryResponse` |
+| Endpoint                    | Method | Description                   | Response Type         |
+| --------------------------- | ------ | ----------------------------- | --------------------- |
+| `/ivxp/catalog`             | GET    | Get service catalog           | `ServiceCatalog`      |
+| `/ivxp/request`             | POST   | Request service and get quote | `ServiceQuote`        |
+| `/ivxp/deliver`             | POST   | Request delivery              | `DeliveryAccepted`    |
+| `/ivxp/status/{order_id}`   | GET    | Query order status            | `OrderStatusResponse` |
+| `/ivxp/download/{order_id}` | GET    | Download deliverable          | `DeliveryResponse`    |
 
 ### 9.4 HTTP Error Codes
 
-| Code | Meaning | Use Case |
-|--------|------|----------|
-| `200` | Success | Request handled successfully |
-| `202` | Accepted | Service processing, not completed |
-| `400` | Bad request | Unsupported protocol version or invalid message format |
-| `401` | Unauthorized | Signature verification failed |
-| `402` | Payment required/failed | On-chain payment verification failed |
-| `404` | Not found | Order missing or deliverable not ready |
-| `500` | Server error | Internal Provider error |
+| Code  | Meaning                 | Use Case                                               |
+| ----- | ----------------------- | ------------------------------------------------------ |
+| `200` | Success                 | Request handled successfully                           |
+| `202` | Accepted                | Service processing, not completed                      |
+| `400` | Bad request             | Unsupported protocol version or invalid message format |
+| `401` | Unauthorized            | Signature verification failed                          |
+| `402` | Payment required/failed | On-chain payment verification failed                   |
+| `404` | Not found               | Order missing or deliverable not ready                 |
+| `500` | Server error            | Internal Provider error                                |
 
 ### 9.5 Message Formats
 
@@ -718,7 +722,7 @@ The following type definitions use the **IVXP/1.0 reference implementation as ca
 
 ```typescript
 interface ServiceCatalog {
-  protocol: 'IVXP/1.0';
+  protocol: "IVXP/1.0";
   provider: string;
   wallet_address: `0x${string}`;
   services: Array<{
@@ -727,8 +731,8 @@ interface ServiceCatalog {
     estimated_delivery_hours: number;
   }>;
   // extension (optional, backward-compatible)
-  message_type?: 'service_catalog';
-  timestamp?: string;  // ISO 8601 format, e.g. "2026-02-05T12:00:00Z"
+  message_type?: "service_catalog";
+  timestamp?: string; // ISO 8601 format, e.g. "2026-02-05T12:00:00Z"
 }
 ```
 
@@ -738,20 +742,20 @@ interface ServiceCatalog {
 
 ```typescript
 interface ServiceRequest {
-  protocol: 'IVXP/1.0';
-  message_type: 'service_request';
-  timestamp: string;  // ISO 8601 format
+  protocol: "IVXP/1.0";
+  message_type: "service_request";
+  timestamp: string; // ISO 8601 format
   client_agent: {
     name: string;
     wallet_address: `0x${string}`;
-    contact_endpoint?: string;  // optional, for P2P push delivery
+    contact_endpoint?: string; // optional, for P2P push delivery
   };
   service_request: {
     type: string;
-    description: string;  // requirement text; SDK input should be serialized here
+    description: string; // requirement text; SDK input should be serialized here
     budget_usdc: number;
-    delivery_format?: 'markdown' | 'json' | 'code';
-    deadline?: string;  // ISO 8601 format
+    delivery_format?: "markdown" | "json" | "code";
+    deadline?: string; // ISO 8601 format
   };
 }
 ```
@@ -764,10 +768,10 @@ interface ServiceRequest {
 
 ```typescript
 interface ServiceQuote {
-  protocol: 'IVXP/1.0';
-  message_type: 'service_quote';
-  timestamp: string;  // ISO 8601 format
-  order_id: string;   // format: ivxp-{uuid-v4}
+  protocol: "IVXP/1.0";
+  message_type: "service_quote";
+  timestamp: string; // ISO 8601 format
+  order_id: string; // format: ivxp-{uuid-v4}
   provider_agent: {
     name: string;
     wallet_address: `0x${string}`;
@@ -775,13 +779,13 @@ interface ServiceQuote {
   };
   quote: {
     price_usdc: number;
-    estimated_delivery: string;  // ISO 8601 format, ETA
+    estimated_delivery: string; // ISO 8601 format, ETA
     payment_address: `0x${string}`;
-    network: 'base-mainnet' | 'base-sepolia';
-    token_contract?: `0x${string}`;  // USDC contract address
+    network: "base-mainnet" | "base-sepolia";
+    token_contract?: `0x${string}`; // USDC contract address
   };
   terms?: {
-    payment_timeout?: number;  // seconds
+    payment_timeout?: number; // seconds
     revision_policy?: string;
     refund_policy?: string;
   };
@@ -794,17 +798,17 @@ interface ServiceQuote {
 
 ```typescript
 interface DeliveryRequest {
-  protocol: 'IVXP/1.0';
-  message_type: 'delivery_request';
-  timestamp: string;  // ISO 8601 format
+  protocol: "IVXP/1.0";
+  message_type: "delivery_request";
+  timestamp: string; // ISO 8601 format
   order_id: string;
   payment_proof: {
     tx_hash: `0x${string}`;
     from_address: `0x${string}`;
-    network: 'base-mainnet' | 'base-sepolia';
+    network: "base-mainnet" | "base-sepolia";
     // extension (optional, backward-compatible)
     to_address?: `0x${string}`;
-    amount_usdc?: string;  // raw amount, 6 decimals
+    amount_usdc?: string; // raw amount, 6 decimals
     block_number?: number;
   };
   /**
@@ -813,7 +817,7 @@ interface DeliveryRequest {
    */
   delivery_endpoint?: string;
   signature: `0x${string}`;
-  signed_message: string;  // format specified in section 9.2
+  signed_message: string; // format specified in section 9.2
 }
 ```
 
@@ -823,7 +827,7 @@ interface DeliveryRequest {
 
 ```typescript
 interface DeliveryAccepted {
-  status: 'accepted';
+  status: "accepted";
   order_id: string;
   message: string;
 }
@@ -835,11 +839,11 @@ interface DeliveryAccepted {
 
 ```typescript
 interface DeliveryResponse {
-  protocol: 'IVXP/1.0';
-  message_type: 'service_delivery';
-  timestamp: string;  // ISO 8601 format
+  protocol: "IVXP/1.0";
+  message_type: "service_delivery";
+  timestamp: string; // ISO 8601 format
   order_id: string;
-  status: 'completed';
+  status: "completed";
   provider_agent: {
     name: string;
     wallet_address: `0x${string}`;
@@ -849,8 +853,8 @@ interface DeliveryResponse {
     format?: string;
     content: unknown;
   };
-  content_hash?: string;  // SHA256 hash of deliverable.content
-  delivered_at?: string;  // ISO 8601 format
+  content_hash?: string; // SHA256 hash of deliverable.content
+  delivered_at?: string; // ISO 8601 format
   // extension (optional, backward-compatible)
   signature?: `0x${string}`;
   signed_message?: string;
@@ -871,8 +875,8 @@ interface OrderStatusResponse {
    * - delivered: P2P push succeeded
    * - delivery_failed: P2P push failed, deliverable downloadable
    */
-  status: 'quoted' | 'paid' | 'delivered' | 'delivery_failed';
-  created_at: string;  // ISO 8601 format
+  status: "quoted" | "paid" | "delivered" | "delivery_failed";
+  created_at: string; // ISO 8601 format
   service_type: string;
   price_usdc: number;
 }
@@ -882,9 +886,9 @@ interface OrderStatusResponse {
 
 ```typescript
 interface DeliveryConfirmation {
-  protocol: 'IVXP/1.0';
-  message_type: 'delivery_confirmation';
-  timestamp: string;  // ISO 8601 format
+  protocol: "IVXP/1.0";
+  message_type: "delivery_confirmation";
+  timestamp: string; // ISO 8601 format
   order_id: string;
   client_agent: {
     name: string;
@@ -892,9 +896,9 @@ interface DeliveryConfirmation {
   };
   confirmation: {
     received: boolean;
-    content_hash: string;  // hash computed by client to verify consistency
-    received_at: string;   // ISO 8601 format
-    satisfaction_rating?: number;  // 1-5
+    content_hash: string; // hash computed by client to verify consistency
+    received_at: string; // ISO 8601 format
+    satisfaction_rating?: number; // 1-5
   };
   signature: `0x${string}`;
   signed_message: string;
@@ -915,13 +919,13 @@ Example: ivxp-550e8400-e29b-41d4-a716-446655440000
 
 ### 10.1 Tech Stack Selection
 
-| Dimension | Python (current) | TypeScript (recommended) | Go (optional) |
-|------|---------------|-------------------|-----------|
-| **Developer adoption** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Agent ecosystem fit** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **Browser support** | ❌ | ✅ | ❌ (possible via WASM) |
-| **Crypto library maturity** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Deployment convenience** | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Dimension                   | Python (current) | TypeScript (recommended) | Go (optional)          |
+| --------------------------- | ---------------- | ------------------------ | ---------------------- |
+| **Developer adoption**      | ⭐⭐⭐           | ⭐⭐⭐⭐⭐               | ⭐⭐⭐⭐               |
+| **Agent ecosystem fit**     | ⭐⭐⭐           | ⭐⭐⭐⭐⭐               | ⭐⭐⭐                 |
+| **Browser support**         | ❌               | ✅                       | ❌ (possible via WASM) |
+| **Crypto library maturity** | ⭐⭐⭐⭐         | ⭐⭐⭐⭐⭐               | ⭐⭐⭐⭐               |
+| **Deployment convenience**  | ⭐⭐⭐           | ⭐⭐⭐⭐                 | ⭐⭐⭐⭐⭐             |
 
 **Recommended strategy:**
 
@@ -979,16 +983,16 @@ const provider = new IVXPProvider({
 ```typescript
 // Standard service call
 const result = await agent.callService({
-  provider: 'https://code-bot.example.com',
-  service: 'code_review',
-  input: { code: sourceCode, language: 'python' }
+  provider: "https://code-bot.example.com",
+  service: "code_review",
+  input: { code: sourceCode, language: "python" },
 });
 
 // Service discovery + automatic selection
 const result = await agent.callBest({
-  serviceType: 'translation',
-  input: { text: 'Hello', targetLang: 'zh' },
-  selection: 'cheapest',  // 'cheapest' | 'fastest' | 'best_rated'
+  serviceType: "translation",
+  input: { text: "Hello", targetLang: "zh" },
+  selection: "cheapest", // 'cheapest' | 'fastest' | 'best_rated'
 });
 ```
 
@@ -1000,13 +1004,13 @@ const result = await agent.callBest({
 // For scenarios requiring fine-grained control, use Low-Level API
 const client = new IVXPClient({
   privateKey: process.env.PRIVATE_KEY,
-  network: 'base-mainnet',
+  network: "base-mainnet",
 });
 
 // 1. Get quote
 const quote = await client.requestQuote(providerUrl, {
-  type: 'code_review',
-  description: JSON.stringify({ code: sourceCode, language: 'python' }),
+  type: "code_review",
+  description: JSON.stringify({ code: sourceCode, language: "python" }),
   budget_usdc: 50,
 });
 
@@ -1028,7 +1032,7 @@ const deliverable = await client.pollAndDownload(providerUrl, quote.order_id);
 ```typescript
 // Discover services from Registry
 const providers = await agent.discover({
-  serviceType: 'code_review',
+  serviceType: "code_review",
   maxPrice: 50,
   minRating: 4.0,
 });
@@ -1040,17 +1044,17 @@ The SDK provides an event system so developers can observe detailed protocol eve
 
 ```typescript
 // Protocol-level events
-agent.on('protocol:request', (data) => console.log(`Request: ${data.orderId}`));
-agent.on('protocol:quote', (quote) => console.log(`Quote: ${quote.price_usdc} USDC`));
-agent.on('protocol:payment', (tx) => console.log(`Payment: ${tx.hash}`));
-agent.on('protocol:delivery_request', (data) => console.log(`Delivery requested: ${data.orderId}`));
-agent.on('protocol:status', (status) => console.log(`Status: ${status.status}`));
-agent.on('protocol:download', (data) => console.log(`Downloaded: ${data.orderId}`));
+agent.on("protocol:request", (data) => console.log(`Request: ${data.orderId}`));
+agent.on("protocol:quote", (quote) => console.log(`Quote: ${quote.price_usdc} USDC`));
+agent.on("protocol:payment", (tx) => console.log(`Payment: ${tx.hash}`));
+agent.on("protocol:delivery_request", (data) => console.log(`Delivery requested: ${data.orderId}`));
+agent.on("protocol:status", (status) => console.log(`Status: ${status.status}`));
+agent.on("protocol:download", (data) => console.log(`Downloaded: ${data.orderId}`));
 
 // High-level events
-agent.on('payment:sent', (tx) => console.log(`Payment: ${tx.hash}`));
-agent.on('service:completed', (result) => console.log(`Done: ${result.orderId}`));
-agent.on('budget:warning', (remaining) => console.log(`Low budget: ${remaining}`));
+agent.on("payment:sent", (tx) => console.log(`Payment: ${tx.hash}`));
+agent.on("service:completed", (result) => console.log(`Done: ${result.orderId}`));
+agent.on("budget:warning", (remaining) => console.log(`Low budget: ${remaining}`));
 ```
 
 #### Error Handling
@@ -1078,7 +1082,7 @@ try {
 ### 10.4 Provider SDK
 
 ```typescript
-import { IVXPProvider, defineService } from '@ivxp/sdk';
+import { IVXPProvider, defineService } from "@ivxp/sdk";
 
 const provider = new IVXPProvider({
   privateKey: process.env.PRIVATE_KEY,
@@ -1086,24 +1090,24 @@ const provider = new IVXPProvider({
 });
 
 // Define service
-provider.service('code_review', {
+provider.service("code_review", {
   price: 30,
-  deliveryTime: 'instant',
+  deliveryTime: "instant",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
-      code: { type: 'string' },
-      language: { type: 'string', enum: ['python', 'javascript', 'go'] }
+      code: { type: "string" },
+      language: { type: "string", enum: ["python", "javascript", "go"] },
     },
-    required: ['code', 'language']
+    required: ["code", "language"],
   },
   handler: async (input, context) => {
     const result = await reviewCode(input.code, input.language);
     return {
-      type: 'code_review_result',
+      type: "code_review_result",
       content: result,
     };
-  }
+  },
 });
 
 // Start server
@@ -1155,7 +1159,7 @@ provider.start();
 async function verifyClientSignature(
   message: string,
   signature: string,
-  expectedAddress: string
+  expectedAddress: string,
 ): Promise<boolean> {
   const recoveredAddress = await recoverMessageAddress({
     message,
@@ -1172,13 +1176,13 @@ async function verifyClientSignature(
 async function verifyPayment(
   txHash: string,
   expectedTo: string,
-  expectedAmount: bigint
+  expectedAmount: bigint,
 ): Promise<boolean> {
   const tx = await publicClient.getTransaction({ hash: txHash });
   const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
 
   // Ensure transaction success
-  if (receipt.status !== 'success') return false;
+  if (receipt.status !== "success") return false;
 
   // Ensure USDC contract call
   if (tx.to?.toLowerCase() !== USDC_ADDRESS.toLowerCase()) return false;
@@ -1195,14 +1199,14 @@ async function verifyPayment(
 
 ### 11.4 Threat Model
 
-| Threat | Risk Level | Mitigation |
-|------|----------|----------|
-| Forged payment proof | High | Verify transaction on-chain |
-| Identity impersonation | High | Signature verification |
-| Replay attack | Medium | Timestamp + one-time order ID |
-| Man-in-the-middle attack | Medium | HTTPS + certificate validation |
-| Private key leakage | High | Secure storage + spending caps |
-| Non-delivery of service | Medium | Future: arbitration/refund mechanism |
+| Threat                   | Risk Level | Mitigation                           |
+| ------------------------ | ---------- | ------------------------------------ |
+| Forged payment proof     | High       | Verify transaction on-chain          |
+| Identity impersonation   | High       | Signature verification               |
+| Replay attack            | Medium     | Timestamp + one-time order ID        |
+| Man-in-the-middle attack | Medium     | HTTPS + certificate validation       |
+| Private key leakage      | High       | Secure storage + spending caps       |
+| Non-delivery of service  | Medium     | Future: arbitration/refund mechanism |
 
 ---
 
@@ -1280,29 +1284,29 @@ async function verifyPayment(
 
 ### 13.1 Business Metrics
 
-| Metric | MVP Goal | 3-Month Goal |
-|------|----------|-----------|
-| Number of registered Providers | 5+ | 50+ |
-| Completed transactions | 10+ | 500+ |
-| Total transaction volume (USDC) | $500+ | $10,000+ |
-| Active Agent users | 3+ | 30+ |
+| Metric                          | MVP Goal | 3-Month Goal |
+| ------------------------------- | -------- | ------------ |
+| Number of registered Providers  | 5+       | 50+          |
+| Completed transactions          | 10+      | 500+         |
+| Total transaction volume (USDC) | $500+    | $10,000+     |
+| Active Agent users              | 3+       | 30+          |
 
 ### 13.2 Technical Metrics
 
-| Metric | Goal |
-|------|------|
-| SDK integration time | < 5 minutes |
-| Payment confirmation time | < 15 seconds |
-| API response time | < 200ms (P95) |
-| System availability | > 99% |
+| Metric                    | Goal          |
+| ------------------------- | ------------- |
+| SDK integration time      | < 5 minutes   |
+| Payment confirmation time | < 15 seconds  |
+| API response time         | < 200ms (P95) |
+| System availability       | > 99%         |
 
 ### 13.3 User Metrics
 
-| Metric | Goal |
-|------|------|
-| First-transaction success rate | > 90% |
-| User satisfaction | > 4.0/5.0 |
-| Provider on-time delivery rate | > 95% |
+| Metric                         | Goal      |
+| ------------------------------ | --------- |
+| First-transaction success rate | > 90%     |
+| User satisfaction              | > 4.0/5.0 |
+| Provider on-time delivery rate | > 95%     |
 
 ---
 
@@ -1310,15 +1314,15 @@ async function verifyPayment(
 
 ### 14.1 Glossary
 
-| Term | Alias | Definition |
-|------|------|------|
-| Provider | Service Provider | Service-providing Agent |
-| Client | Service Consumer | Service-consuming Agent or user |
-| Catalog | Service Catalog | Public service list exposed by a Provider |
-| Order | Transaction Order | A service transaction |
-| Deliverable | Service Output | Output after service completion |
-| Signature | Wallet Signature | Wallet private-key signature |
-| On-chain | Blockchain-native | On the blockchain |
+| Term        | Alias             | Definition                                |
+| ----------- | ----------------- | ----------------------------------------- |
+| Provider    | Service Provider  | Service-providing Agent                   |
+| Client      | Service Consumer  | Service-consuming Agent or user           |
+| Catalog     | Service Catalog   | Public service list exposed by a Provider |
+| Order       | Transaction Order | A service transaction                     |
+| Deliverable | Service Output    | Output after service completion           |
+| Signature   | Wallet Signature  | Wallet private-key signature              |
+| On-chain    | Blockchain-native | On the blockchain                         |
 
 ### 14.2 Detailed UI Flows
 
@@ -1418,24 +1422,24 @@ The following UI references illustrate key Client-side interaction flows and exp
 
 Comparison and planning for service discovery in different growth stages:
 
-| Approach | Pros | Cons | Recommended Stage |
-|------|------|------|----------|
-| **Centralized Registry** | Simple, fast, MVP-friendly | Single point of failure | **MVP (v1.0)** |
-| **DNS-based** | Decentralized, standard-based | Requires domain ownership | v1.1 |
-| **DHT (P2P)** | Fully decentralized | Complex, higher latency | v2.0 |
-| **ENS** | Blockchain-native naming | Higher gas cost | v2.0 |
+| Approach                 | Pros                          | Cons                      | Recommended Stage |
+| ------------------------ | ----------------------------- | ------------------------- | ----------------- |
+| **Centralized Registry** | Simple, fast, MVP-friendly    | Single point of failure   | **MVP (v1.0)**    |
+| **DNS-based**            | Decentralized, standard-based | Requires domain ownership | v1.1              |
+| **DHT (P2P)**            | Fully decentralized           | Complex, higher latency   | v2.0              |
+| **ENS**                  | Blockchain-native naming      | Higher gas cost           | v2.0              |
 
 **MVP approach (v1.0)**: use a RESTful centralized Registry, with Provider-signed data to prevent tampering.
 
 ### 14.4 External References
 
-| Resource | Link |
-|------|------|
-| Base Docs | https://docs.base.org |
-| USDC Docs | https://developers.circle.com |
-| viem Docs | https://viem.sh |
-| wagmi Docs | https://wagmi.sh |
-| EIP-191 | https://eips.ethereum.org/EIPS/eip-191 |
+| Resource   | Link                                   |
+| ---------- | -------------------------------------- |
+| Base Docs  | https://docs.base.org                  |
+| USDC Docs  | https://developers.circle.com          |
+| viem Docs  | https://viem.sh                        |
+| wagmi Docs | https://wagmi.sh                       |
+| EIP-191    | https://eips.ethereum.org/EIPS/eip-191 |
 
 ### 14.5 Demo Design and Acceptance Criteria
 
@@ -1507,4 +1511,4 @@ The IVXP protocol aims to become foundational infrastructure for the Agent econo
 
 ---
 
-*End of Document*
+_End of Document_

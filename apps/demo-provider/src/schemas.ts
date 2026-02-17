@@ -12,19 +12,13 @@
 import { z } from "zod";
 
 /** 0x-prefixed 40-hex-char Ethereum address. */
-const hexAddress = z
-  .string()
-  .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address format");
+const hexAddress = z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address format");
 
 /** 0x-prefixed 64-hex-char transaction hash. */
-const hexHash = z
-  .string()
-  .regex(/^0x[a-fA-F0-9]{64}$/, "Invalid transaction hash format");
+const hexHash = z.string().regex(/^0x[a-fA-F0-9]{64}$/, "Invalid transaction hash format");
 
 /** 0x-prefixed 130-hex-char EIP-191 signature. */
-const hexSignature = z
-  .string()
-  .regex(/^0x[a-fA-F0-9]{130}$/, "Invalid EIP-191 signature format");
+const hexSignature = z.string().regex(/^0x[a-fA-F0-9]{130}$/, "Invalid EIP-191 signature format");
 
 /** Supported blockchain networks. */
 const networkId = z.enum(["base-mainnet", "base-sepolia"]);

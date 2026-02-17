@@ -5,51 +5,51 @@ This guide covers the full `IVXPProvider` API for hosting IVXP services.
 ## Creating a Provider
 
 ```typescript
-import { createIVXPProvider } from '@ivxp/sdk';
+import { createIVXPProvider } from "@ivxp/sdk";
 
 const provider = createIVXPProvider({
   privateKey: process.env.PROVIDER_PRIVATE_KEY as `0x${string}`,
-  network: 'base-sepolia',
+  network: "base-sepolia",
   services: [
     {
-      type: 'code_review',
-      description: 'AI-powered code review',
+      type: "code_review",
+      description: "AI-powered code review",
       base_price_usdc: 5,
       estimated_delivery_hours: 1,
     },
     {
-      type: 'market_analysis',
-      description: 'Crypto market analysis',
+      type: "market_analysis",
+      description: "Crypto market analysis",
       base_price_usdc: 10,
       estimated_delivery_hours: 2,
     },
   ],
-  providerName: 'My AI Services',
+  providerName: "My AI Services",
   port: 3001,
-  host: '127.0.0.1',
+  host: "127.0.0.1",
 });
 ```
 
 ## Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `privateKey` | `0x${string}` | required | Provider's wallet private key |
-| `services` | `ServiceDefinition[]` | required | Services offered (min 1) |
-| `network` | `NetworkType` | `'base-sepolia'` | Base network |
-| `port` | `number` | `3001` | HTTP server port (0 = OS-assigned) |
-| `host` | `string` | `'127.0.0.1'` | HTTP server host |
-| `providerName` | `string` | `'IVXP Provider'` | Display name in catalog |
-| `orderStore` | `IOrderStorage` | `InMemoryOrderStore` | Order persistence backend |
-| `deliverableStore` | `IDeliverableStore` | `InMemoryDeliverableStore` | Deliverable storage |
-| `allowPrivateDeliveryUrls` | `boolean` | `false` | Allow localhost push delivery (dev only) |
+| Option                     | Type                  | Default                    | Description                              |
+| -------------------------- | --------------------- | -------------------------- | ---------------------------------------- |
+| `privateKey`               | `0x${string}`         | required                   | Provider's wallet private key            |
+| `services`                 | `ServiceDefinition[]` | required                   | Services offered (min 1)                 |
+| `network`                  | `NetworkType`         | `'base-sepolia'`           | Base network                             |
+| `port`                     | `number`              | `3001`                     | HTTP server port (0 = OS-assigned)       |
+| `host`                     | `string`              | `'127.0.0.1'`              | HTTP server host                         |
+| `providerName`             | `string`              | `'IVXP Provider'`          | Display name in catalog                  |
+| `orderStore`               | `IOrderStorage`       | `InMemoryOrderStore`       | Order persistence backend                |
+| `deliverableStore`         | `IDeliverableStore`   | `InMemoryDeliverableStore` | Deliverable storage                      |
+| `allowPrivateDeliveryUrls` | `boolean`             | `false`                    | Allow localhost push delivery (dev only) |
 
 ## Service Handlers
 
 Register handlers to process orders after payment verification:
 
 ```typescript
-provider.registerServiceHandler('code_review', async (order) => {
+provider.registerServiceHandler("code_review", async (order) => {
   // order.orderId      -- Unique order ID
   // order.serviceType  -- 'code_review'
   // order.clientAddress -- Client's wallet address
@@ -59,7 +59,7 @@ provider.registerServiceHandler('code_review', async (order) => {
 
   return {
     content: JSON.stringify(review, null, 2),
-    content_type: 'application/json',
+    content_type: "application/json",
   };
 });
 ```
@@ -85,7 +85,7 @@ const { port, host } = await provider.start();
 console.log(`Provider running at http://${host}:${port}`);
 
 // Check if running
-console.log('Running:', provider.isRunning());
+console.log("Running:", provider.isRunning());
 
 // Stop gracefully
 await provider.stop();
@@ -141,7 +141,7 @@ Implement `IOrderStorage` for persistent order storage:
 
 ```typescript
 interface IOrderStorage {
-  create(order: Omit<StoredOrder, 'createdAt' | 'updatedAt'>): Promise<StoredOrder>;
+  create(order: Omit<StoredOrder, "createdAt" | "updatedAt">): Promise<StoredOrder>;
   get(orderId: string): Promise<StoredOrder | null>;
   update(orderId: string, updates: Partial<StoredOrder>): Promise<StoredOrder>;
   list(filter?: { status?: OrderStatus }): Promise<StoredOrder[]>;
@@ -171,11 +171,11 @@ When a client provides a `delivery_endpoint`, the provider POSTs the deliverable
 ## Provider Properties
 
 ```typescript
-const address = await provider.getAddress();  // Wallet address
-const network = provider.getNetwork();         // 'base-sepolia' | 'base-mainnet'
-const port = provider.getPort();               // Configured port
-const host = provider.getHost();               // Configured host
-const running = provider.isRunning();          // Server status
+const address = await provider.getAddress(); // Wallet address
+const network = provider.getNetwork(); // 'base-sepolia' | 'base-mainnet'
+const port = provider.getPort(); // Configured port
+const host = provider.getHost(); // Configured host
+const running = provider.isRunning(); // Server status
 ```
 
 ## Next Steps

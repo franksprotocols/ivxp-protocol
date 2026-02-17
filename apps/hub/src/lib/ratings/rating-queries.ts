@@ -18,9 +18,7 @@ const EMPTY_DISTRIBUTION: RatingDistribution = {
 /**
  * Calculate the distribution of star ratings.
  */
-export function calculateDistribution(
-  ratings: readonly RatingWire[],
-): RatingDistribution {
+export function calculateDistribution(ratings: readonly RatingWire[]): RatingDistribution {
   return ratings.reduce<RatingDistribution>(
     (dist, r) => ({
       ...dist,
@@ -91,16 +89,11 @@ export function queryProviderRatings(
   providerAddress: string,
   options: QueryOptions = {},
 ): ProviderRatingsWire {
-  const {
-    sort = "newest",
-    page = DEFAULT_PAGE,
-    limit = DEFAULT_LIMIT,
-  } = options;
+  const { sort = "newest", page = DEFAULT_PAGE, limit = DEFAULT_LIMIT } = options;
 
   const allRatings = loadRatings();
   const providerRatings = allRatings.filter(
-    (r) =>
-      r.provider_address.toLowerCase() === providerAddress.toLowerCase(),
+    (r) => r.provider_address.toLowerCase() === providerAddress.toLowerCase(),
   );
 
   const sorted = sortRatings(providerRatings, sort);

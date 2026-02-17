@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  flattenProviderServices,
-  clearAggregatorCache,
-} from "./service-aggregator";
+import { flattenProviderServices, clearAggregatorCache } from "./service-aggregator";
 import type { RegistryProviderWire } from "./types";
 
 const mockProviders: RegistryProviderWire[] = [
@@ -105,16 +102,11 @@ describe("flattenProviderServices", () => {
     const result = flattenProviderServices(mockProviders);
     expect(result[0].provider_name).toBe("Verified Provider");
     expect(result[0].provider_address).toBe("0xAAA");
-    expect(result[0].provider_endpoint_url).toBe(
-      "https://verified.example.com",
-    );
+    expect(result[0].provider_endpoint_url).toBe("https://verified.example.com");
   });
 
   it("returns empty array when no verified active providers", () => {
-    const result = flattenProviderServices([
-      mockProviders[1],
-      mockProviders[2],
-    ]);
+    const result = flattenProviderServices([mockProviders[1], mockProviders[2]]);
     expect(result).toHaveLength(0);
   });
 });

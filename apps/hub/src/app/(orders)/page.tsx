@@ -12,9 +12,7 @@ export default function OrdersPage() {
     <main className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">My Orders</h1>
-        <p className="mt-2 text-muted-foreground">
-          Track and manage your service orders.
-        </p>
+        <p className="mt-2 text-muted-foreground">Track and manage your service orders.</p>
       </div>
       <OrderList />
     </main>

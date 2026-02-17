@@ -6,20 +6,12 @@ interface SearchEmptyStateProps {
   readonly onClearFilters: () => void;
 }
 
-export function SearchEmptyState({
-  query,
-  hasFilters,
-  onClearFilters,
-}: SearchEmptyStateProps) {
+export function SearchEmptyState({ query, hasFilters, onClearFilters }: SearchEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <p className="text-lg font-medium text-muted-foreground">
-        No services found
-      </p>
+      <p className="text-lg font-medium text-muted-foreground">No services found</p>
       {query && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          No results for &quot;{query}&quot;
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">No results for &quot;{query}&quot;</p>
       )}
       {hasFilters && (
         <p className="mt-1 text-sm text-muted-foreground">

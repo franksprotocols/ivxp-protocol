@@ -55,16 +55,12 @@ describe("RatingCard", () => {
   });
 
   it("does not show Read more for short reviews", () => {
-    render(
-      <RatingCard rating={makeRating({ review_text: "Short" })} />,
-    );
+    render(<RatingCard rating={makeRating({ review_text: "Short" })} />);
     expect(screen.queryByTestId("read-more-button")).not.toBeInTheDocument();
   });
 
   it("handles missing review text", () => {
-    render(
-      <RatingCard rating={makeRating({ review_text: undefined })} />,
-    );
+    render(<RatingCard rating={makeRating({ review_text: undefined })} />);
     expect(screen.getByTestId("rating-card")).toBeInTheDocument();
   });
 });

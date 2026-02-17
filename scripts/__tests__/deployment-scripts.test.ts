@@ -136,7 +136,7 @@ describe("Deployment Scripts: common.sh", () => {
   });
 
   it("disables colors when not a terminal", () => {
-    expect(content).toContain('[ -t 1 ]');
+    expect(content).toContain("[ -t 1 ]");
   });
 });
 
@@ -508,22 +508,16 @@ describe("Deployment Configuration", () => {
   });
 
   it("vercel.json has correct framework", () => {
-    const config = JSON.parse(
-      readFileSync(join(ROOT_DIR, "apps/hub/vercel.json"), "utf-8"),
-    );
+    const config = JSON.parse(readFileSync(join(ROOT_DIR, "apps/hub/vercel.json"), "utf-8"));
     expect(config.framework).toBe("nextjs");
   });
 
   it("railway.toml exists for Provider", () => {
-    expect(existsSync(join(ROOT_DIR, "apps/demo-provider/railway.toml"))).toBe(
-      true,
-    );
+    expect(existsSync(join(ROOT_DIR, "apps/demo-provider/railway.toml"))).toBe(true);
   });
 
   it("Dockerfile exists for Provider", () => {
-    expect(existsSync(join(ROOT_DIR, "apps/demo-provider/Dockerfile"))).toBe(
-      true,
-    );
+    expect(existsSync(join(ROOT_DIR, "apps/demo-provider/Dockerfile"))).toBe(true);
   });
 
   it("Hub .env.example exists", () => {
@@ -531,9 +525,7 @@ describe("Deployment Configuration", () => {
   });
 
   it("Provider .env.example exists", () => {
-    expect(
-      existsSync(join(ROOT_DIR, "apps/demo-provider/.env.example")),
-    ).toBe(true);
+    expect(existsSync(join(ROOT_DIR, "apps/demo-provider/.env.example"))).toBe(true);
   });
 
   it("deployment documentation exists", () => {
@@ -553,31 +545,25 @@ describe("Deployment Scripts: Dry-Run Support", () => {
     "db/backup-db.sh",
   ] as const;
 
-  it.each(scriptsWithDryRun)(
-    "script uses run_cmd for dry-run support: %s",
-    (script) => {
-      const content = readScript(script);
-      expect(content).toContain("run_cmd");
-    },
-  );
+  it.each(scriptsWithDryRun)("script uses run_cmd for dry-run support: %s", (script) => {
+    const content = readScript(script);
+    expect(content).toContain("run_cmd");
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════
 // Test Suite: Security Checks
 // ════════════════════════════════════════════════════════════════════
 describe("Deployment Scripts: Security", () => {
-  it.each(EXPECTED_SCRIPTS)(
-    "script does not contain hardcoded secrets: %s",
-    (script) => {
-      const content = readScript(script);
-      // Check for common secret patterns
-      expect(content).not.toMatch(/sk_live_[a-zA-Z0-9]+/);
-      expect(content).not.toMatch(/AKIA[A-Z0-9]{16}/);
-      expect(content).not.toMatch(
-        /0x[a-fA-F0-9]{64}(?!0{10})/, // real private keys (not placeholder zeros)
-      );
-    },
-  );
+  it.each(EXPECTED_SCRIPTS)("script does not contain hardcoded secrets: %s", (script) => {
+    const content = readScript(script);
+    // Check for common secret patterns
+    expect(content).not.toMatch(/sk_live_[a-zA-Z0-9]+/);
+    expect(content).not.toMatch(/AKIA[A-Z0-9]{16}/);
+    expect(content).not.toMatch(
+      /0x[a-fA-F0-9]{64}(?!0{10})/, // real private keys (not placeholder zeros)
+    );
+  });
 
   it("setup-env.sh warns about secrets", () => {
     const content = readScript("deploy/setup-env.sh");
