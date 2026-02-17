@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "tsup": "^8.0.0",
-    "viem": "^2.0.0"
+    "viem": "^2.46.1"
   },
   "license": "MIT"
 }
