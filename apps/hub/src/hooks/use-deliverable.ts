@@ -128,6 +128,10 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
         setContentHash(response.contentHash);
         setHashStatus("verified");
         setError(null);
+        client.emit?.("order.delivered", {
+          orderId,
+          contentHash: response.contentHash,
+        });
       } else {
         setContent(null);
         setContentType(null);

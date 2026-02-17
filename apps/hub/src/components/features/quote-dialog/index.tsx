@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Address } from "viem";
+import { useAccount } from "wagmi";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ export function QuoteDialog({
   onConfirm,
   onRequestNewQuote,
 }: QuoteDialogProps) {
+  const { address } = useAccount();
   const { isExpired, timeRemaining, isWarning, isCritical } = useQuoteExpiry(quote.expiresAt);
   const addOrder = useOrderStore((s) => s.addOrder);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -60,12 +62,16 @@ export function QuoteDialog({
     if (isConfirming) {
       return;
     }
+    if (!address) {
+      return;
+    }
     setIsConfirming(true);
     addOrder({
       orderId: quote.orderId,
       serviceType: quote.serviceType,
       priceUsdc: quote.priceUsdc,
       providerAddress: quote.providerAddress,
+      clientAddress: address,
       status: "quoted",
       createdAt: Date.now(),
     });
@@ -98,12 +104,20 @@ export function QuoteDialog({
           isCritical={isCritical}
         />
 
+        {!address ? (
+          <p className="text-sm text-amber-700" data-testid="reconnect-prompt">
+            Reconnect wallet to continue.
+          </p>
+        ) : null}
+
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           {isExpired ? (
             <Button onClick={onRequestNewQuote}>Request New Quote</Button>
+          ) : !address ? (
+            <Button disabled>Reconnect Wallet</Button>
           ) : (
             <Button onClick={handleConfirm} disabled={isConfirming}>
               Confirm & Pay

@@ -22,6 +22,7 @@ export interface Order {
   readonly serviceType: string;
   readonly priceUsdc: string;
   readonly providerAddress: Address;
+  readonly clientAddress?: Address;
   readonly status: OrderStatus;
   readonly createdAt: number;
   readonly updatedAt?: number;
@@ -98,13 +99,14 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
   },
 
   getOrdersByWallet: (walletAddress: Address) => {
-    // Note: Wallet-based filtering is out of scope for this story.
-    // TODO: Filter by walletAddress when provider API integration is added.
-    // Currently all orders in the store belong to the connected wallet.
-    return [...get().orders].sort((a, b) => b.createdAt - a.createdAt);
+    const target = walletAddress.toLowerCase();
+
+    return [...get().orders]
+      .filter((order) => order.clientAddress?.toLowerCase() === target)
+      .sort((a, b) => b.createdAt - a.createdAt);
   },
 
-  fetchOrders: async (walletAddress: Address) => {
+  fetchOrders: async (_walletAddress: Address) => {
     set({ isLoading: true, error: null });
     try {
       // TODO: Call Provider APIs to fetch orders by walletAddress.

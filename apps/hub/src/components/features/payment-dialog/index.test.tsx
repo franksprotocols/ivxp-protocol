@@ -32,6 +32,28 @@ vi.mock("@/hooks/use-payment", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mock useIdentitySignature (used by SignatureDialog)
+// ---------------------------------------------------------------------------
+
+vi.mock("@/hooks/use-identity-signature", () => ({
+  useIdentitySignature: () => ({
+    step: "idle",
+    signature: null,
+    error: null,
+    errorCode: null,
+    message: null,
+    signAndDeliver: vi.fn(),
+    retryDelivery: vi.fn(),
+  }),
+  SIGNATURE_ERROR_CODES: {
+    WALLET_DISCONNECTED: "WALLET_DISCONNECTED",
+    USER_REJECTED: "USER_REJECTED",
+    DELIVERY_FAILED: "DELIVERY_FAILED",
+    SIGNING_FAILED: "SIGNING_FAILED",
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 

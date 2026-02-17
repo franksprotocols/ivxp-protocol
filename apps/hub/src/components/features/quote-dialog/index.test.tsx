@@ -1,9 +1,19 @@
 import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from "vitest";
-import { render, screen, act, waitFor } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QuoteDialog } from "./index";
 import type { Quote } from "./index";
 import { useOrderStore } from "@/stores/order-store";
+import type { Address } from "viem";
+
+let mockAddress: Address | undefined = "0x1234567890abcdef1234567890abcdef12345678" as Address;
+
+vi.mock("wagmi", () => ({
+  useAccount: () => ({
+    address: mockAddress,
+    isConnected: Boolean(mockAddress),
+  }),
+}));
 
 // Mock clipboard API
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
@@ -38,6 +48,7 @@ describe("QuoteDialog", () => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     useOrderStore.getState().clearOrders();
+    mockAddress = "0x1234567890abcdef1234567890abcdef12345678" as Address;
   });
 
   afterEach(() => {
@@ -278,6 +289,25 @@ describe("QuoteDialog", () => {
       render(<QuoteDialog open={true} quote={quote} {...defaultHandlers} />);
 
       expect(screen.getByText("Quote Confirmation")).toBeInTheDocument();
+    });
+
+    it("shows reconnect prompt and blocks confirm when wallet disconnected", () => {
+      mockAddress = undefined;
+      const quote = createMockQuote();
+      const onConfirm = vi.fn();
+      render(
+        <QuoteDialog
+          open={true}
+          quote={quote}
+          onConfirm={onConfirm}
+          onRequestNewQuote={defaultHandlers.onRequestNewQuote}
+          onOpenChange={defaultHandlers.onOpenChange}
+        />,
+      );
+
+      expect(screen.getByTestId("reconnect-prompt")).toBeInTheDocument();
+      expect(screen.getByText("Reconnect Wallet")).toBeDisabled();
+      expect(onConfirm).not.toHaveBeenCalled();
     });
   });
 

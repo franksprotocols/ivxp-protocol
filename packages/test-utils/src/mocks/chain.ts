@@ -68,7 +68,9 @@ export const createTestChain = (config: TestChainConfig = {}): AnvilTestClient =
   return createTestClient({
     chain,
     mode: "anvil",
-    transport: http(rpcUrl),
+    // jsdom tests can expose an AbortSignal class mismatch with Node fetch.
+    // timeout: 0 prevents viem from injecting a signal into RequestInit.
+    transport: http(rpcUrl, { timeout: 0 }),
   })
     .extend(publicActions)
     .extend(walletActions);
