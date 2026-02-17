@@ -414,6 +414,17 @@ export class IVXPProvider {
   private server: HttpServer | null = null;
 
   /**
+   * Set of tx_hashes that have already been used for delivery requests.
+   *
+   * Prevents replay attacks where the same payment transaction is used
+   * to claim delivery of multiple orders. This is an in-memory set that
+   * is cleared when the provider is restarted; persistent replay protection
+   * is provided by the order store's tx_hash field (each order can only
+   * transition from "quoted" to "paid" once).
+   */
+  private readonly usedTxHashes: Set<string> = new Set();
+
+  /**
    * Create a new IVXPProvider instance.
    *
    * Validates the configuration. Initializes CryptoService and
@@ -839,6 +850,21 @@ export class IVXPProvider {
       );
     }
 
+    // Replay protection: reject duplicate tx_hash usage.
+    // Prevents the same payment transaction from being used to claim
+    // delivery of multiple orders (Story 8.8, AC #6).
+    const txHashLower = request.payment_proof.tx_hash.toLowerCase();
+    if (this.usedTxHashes.has(txHashLower)) {
+      throw new IVXPError(
+        "Duplicate payment: this transaction hash has already been used",
+        "PAYMENT_VERIFICATION_FAILED",
+        {
+          orderId: request.order_id,
+          txHash: request.payment_proof.tx_hash,
+        },
+      );
+    }
+
     // Verify on-chain payment (AC #1)
     // Amount validation is delegated to the PaymentService, which verifies
     // the on-chain transfer amount matches order.priceUsdc. This design
@@ -869,6 +895,9 @@ export class IVXPProvider {
         orderId: request.order_id,
       });
     }
+
+    // Record tx_hash as used to prevent replay (Story 8.8, AC #6)
+    this.usedTxHashes.add(txHashLower);
 
     // Transition to "paid" status and store tx_hash (AC #3)
     const paidOrder = await this.orderStore.update(request.order_id, {

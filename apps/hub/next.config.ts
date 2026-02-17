@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@ivxp/protocol", "@ivxp/sdk"],
   turbopack: {},
+  poweredByHeader: false,
 };
 
 // Copy providers.json to build output during build
