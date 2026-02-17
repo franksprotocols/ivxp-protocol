@@ -37,7 +37,9 @@ export class IVXPError extends Error {
     this.name = "IVXPError";
 
     // Maintains proper stack trace for where error was thrown (V8 only)
-    const ErrorCtor = Error as { captureStackTrace?: (target: object, ctor: Function) => void };
+    const ErrorCtor = Error as {
+      captureStackTrace?: (target: object, ctor: object) => void;
+    };
     if (ErrorCtor.captureStackTrace) {
       ErrorCtor.captureStackTrace(this, this.constructor);
     }
