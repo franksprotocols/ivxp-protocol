@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
+      "@ivxp/test-utils": resolve(__dirname, "../../packages/test-utils/src/index.ts"),
     },
   },
   test: {

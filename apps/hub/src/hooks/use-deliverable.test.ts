@@ -12,7 +12,8 @@ function textToArrayBuffer(text: string): ArrayBuffer {
 }
 
 async function computeSha256(content: ArrayBuffer): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest("SHA-256", content);
+  // Normalize to Node Buffer to avoid ArrayBuffer realm mismatch in CI/jsdom.
+  const hashBuffer = await crypto.subtle.digest("SHA-256", Buffer.from(new Uint8Array(content)));
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }

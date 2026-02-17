@@ -23,7 +23,10 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@ivxp/protocol": ["../../packages/protocol/src/index.ts"],
+      "@ivxp/sdk": ["../../packages/sdk/src/index.ts"],
+      "@ivxp/test-utils": ["../../packages/test-utils/src/index.ts"]
     },
     "strict": true
   },
