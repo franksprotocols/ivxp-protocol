@@ -346,8 +346,11 @@ describe("complete order lifecycle (AC #3)", () => {
     const downloadRes = await fetchJson(`/ivxp/download/${orderId}`);
     expect(downloadRes.status).toBe(200);
     expect(downloadRes.body["order_id"]).toBe(orderId);
-    expect(downloadRes.body["content"]).toContain("Echo:");
-    expect(downloadRes.body["content_type"]).toBe("text/plain");
+    // Content is now JSON with echoed text and timestamp
+    const content = downloadRes.body["content"] as string;
+    expect(content).toContain("echoed_text");
+    expect(content).toContain("text_echo");
+    expect(downloadRes.body["content_type"]).toBe("application/json");
     expect(downloadRes.body["content_hash"]).toBeTypeOf("string");
   });
 });

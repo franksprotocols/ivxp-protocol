@@ -1,13 +1,31 @@
 /**
- * Demo service handler stubs.
+ * Demo service handlers bridging the SDK's ServiceHandler interface
+ * to the demo service implementations.
  *
- * Provides simple handler implementations for the demo services.
- * Actual service logic will be implemented in Story 6.3.
+ * The SDK calls handlers with a StoredOrder and expects back
+ * `{ content: string | Uint8Array; content_type: string }`.
+ * This module adapts our service implementations to that contract.
  *
+ * LIMITATION: The original service request description is not persisted
+ * on StoredOrder by the SDK. Handlers use a fallback description based
+ * on the order metadata. For production use, consider extending the
+ * order storage schema to include the original description field.
+ *
+ * RATE LIMITING: Service execution rate limiting is handled at the HTTP
+ * layer by Express middleware (see server.ts). The default is 100 requests
+ * per minute per IP address. Service handlers themselves do not implement
+ * additional rate limiting, as the SDK processes orders asynchronously
+ * after payment verification. For production use with resource-intensive
+ * services, consider adding per-service execution limits or queue-based
+ * throttling in the handler layer.
+ *
+ * @see services/ for the actual service logic
  * @see Story 6.3 for full service handler implementations
  */
 
 import type { StoredOrder } from "@ivxp/protocol";
+import { executeTextEcho } from "./services/text-echo.js";
+import { executeImageGen } from "./services/image-gen.js";
 
 /**
  * Service handler function type (mirrors SDK's ServiceHandler).
@@ -19,34 +37,81 @@ type ServiceHandler = (
   params?: Record<string, unknown>,
 ) => Promise<{ content: string | Uint8Array; content_type: string }>;
 
+/** Regex for valid IVXP order IDs: ivxp-{uuid-v4}. */
+const ORDER_ID_REGEX =
+  /^ivxp-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 /**
- * Text echo handler: returns the input description back as the deliverable.
+ * Validate that the order has required fields and correct format.
+ *
+ * @throws Error if validation fails
+ */
+function validateOrder(order: StoredOrder): void {
+  if (!order.orderId || typeof order.orderId !== "string") {
+    throw new Error("Invalid order: orderId is required and must be a string");
+  }
+
+  if (!ORDER_ID_REGEX.test(order.orderId)) {
+    throw new Error(
+      `Invalid order: orderId must match format ivxp-{uuid-v4}, got: ${order.orderId}`,
+    );
+  }
+
+  if (!order.serviceType || typeof order.serviceType !== "string") {
+    throw new Error("Invalid order: serviceType is required and must be a string");
+  }
+
+  if (order.status !== "processing") {
+    throw new Error(`Invalid order: expected status "processing", got: ${order.status}`);
+  }
+}
+
+/**
+ * Text echo handler: delegates to the text-echo service implementation.
+ *
+ * LIMITATION: Uses the order's serviceType as the echo text since the original
+ * description is not persisted on StoredOrder. See module-level documentation.
  */
 export const textEchoHandler: ServiceHandler = async (order) => {
-  const echoText = `Echo: ${order.serviceType} order ${order.orderId} processed successfully.`;
-  return {
-    content: echoText,
-    content_type: "text/plain",
-  };
+  try {
+    validateOrder(order);
+
+    // Fallback description since original is not available on StoredOrder
+    const description = `Demo ${order.serviceType} service for order ${order.orderId}`;
+    const result = await executeTextEcho(order.orderId, description);
+
+    return {
+      content: result.content,
+      content_type: result.contentType,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Text echo handler failed: ${message}`);
+  }
 };
 
 /**
- * Image generation handler stub: returns a placeholder SVG.
+ * Image generation handler: delegates to the image-gen service implementation.
+ *
+ * LIMITATION: Uses the order's serviceType as the prompt since the original
+ * description is not persisted on StoredOrder. See module-level documentation.
  */
 export const imageGenHandler: ServiceHandler = async (order) => {
-  const svg = [
-    '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">',
-    '  <rect width="256" height="256" fill="#6366f1"/>',
-    '  <text x="128" y="128" text-anchor="middle" fill="white" font-size="14">',
-    `    IVXP Demo: ${order.orderId}`,
-    "  </text>",
-    "</svg>",
-  ].join("\n");
+  try {
+    validateOrder(order);
 
-  return {
-    content: svg,
-    content_type: "image/svg+xml",
-  };
+    // Fallback description since original is not available on StoredOrder
+    const description = `Demo ${order.serviceType} service for order ${order.orderId}`;
+    const result = await executeImageGen(order.orderId, description);
+
+    return {
+      content: result.content,
+      content_type: result.contentType,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Image generation handler failed: ${message}`);
+  }
 };
 
 /**
