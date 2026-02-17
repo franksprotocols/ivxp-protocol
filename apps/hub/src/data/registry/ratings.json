@@ -1,0 +1,37 @@
+{
+  "ratings": [
+    {
+      "rating_id": "rating-001",
+      "order_id": "order-001",
+      "provider_address": "0xAAA",
+      "service_type": "text_echo",
+      "client_address": "0xBBB",
+      "stars": 5,
+      "review_text": "Excellent service",
+      "signature": "0xababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab",
+      "created_at": 1700000000000
+    },
+    {
+      "rating_id": "rating-002",
+      "order_id": "order-002",
+      "provider_address": "0xDDD",
+      "service_type": "text_echo",
+      "client_address": "0xCCC",
+      "stars": 3,
+      "review_text": "Excellent service",
+      "signature": "0xababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab",
+      "created_at": 1700000000000
+    },
+    {
+      "rating_id": "rating-001",
+      "order_id": "order-new",
+      "provider_address": "0xAAA",
+      "service_type": "text_echo",
+      "client_address": "0xNEW",
+      "stars": 5,
+      "review_text": "Excellent service",
+      "signature": "0xababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababab",
+      "created_at": 1700000000000
+    }
+  ]
+}

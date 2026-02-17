@@ -6,13 +6,21 @@ import { formatServiceName } from "@/lib/api/services";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ProviderRating } from "@/components/features/rating/ProviderRating";
 
 interface ServiceCardProps {
   readonly service: Service;
+  readonly averageRating?: number;
+  readonly ratingCount?: number;
   readonly onViewDetails?: (service: Service) => void;
 }
 
-export function ServiceCard({ service, onViewDetails }: ServiceCardProps) {
+export function ServiceCard({
+  service,
+  averageRating,
+  ratingCount,
+  onViewDetails,
+}: ServiceCardProps) {
   const displayName = formatServiceName(service.service_type);
   const providerLabel = service.provider_name ?? truncateAddress(service.provider_address);
   const detailHref = `/marketplace/${service.service_type}`;
@@ -29,8 +37,15 @@ export function ServiceCard({ service, onViewDetails }: ServiceCardProps) {
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent className="flex-1 space-y-2">
         <p className="text-sm text-muted-foreground line-clamp-3">{service.description}</p>
+        {averageRating != null && ratingCount != null && (
+          <ProviderRating
+            averageRating={averageRating}
+            ratingCount={ratingCount}
+            variant="compact"
+          />
+        )}
       </CardContent>
       <CardFooter className="flex flex-col items-start gap-3">
         <div className="flex w-full items-center justify-between">
