@@ -1,13 +1,6 @@
 name: Interoperability Tests
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "packages/sdk/**"
-      - "packages/protocol/**"
-      - "packages/test-utils/**"
-      - "pnpm-lock.yaml"
   pull_request:
     branches: [main]
     paths:
