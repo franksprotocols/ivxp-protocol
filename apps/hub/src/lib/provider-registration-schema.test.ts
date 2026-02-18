@@ -73,6 +73,14 @@ describe("providerRegistrationFormSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts localhost HTTP URL for local development", () => {
+    const result = providerRegistrationFormSchema.safeParse({
+      ...validData,
+      endpointUrl: "http://localhost:3001",
+    });
+    expect(result.success).toBe(true);
+  });
+
   // Services validation
   it("rejects empty services array", () => {
     const result = providerRegistrationFormSchema.safeParse({

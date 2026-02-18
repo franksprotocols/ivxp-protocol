@@ -12,6 +12,6 @@ export const PLAYGROUND_STEPS = [
   "Connect your wallet (MetaMask or Rainbow)",
   "Switch to Base Sepolia network",
   "Get testnet ETH and USDC from faucets below",
-  "Select a demo service to test",
-  "Watch the Protocol Inspector to see IVXP in action",
+  "Run simulated protocol events in this playground",
+  "Use Marketplace for the real quote -> pay -> sign -> status -> download flow",
 ] as const;

@@ -39,7 +39,6 @@ export function ServiceActions({ service, onQuoteReceived }: ServiceActionsProps
       <Button
         size="lg"
         className="w-full"
-        disabled={!isConnected}
         onClick={handleRequestClick}
         data-testid="request-service-button"
       >

@@ -48,7 +48,6 @@ const mockRefs = vi.hoisted(() => {
     readContract: vi.fn(),
     waitForTransactionReceipt: vi.fn(),
     signMessageAsync: vi.fn(),
-    requestDelivery: vi.fn(),
     push: vi.fn(),
     chainId: { current: 84532 },
     address: {
@@ -66,6 +65,9 @@ const mockRefs = vi.hoisted(() => {
         emit: (event: string, payload: unknown) => {
           handlers.get(event)?.forEach((handler) => handler(payload));
         },
+        requestQuote: vi.fn(),
+        requestDelivery: vi.fn(),
+        getOrderStatus: vi.fn(),
         downloadDeliverable: vi.fn(),
       },
       resetHandlers: () => handlers.clear(),
@@ -89,10 +91,6 @@ vi.mock("wagmi", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockRefs.push }),
-}));
-
-vi.mock("@/lib/api/delivery", () => ({
-  requestDelivery: mockRefs.requestDelivery,
 }));
 
 vi.mock("@/hooks/use-ivxp-client", () => ({
@@ -132,9 +130,20 @@ function resetAllMocks() {
   });
 
   mockRefs.signMessageAsync.mockResolvedValue(FAKE_SIGNATURE);
-  mockRefs.requestDelivery.mockResolvedValue({
+  mockRefs.ivxpClient.current.requestQuote.mockResolvedValue({
+    order_id: "ord_test_e2e_001",
+    price_usdc: "1.00",
+    payment_address: PROVIDER_ADDRESS,
+    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    service_type: "text_echo",
+  });
+  mockRefs.ivxpClient.current.requestDelivery.mockResolvedValue({
     order_id: "ord_test_e2e_001",
     status: "processing",
+  });
+  mockRefs.ivxpClient.current.getOrderStatus.mockResolvedValue({
+    order_id: "ord_test_e2e_001",
+    status: "delivered",
   });
 
   mockRefs.ivxpClient.current.downloadDeliverable.mockReset();
@@ -147,6 +156,8 @@ function createServiceDetail(): ServiceDetail {
     description: "Echo service",
     price_usdc: "1.00",
     provider_address: PROVIDER_ADDRESS,
+    provider_id: "prov-test",
+    provider_endpoint_url: "http://localhost:3001",
     provider_name: "Mock Provider",
     category: "AI",
     input_schema: {
@@ -238,8 +249,57 @@ describe("E2E: Complete Purchase Flow", () => {
   );
 
   it(
-    "completes purchase happy path: browse -> request -> quote -> pay -> sign -> status -> download",
+    "completes provider-endpoint-aware real flow: request->pay->sign->status->download",
     async () => {
+      const providerBaseUrl = env!.mockProvider.baseUrl;
+
+      mockRefs.ivxpClient.current.requestQuote.mockImplementation(
+        async (_providerUrl: string, params: { service_type: string; input: Record<string, unknown> }) => {
+          const quote = await env!.mockProvider.requestQuote({
+            service_type: params.service_type,
+            input: params.input,
+          });
+          return {
+            order_id: quote.order_id,
+            price_usdc: quote.price_usdc,
+            payment_address: quote.payment_address,
+            expires_at: quote.expires_at,
+            service_type: quote.service_type,
+          };
+        },
+      );
+      mockRefs.ivxpClient.current.requestDelivery.mockImplementation(
+        async (
+          providerUrl: string,
+          payload: { order_id: string; signature: { sig: `0x${string}` } },
+        ) => {
+          expect(providerUrl).toBe(providerBaseUrl);
+          const accepted = await env!.mockProvider.requestDelivery({
+            order_id: payload.order_id,
+            signature: payload.signature.sig,
+          });
+          return { order_id: accepted.order_id, status: accepted.status };
+        },
+      );
+      mockRefs.ivxpClient.current.getOrderStatus.mockImplementation(
+        async (providerUrl: string, orderId: string) => {
+          expect(providerUrl).toBe(providerBaseUrl);
+          return env!.mockProvider.getStatus(orderId);
+        },
+      );
+      mockRefs.ivxpClient.current.downloadDeliverable.mockImplementation(
+        async (providerUrl: string, orderId: string) => {
+          expect(providerUrl).toBe(providerBaseUrl);
+          const deliverable = await env!.mockProvider.downloadDeliverable(orderId);
+          return {
+            content: deliverable.content,
+            contentType: deliverable.content_type,
+            contentHash: await computeContentHash(deliverable.content),
+            fileName: deliverable.file_name,
+          };
+        },
+      );
+
       // Track protocol events for the entire flow session
       const { result: eventsHook } = renderHook(() => useProtocolEvents("flow-session"));
 
@@ -253,7 +313,7 @@ describe("E2E: Complete Purchase Flow", () => {
       await act(async () => {
         quote = await requestHook.current.submitRequest(
           selectedService.service_type,
-          "http://mock-provider.test",
+          providerBaseUrl,
           { text: "Hello" },
         );
       });
@@ -266,6 +326,20 @@ describe("E2E: Complete Purchase Flow", () => {
         await paymentHook.current.initiatePayment(PROVIDER_ADDRESS, quote!.price_usdc);
       });
       assertPaymentCompleted(paymentHook.current.step, paymentHook.current.txHash);
+      await env!.mockProvider.submitPayment({
+        order_id: quote!.order_id,
+        tx_hash: paymentHook.current.txHash!,
+      });
+
+      useOrderStore.getState().addOrder({
+        orderId: quote!.order_id,
+        serviceType: quote!.service_type,
+        priceUsdc: quote!.price_usdc,
+        providerAddress: PROVIDER_ADDRESS,
+        providerEndpointUrl: providerBaseUrl,
+        status: "paid",
+        createdAt: Date.now(),
+      });
 
       // Signature / Delivery request
       const { result: signatureHook } = renderHook(() =>
@@ -276,34 +350,21 @@ describe("E2E: Complete Purchase Flow", () => {
       });
       assertSignatureCompleted(signatureHook.current.step, signatureHook.current.signature);
 
-      // Polling
-      useOrderStore.getState().addOrder({
-        orderId: quote!.order_id,
-        serviceType: quote!.service_type,
-        priceUsdc: quote!.price_usdc,
-        providerAddress: PROVIDER_ADDRESS,
-        status: "paid",
-        createdAt: Date.now(),
-      });
-
       const { result: orderStatusHook } = renderHook(() => useOrderStatus(quote!.order_id));
       expect(orderStatusHook.current.isPolling).toBe(true);
 
-      act(() => {
-        useOrderStore.getState().updateOrderStatus(quote!.order_id, "delivered");
-      });
-      expect(orderStatusHook.current.isPolling).toBe(false);
+      await waitFor(() => {
+        expect(mockRefs.ivxpClient.current.getOrderStatus).toHaveBeenCalledWith(
+          providerBaseUrl,
+          quote!.order_id,
+        );
+      }, { timeout: 5_000 });
+
+      await waitFor(() => {
+        expect(orderStatusHook.current.order?.status).toBe("delivered");
+      }, { timeout: 5_000 });
 
       // Download
-      const content = textToArrayBuffer("deliverable-content");
-      const contentHash = await computeContentHash(content);
-      mockRefs.ivxpClient.current.downloadDeliverable.mockResolvedValue({
-        content,
-        contentType: "text/plain",
-        contentHash,
-        fileName: "result.txt",
-      });
-
       const { result: deliverableHook } = renderHook(() => useDeliverable(quote!.order_id));
       await act(async () => {
         await deliverableHook.current.download();
@@ -414,7 +475,9 @@ describe("E2E: Complete Purchase Flow", () => {
     );
 
     mockRefs.signMessageAsync.mockResolvedValueOnce(FAKE_SIGNATURE);
-    mockRefs.requestDelivery.mockRejectedValueOnce(new Error("Signer does not match wallet"));
+    mockRefs.ivxpClient.current.requestDelivery.mockRejectedValueOnce(
+      new Error("Signer does not match wallet"),
+    );
 
     await act(async () => {
       await result.current.signAndDeliver();
@@ -425,7 +488,10 @@ describe("E2E: Complete Purchase Flow", () => {
       SIGNATURE_ERROR_CODES.DELIVERY_FAILED,
     );
 
-    mockRefs.requestDelivery.mockResolvedValueOnce({ order_id: "ord_sig_1", status: "processing" });
+    mockRefs.ivxpClient.current.requestDelivery.mockResolvedValueOnce({
+      order_id: "ord_sig_1",
+      status: "processing",
+    });
 
     await act(async () => {
       await result.current.retryDelivery();

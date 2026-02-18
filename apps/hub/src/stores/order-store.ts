@@ -22,6 +22,8 @@ export interface Order {
   readonly serviceType: string;
   readonly priceUsdc: string;
   readonly providerAddress: Address;
+  readonly providerId?: string;
+  readonly providerEndpointUrl?: string;
   readonly clientAddress?: Address;
   readonly status: OrderStatus;
   readonly createdAt: number;

@@ -27,6 +27,8 @@ function toService(result: SearchServiceResultWire): Service {
     description: result.description,
     price_usdc: result.price_usdc,
     provider_address: result.provider_address as `0x${string}`,
+    provider_id: result.provider_id,
+    provider_endpoint_url: result.provider_endpoint_url,
     provider_name: result.provider_name,
   };
 }
@@ -59,26 +61,28 @@ export function MarketplaceContent() {
       if (state.sortOrder !== "asc") params.set("sort_order", state.sortOrder);
 
       const qs = params.toString();
+      if (qs === searchParams.toString()) return;
+
       router.replace(`/marketplace${qs ? `?${qs}` : ""}`, {
         scroll: false,
       });
     },
-    [router],
+    [router, searchParams],
   );
 
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchInput);
-      setFilters((prev) => {
-        const newFilters = { ...prev, q: searchInput };
-        syncUrlParams(newFilters);
-        return newFilters;
-      });
+      setFilters((prev) => (prev.q === searchInput ? prev : { ...prev, q: searchInput }));
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [searchInput, syncUrlParams]);
+  }, [searchInput]);
+
+  useEffect(() => {
+    syncUrlParams(filters);
+  }, [filters, syncUrlParams]);
 
   const { services, total, isLoading, error } = useServiceSearch({
     q: debouncedQuery || undefined,
@@ -90,14 +94,9 @@ export function MarketplaceContent() {
     sortOrder: filters.sortOrder,
   });
 
-  const handleFilterChange = useCallback(
-    (key: keyof FilterState, value: string) => {
-      const newFilters = { ...filters, [key]: value };
-      setFilters(newFilters);
-      syncUrlParams(newFilters);
-    },
-    [filters, syncUrlParams],
-  );
+  const handleFilterChange = useCallback((key: keyof FilterState, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   const handleClearFilters = useCallback(() => {
     const cleared: FilterState = {
@@ -112,8 +111,7 @@ export function MarketplaceContent() {
     setSearchInput("");
     setDebouncedQuery("");
     setFilters(cleared);
-    router.replace("/marketplace", { scroll: false });
-  }, [router]);
+  }, []);
 
   const hasFilters =
     debouncedQuery !== "" ||

@@ -23,6 +23,20 @@ import {
 } from "./helpers/setup";
 import { assertOrderInStatus } from "./helpers/assertions";
 
+const mockGetOrderStatus = vi.fn();
+
+vi.mock("@/hooks/use-ivxp-client", () => ({
+  useIVXPClient: () => ({
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+    requestQuote: vi.fn(),
+    requestDelivery: vi.fn(),
+    getOrderStatus: mockGetOrderStatus,
+    downloadDeliverable: vi.fn(),
+  }),
+}));
+
 // ---------------------------------------------------------------------------
 // Test fixtures
 // ---------------------------------------------------------------------------
@@ -48,6 +62,11 @@ function createTestOrder(overrides: Partial<Order> = {}): Order {
 describe("E2E: Order Management", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.clearAllMocks();
+    mockGetOrderStatus.mockImplementation(async (_providerUrl: string, orderId: string) => ({
+      order_id: orderId,
+      status: "paid",
+    }));
     useOrderStore.getState().clearOrders();
   });
 
@@ -152,7 +171,7 @@ describe("E2E: Order Management", () => {
 
     it(
       "stops polling and sets error after max attempts (20)",
-      () => {
+      async () => {
         const order = createTestOrder({
           orderId: "ord_poll_004",
           status: "paid",
@@ -163,8 +182,8 @@ describe("E2E: Order Management", () => {
         expect(result.current.isPolling).toBe(true);
 
         // Advance enough time to exhaust all 20 attempts
-        act(() => {
-          vi.advanceTimersByTime(700_000);
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(700_000);
         });
 
         expect(result.current.isPolling).toBe(false);

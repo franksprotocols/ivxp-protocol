@@ -11,26 +11,26 @@ describe("HowItWorks", () => {
 
   it("renders all four step titles", () => {
     renderWithProviders(<HowItWorks />);
-    expect(screen.getByText("Discover")).toBeInTheDocument();
-    expect(screen.getByText("Connect & Quote")).toBeInTheDocument();
-    expect(screen.getByText("Pay USDC")).toBeInTheDocument();
-    expect(screen.getByText("Receive Deliverable")).toBeInTheDocument();
+    expect(screen.getByText("Request Quote")).toBeInTheDocument();
+    expect(screen.getByText("Pay + Sign")).toBeInTheDocument();
+    expect(screen.getByText("Track Status")).toBeInTheDocument();
+    expect(screen.getByText("Verify Download")).toBeInTheDocument();
   });
 
   it("renders step descriptions", () => {
     renderWithProviders(<HowItWorks />);
-    expect(screen.getByText(/browse the marketplace/i)).toBeInTheDocument();
-    expect(screen.getByText(/connect your wallet and request a quote/i)).toBeInTheDocument();
-    expect(screen.getByText(/pay securely with usdc/i)).toBeInTheDocument();
-    expect(screen.getByText(/get your results delivered/i)).toBeInTheDocument();
+    expect(screen.getByText(/real order_id and price_usdc/i)).toBeInTheDocument();
+    expect(screen.getByText(/sign eip-191 identity proof/i)).toBeInTheDocument();
+    expect(screen.getByText(/provider-backed status updates/i)).toBeInTheDocument();
+    expect(screen.getByText(/verify content_hash/i)).toBeInTheDocument();
   });
 
   it("renders step numbers 1 through 4 with accessible labels", () => {
     renderWithProviders(<HowItWorks />);
-    expect(screen.getByRole("group", { name: /step 1: discover/i })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: /step 2: connect & quote/i })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: /step 3: pay usdc/i })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: /step 4: receive deliverable/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /step 1: request quote/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /step 2: pay \+ sign/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /step 3: track status/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /step 4: verify download/i })).toBeInTheDocument();
   });
 
   it("has an accessible section with aria-labelledby", () => {

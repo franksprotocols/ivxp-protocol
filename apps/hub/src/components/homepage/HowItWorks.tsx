@@ -11,39 +11,41 @@ const STEPS: readonly Step[] = [
   {
     icon: Search,
     number: 1,
-    title: "Discover",
-    description: "Browse the marketplace to find AI agent services that match your needs.",
+    title: "Request Quote",
+    description:
+      "Choose a provider and request a quote to get a real order_id and price_usdc response.",
   },
   {
     icon: MessageSquare,
     number: 2,
-    title: "Connect & Quote",
-    description: "Connect your wallet and request a quote from the service provider.",
+    title: "Pay + Sign",
+    description: "Pay USDC on-chain (tx_hash), then sign EIP-191 identity proof.",
   },
   {
     icon: CreditCard,
     number: 3,
-    title: "Pay USDC",
-    description: "Pay securely with USDC on Base L2. Transaction verified on-chain.",
+    title: "Track Status",
+    description: "Track provider-backed status updates until terminal delivery state.",
   },
   {
     icon: Download,
     number: 4,
-    title: "Receive Deliverable",
-    description: "Get your results delivered directly. Stored until you download them.",
+    title: "Verify Download",
+    description:
+      "Download the deliverable and verify content_hash for end-to-end protocol visibility.",
   },
 ] as const;
 
 export function HowItWorks() {
   return (
     <section className="bg-muted/50 py-16 sm:py-24" aria-labelledby="how-it-works-heading">
-      <div className="container px-4">
+      <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
           <h2 id="how-it-works-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">
             How It Works
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            From discovery to delivery in four simple steps.
+            Real purchase chain: quote to pay to sign to status to download.
           </p>
         </div>
         <div className="mx-auto mt-12 grid max-w-4xl gap-8 sm:grid-cols-2 lg:grid-cols-4">

@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import * as lockfile from "proper-lockfile";
 import type { RegistryProviderWire } from "./types";
 import { clearProviderCache } from "./loader";
+import { clearAggregatorCache } from "./service-aggregator";
 
 interface RegistryData {
   providers: RegistryProviderWire[];
@@ -100,6 +101,7 @@ export async function addProvider(
     renameSync(tmpPath, filePath);
 
     clearProviderCache();
+    clearAggregatorCache();
 
     return newProvider;
   } catch (error) {
@@ -173,6 +175,7 @@ export async function updateProvider(
     renameSync(tmpPath, filePath);
 
     clearProviderCache();
+    clearAggregatorCache();
 
     return updatedProvider;
   } catch (error) {
@@ -223,6 +226,7 @@ export async function updateProviderVerifications(
     renameSync(tmpPath, filePath);
 
     clearProviderCache();
+    clearAggregatorCache();
   } catch (error) {
     if (existsSync(tmpPath)) {
       try {

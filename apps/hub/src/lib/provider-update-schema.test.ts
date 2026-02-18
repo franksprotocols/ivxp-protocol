@@ -59,6 +59,14 @@ describe("providerUpdateFormSchema", () => {
     }
   });
 
+  it("accepts localhost HTTP endpoint URL for local development", () => {
+    const result = providerUpdateFormSchema.safeParse({
+      ...validData,
+      endpointUrl: "http://localhost:3001",
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects invalid URL format", () => {
     const result = providerUpdateFormSchema.safeParse({
       ...validData,

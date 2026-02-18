@@ -161,8 +161,8 @@ describe("E2E User Journeys", () => {
       // Wallet prompt is shown (not connected)
       expect(screen.getByTestId("wallet-prompt")).toHaveTextContent(/connect your wallet/i);
 
-      // Request service button is disabled
-      expect(screen.getByTestId("request-service-button")).toBeDisabled();
+      // Request service button remains clickable and opens connect flow in panel
+      expect(screen.getByTestId("request-service-button")).toBeEnabled();
     });
   });
 

@@ -220,6 +220,9 @@ describe("ServiceRequestForm", () => {
         expect.objectContaining({ order_id: "ord_123" }),
       );
     });
+
+    expect(screen.getByTestId("request-success")).toHaveTextContent("Quote Received");
+    expect(screen.getByTestId("request-success")).toHaveTextContent("ord_123");
   });
 
   // AC #2: Uses provider_url from service when available
@@ -271,5 +274,8 @@ describe("ServiceRequestForm", () => {
     const submitButton = screen.getByTestId("submit-request-button");
     expect(submitButton).toBeDisabled();
     expect(submitButton).toHaveTextContent("Requesting Quote...");
+    expect(screen.getByTestId("request-pending")).toHaveTextContent(
+      "Waiting for provider response...",
+    );
   });
 });
