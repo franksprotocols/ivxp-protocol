@@ -48,7 +48,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "better-sqlite3"
     ],
     "overrides": {
       "use-sync-external-store": "^1.4.0"
