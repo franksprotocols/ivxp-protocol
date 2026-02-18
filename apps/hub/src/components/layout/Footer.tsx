@@ -18,7 +18,7 @@ const EXTERNAL_LINKS = [
 export function Footer() {
   return (
     <footer className="border-t bg-muted/40">
-      <div className="container flex flex-col items-center gap-4 px-4 py-6 sm:flex-row sm:justify-between">
+      <div className="container mx-auto flex flex-col items-center gap-4 px-4 py-6 sm:flex-row sm:justify-between">
         <p className="text-sm text-muted-foreground">
           &copy; {CURRENT_YEAR} IVXP Protocol. All rights reserved.
         </p>
