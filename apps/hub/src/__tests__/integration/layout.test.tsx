@@ -145,6 +145,7 @@ describe("Layout Integration", () => {
       // Check that links are present within mobile nav (scoped to avoid desktop nav duplicates)
       expect(within(mobileNav).getByText("Home")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Marketplace")).toBeInTheDocument();
+      expect(within(mobileNav).getByText("Provider Register")).toBeInTheDocument();
       expect(within(mobileNav).getByText("My Orders")).toBeInTheDocument();
       expect(within(mobileNav).getByText("About")).toBeInTheDocument();
     });

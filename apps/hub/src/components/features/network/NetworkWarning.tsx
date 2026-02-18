@@ -34,7 +34,7 @@ export function NetworkWarning() {
       role="alert"
       className="w-full border-b border-amber-300 bg-amber-50 px-4 py-3 text-amber-900"
     >
-      <div className="container flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="container mx-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <p className="text-sm">

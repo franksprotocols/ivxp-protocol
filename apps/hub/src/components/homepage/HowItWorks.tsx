@@ -37,7 +37,7 @@ const STEPS: readonly Step[] = [
 export function HowItWorks() {
   return (
     <section className="bg-muted/50 py-16 sm:py-24" aria-labelledby="how-it-works-heading">
-      <div className="container px-4">
+      <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
           <h2 id="how-it-works-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">
             How It Works
