@@ -1,12 +1,6 @@
 name: Hub Tests
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/hub/**"
-      - "packages/**"
-      - "pnpm-lock.yaml"
   pull_request:
     branches: [main]
     paths:
