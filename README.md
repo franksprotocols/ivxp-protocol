@@ -33,17 +33,17 @@ ivxp-protocol/
 
 ## Tech Stack
 
-| Category   | Technology                                     |
-| ---------- | ---------------------------------------------- |
-| Language   | TypeScript 5.x                                 |
-| Runtime    | Node.js 20+ LTS                                |
-| Monorepo   | pnpm workspaces                                |
-| Frontend   | Next.js 16.x, React 19, Tailwind CSS 4, shadcn/ui |
-| Backend    | Express 5 (demo provider)                      |
-| Storage    | SQLite (better-sqlite3, demo provider)         |
-| Web3       | wagmi v2, viem v2                              |
-| Testing    | Vitest, viem/test                              |
-| Build      | tsup                                            |
+| Category   | Technology                                           |
+| ---------- | ---------------------------------------------------- |
+| Language   | TypeScript 5.x                                       |
+| Runtime    | Node.js 20+ LTS                                      |
+| Monorepo   | pnpm workspaces                                      |
+| Frontend   | Next.js 16.x, React 19, Tailwind CSS 4, shadcn/ui    |
+| Backend    | Express 5 (demo provider)                            |
+| Storage    | SQLite (better-sqlite3, demo provider)               |
+| Web3       | wagmi v2, viem v2                                    |
+| Testing    | Vitest, viem/test                                    |
+| Build      | tsup                                                 |
 | Blockchain | Base L2 (Mainnet/Sepolia), USDC (ERC-20, 6 decimals) |
 
 ## Protocol Invariants (Must Not Change)
