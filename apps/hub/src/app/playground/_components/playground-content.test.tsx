@@ -40,6 +40,8 @@ describe("PlaygroundContent", () => {
   it("renders the playground content", () => {
     render(<PlaygroundContent />);
     expect(screen.getByTestId("playground-content")).toBeInTheDocument();
+    expect(screen.getByTestId("playground-mode-badge")).toHaveTextContent("Simulation Mode");
+    expect(screen.getByTestId("playground-mode-note")).toBeInTheDocument();
   });
 
   it("renders the quick start guide", () => {

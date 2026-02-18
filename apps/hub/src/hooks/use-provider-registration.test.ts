@@ -86,7 +86,7 @@ describe("useProviderRegistration", () => {
       "/api/registry/providers",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(mockRouterPush).toHaveBeenCalledWith("/provider/dashboard");
+    expect(mockRouterPush).toHaveBeenCalledWith("/provider");
   });
 
   it("sends correct wire format payload", async () => {

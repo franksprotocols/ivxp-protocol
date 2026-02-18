@@ -23,6 +23,9 @@ interface ServiceRequestFormProps {
  * Prefers the explicit provider_url field, falls back to a constructed URL.
  */
 function resolveProviderUrl(service: ServiceDetail): string {
+  if (service.provider_endpoint_url) {
+    return service.provider_endpoint_url;
+  }
   if (service.provider_url) {
     return service.provider_url;
   }
@@ -79,8 +82,13 @@ export function ServiceRequestForm({ service, onQuoteReceived }: ServiceRequestF
     const providerUrl = resolveProviderUrl(service);
     const quote = await submitRequest(service.service_type, providerUrl, data);
     if (quote) {
-      setLatestQuote(quote);
-      onQuoteReceived?.(quote);
+      const quoteWithProviderContext: ServiceQuote = {
+        ...quote,
+        provider_id: service.provider_id,
+        provider_endpoint_url: providerUrl,
+      };
+      setLatestQuote(quoteWithProviderContext);
+      onQuoteReceived?.(quoteWithProviderContext);
     }
   };
 

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { ServiceDetail } from "@/components/features/service";
-import { getServiceByType, getAllServiceTypes, formatServiceName } from "@/lib/api/services";
+import { notFound, redirect } from "next/navigation";
+import {
+  getAllServiceTypes,
+  getServiceByType,
+  formatServiceName,
+  resolveLegacyServiceRoute,
+} from "@/lib/api/services";
 
 interface ServiceDetailPageProps {
   readonly params: Promise<{ serviceId: string }>;
@@ -9,14 +13,15 @@ interface ServiceDetailPageProps {
 
 export async function generateMetadata({ params }: ServiceDetailPageProps): Promise<Metadata> {
   const { serviceId } = await params;
+  const resolution = resolveLegacyServiceRoute(serviceId);
   const service = getServiceByType(serviceId);
 
-  if (!service) {
+  if (!service || resolution.kind === "none") {
     return { title: "Service Not Found | IVXP Hub" };
   }
 
   return {
-    title: `${formatServiceName(service.service_type)} | IVXP Hub`,
+    title: `${formatServiceName(serviceId)} | IVXP Hub`,
     description: service.description,
   };
 }
@@ -29,15 +34,17 @@ export function generateStaticParams() {
 
 export default async function ServiceDetailPage({ params }: ServiceDetailPageProps) {
   const { serviceId } = await params;
-  const service = getServiceByType(serviceId);
+  const resolution = resolveLegacyServiceRoute(serviceId);
 
-  if (!service) {
+  if (resolution.kind === "none") {
     notFound();
   }
 
-  return (
-    <main className="container mx-auto px-4 py-8">
-      <ServiceDetail service={service} />
-    </main>
-  );
+  if (resolution.kind === "unique") {
+    redirect(
+      `/marketplace/${encodeURIComponent(resolution.providerId)}/${encodeURIComponent(resolution.serviceType)}`,
+    );
+  }
+
+  redirect(`/marketplace?service_type=${encodeURIComponent(resolution.serviceType)}`);
 }

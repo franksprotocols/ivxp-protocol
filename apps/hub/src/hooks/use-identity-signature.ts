@@ -12,8 +12,9 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useRouter } from "next/navigation";
-import { requestDelivery, type ValidNetwork } from "@/lib/api/delivery";
+import type { ValidNetwork } from "@/lib/api/delivery";
 import { useOrderStore } from "@/stores/order-store";
+import { useIVXPClient } from "./use-ivxp-client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,6 +82,7 @@ export function useIdentitySignature({
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const router = useRouter();
+  const client = useIVXPClient();
   const updateOrderSignature = useOrderStore((s) => s.updateOrderSignature);
 
   const [step, setStep] = useState<SignatureStep>("idle");
@@ -135,7 +137,13 @@ export function useIdentitySignature({
       setErrorCode(null);
 
       try {
-        await requestDelivery({
+        const order = useOrderStore.getState().getOrder(orderId);
+        const providerUrl =
+          order?.providerEndpointUrl ??
+          process.env.NEXT_PUBLIC_PROVIDER_URL ??
+          "http://localhost:3001";
+
+        await client.requestDelivery(providerUrl, {
           order_id: orderId,
           payment: {
             tx_hash: txHash,
@@ -163,7 +171,7 @@ export function useIdentitySignature({
         setErrorCode(SIGNATURE_ERROR_CODES.DELIVERY_FAILED);
       }
     },
-    [orderId, txHash, network, updateOrderSignature, router],
+    [orderId, txHash, network, updateOrderSignature, router, client],
   );
 
   const signAndDeliver = useCallback(async () => {

@@ -72,8 +72,8 @@ describe("Navigation Integration", () => {
       expect(marketplaceLink).toHaveAttribute("data-active", "true");
     });
 
-    it("marks Marketplace as active on sub-routes like /marketplace/text_echo", () => {
-      mockUsePathname.mockReturnValue("/marketplace/text_echo");
+    it("marks Marketplace as active on canonical sub-routes", () => {
+      mockUsePathname.mockReturnValue("/marketplace/prov-001/text_echo");
       renderWithProviders(<Navigation />);
 
       const marketplaceLink = screen.getByText("Marketplace");

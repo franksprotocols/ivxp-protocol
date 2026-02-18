@@ -23,7 +23,9 @@ export function ServiceCard({
 }: ServiceCardProps) {
   const displayName = formatServiceName(service.service_type);
   const providerLabel = service.provider_name ?? truncateAddress(service.provider_address);
-  const detailHref = `/marketplace/${service.service_type}`;
+  const detailHref = service.provider_id
+    ? `/marketplace/${encodeURIComponent(service.provider_id)}/${encodeURIComponent(service.service_type)}`
+    : `/marketplace/${encodeURIComponent(service.service_type)}`;
 
   return (
     <Card className="flex h-full flex-col transition-shadow hover:shadow-md">

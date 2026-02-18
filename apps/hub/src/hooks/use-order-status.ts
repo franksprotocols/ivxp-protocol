@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useOrderStore, TERMINAL_STATUSES, type Order } from "@/stores/order-store";
+import { useIVXPClient } from "./use-ivxp-client";
+import {
+  useOrderStore,
+  TERMINAL_STATUSES,
+  type Order,
+  type OrderStatus,
+} from "@/stores/order-store";
 
 /** Polling configuration constants. */
 const INITIAL_INTERVAL_MS = 1_000;
@@ -29,6 +35,15 @@ function isTerminalStatus(status: string): boolean {
   return TERMINAL_STATUSES.includes(status as Order["status"]);
 }
 
+function mapProviderStatus(providerStatus: string): OrderStatus | null {
+  if (providerStatus === "quoted") return "quoted";
+  if (providerStatus === "paid") return "paid";
+  if (providerStatus === "processing") return "processing";
+  if (providerStatus === "delivered") return "delivered";
+  if (providerStatus === "failed" || providerStatus === "delivery_failed") return "delivery_failed";
+  return null;
+}
+
 /**
  * Hook that tracks an order's status with exponential backoff polling.
  *
@@ -37,9 +52,11 @@ function isTerminalStatus(status: string): boolean {
  * order reaches "delivered", "delivery_failed", or after MAX_POLL_ATTEMPTS.
  */
 export function useOrderStatus(orderId: string): UseOrderStatusReturn {
+  const client = useIVXPClient();
   // Issue #4: inline selector instead of useCallback to avoid
   // unnecessary Zustand re-subscriptions
   const order = useOrderStore((state) => state.orders.find((o) => o.orderId === orderId) ?? null);
+  const updateOrderStatus = useOrderStore((state) => state.updateOrderStatus);
 
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +107,52 @@ export function useOrderStatus(orderId: string): UseOrderStatusReturn {
           return;
         }
 
-        schedulePoll();
+        const providerUrl =
+          currentOrder.providerEndpointUrl ??
+          process.env.NEXT_PUBLIC_PROVIDER_URL ??
+          "http://localhost:3001";
+
+        client
+          .getOrderStatus(providerUrl, orderId)
+          .then((remote) => {
+            setError(null);
+            const mappedStatus = mapProviderStatus(remote.status);
+
+            if (!mappedStatus) {
+              client.emit("error", {
+                scope: "order.status",
+                code: "UNKNOWN_PROVIDER_STATUS",
+                orderId,
+                providerStatus: remote.status,
+              });
+              return;
+            }
+
+            // Keep local terminal states authoritative to avoid regressions.
+            if (isTerminalStatus(currentOrder.status)) {
+              return;
+            }
+
+            if (mappedStatus !== currentOrder.status) {
+              updateOrderStatus(orderId, mappedStatus);
+            }
+
+            if (isTerminalStatus(mappedStatus)) {
+              setIsPolling(false);
+            }
+          })
+          .catch((err) => {
+            const message = err instanceof Error ? err.message : "Failed to poll provider status.";
+            setError(message);
+          })
+          .finally(() => {
+            const latestOrder = useOrderStore.getState().getOrder(orderId);
+            if (latestOrder && !isTerminalStatus(latestOrder.status)) {
+              schedulePoll();
+            } else {
+              setIsPolling(false);
+            }
+          });
       }, interval);
     }
 
@@ -102,7 +164,7 @@ export function useOrderStatus(orderId: string): UseOrderStatusReturn {
         timerRef.current = null;
       }
     };
-  }, [order?.status, orderId]);
+  }, [order?.status, orderId, client, updateOrderStatus]);
 
   return { order, isPolling, error };
 }

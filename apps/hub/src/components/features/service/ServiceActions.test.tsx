@@ -146,7 +146,7 @@ describe("ServiceActions", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps request sheet open after quote is received", async () => {
+  it("closes request sheet after quote is received", async () => {
     const user = userEvent.setup();
     const onQuoteReceived = vi.fn();
     mockUseAccount.mockReturnValue({
@@ -161,6 +161,6 @@ describe("ServiceActions", () => {
     await user.click(screen.getByTestId("mock-quote-success"));
 
     expect(onQuoteReceived).toHaveBeenCalledWith(expect.objectContaining({ order_id: "ord_123" }));
-    expect(screen.getByText("Request Service")).toBeInTheDocument();
+    expect(screen.queryByText("Fill in the details below to request a quote for this service.")).not.toBeInTheDocument();
   });
 });

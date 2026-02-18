@@ -110,9 +110,9 @@ export function useProviderRegistration(): UseProviderRegistrationReturn {
           return;
         }
 
-        // 4. Success - redirect to dashboard
+        // 4. Success - redirect to provider entry page
         setState("success");
-        router.push("/provider/dashboard");
+        router.push("/provider");
       } catch {
         setError({
           code: "NETWORK_ERROR",

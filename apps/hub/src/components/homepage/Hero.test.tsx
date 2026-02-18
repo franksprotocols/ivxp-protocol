@@ -21,16 +21,22 @@ describe("Hero", () => {
     expect(screen.getByText(/first universal P2P protocol/i)).toBeInTheDocument();
   });
 
-  it("renders Browse Services link pointing to /marketplace", () => {
+  it("renders Consumer Path link pointing to /marketplace", () => {
     renderWithProviders(<Hero />);
-    const link = screen.getByRole("link", { name: /browse services/i });
+    const link = screen.getByRole("link", { name: /consumer path/i });
     expect(link).toHaveAttribute("href", "/marketplace");
   });
 
-  it("renders Explore Marketplace link pointing to /marketplace", () => {
+  it("renders Provider Path link pointing to /provider", () => {
     renderWithProviders(<Hero />);
-    const link = screen.getByRole("link", { name: /explore marketplace/i });
-    expect(link).toHaveAttribute("href", "/marketplace");
+    const link = screen.getByRole("link", { name: /provider path/i });
+    expect(link).toHaveAttribute("href", "/provider");
+  });
+
+  it("renders Developer Path link pointing to /playground", () => {
+    renderWithProviders(<Hero />);
+    const link = screen.getByRole("link", { name: /developer path/i });
+    expect(link).toHaveAttribute("href", "/playground");
   });
 
   it("has an accessible section with aria-labelledby", () => {

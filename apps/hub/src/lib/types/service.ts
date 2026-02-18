@@ -5,6 +5,8 @@ export interface Service {
   readonly description: string;
   readonly price_usdc: string;
   readonly provider_address: Address;
+  readonly provider_id?: string;
+  readonly provider_endpoint_url?: string;
   readonly provider_name?: string;
   readonly category?: string;
 }
@@ -39,6 +41,8 @@ export interface ServiceExample {
 export interface ServiceDetail extends Service {
   readonly long_description?: string;
   readonly provider_reputation?: number;
+  readonly provider_id?: string;
+  readonly provider_endpoint_url?: string;
   readonly provider_url?: string;
   readonly input_schema: InputSchema;
   readonly output_schema: OutputSchema;

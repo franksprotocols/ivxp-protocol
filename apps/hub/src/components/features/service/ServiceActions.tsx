@@ -30,6 +30,7 @@ export function ServiceActions({ service, onQuoteReceived }: ServiceActionsProps
   };
 
   const handleQuoteReceived = (quote: ServiceQuote) => {
+    setIsSheetOpen(false);
     onQuoteReceived?.(quote);
   };
 
