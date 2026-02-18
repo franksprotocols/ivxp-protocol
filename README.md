@@ -26,22 +26,32 @@ ivxp-protocol/
 │   ├── sdk/           # @ivxp/sdk      - TypeScript SDK (client + provider)
 │   └── test-utils/    # @ivxp/test-utils - Shared test fixtures, mocks, helpers
 ├── apps/
-│   └── (hub)          # Next.js Web Hub (coming soon)
+│   ├── hub/           # Next.js Web Hub
+│   └── demo-provider/ # Express demo provider (SQLite-backed)
 └── docs/              # PRD, architecture, knowledge reference
 ```
 
 ## Tech Stack
 
-| Category   | Technology                               |
-| ---------- | ---------------------------------------- |
-| Language   | TypeScript 5.x                           |
-| Runtime    | Node.js 20+ LTS                          |
-| Monorepo   | pnpm workspaces                          |
-| Frontend   | Next.js, React, Tailwind CSS, shadcn/ui  |
-| Web3       | wagmi v2, viem v2                        |
-| Testing    | Vitest, viem/test                        |
-| Build      | tsup                                     |
-| Blockchain | Base L2 (Mainnet/Sepolia), USDC (ERC-20) |
+| Category   | Technology                                           |
+| ---------- | ---------------------------------------------------- |
+| Language   | TypeScript 5.x                                       |
+| Runtime    | Node.js 20+ LTS                                      |
+| Monorepo   | pnpm workspaces                                      |
+| Frontend   | Next.js 16.x, React 19, Tailwind CSS 4, shadcn/ui    |
+| Backend    | Express 5 (demo provider)                            |
+| Storage    | SQLite (better-sqlite3, demo provider)               |
+| Web3       | wagmi v2, viem v2                                    |
+| Testing    | Vitest, viem/test                                    |
+| Build      | tsup                                                 |
+| Blockchain | Base L2 (Mainnet/Sepolia), USDC (ERC-20, 6 decimals) |
+
+## Protocol Invariants (Must Not Change)
+
+- Wire format uses `snake_case`; app-facing parsed output uses `camelCase`
+- Supported networks are only `base-mainnet` and `base-sepolia`
+- Signature baseline is EIP-191
+- Payment token is USDC with 6 decimals
 
 ## Getting Started
 
@@ -87,16 +97,20 @@ Type-safe protocol definitions for IVXP/1.0 messages, including:
 - Zod v4 validation schemas (snake_case wire format with camelCase output)
 - Internal interface contracts for dependency injection (ICryptoService, IPaymentService, IHttpClient, IOrderStorage, IEventEmitter)
 
-### @ivxp/sdk (in development)
+### @ivxp/sdk
 
 TypeScript SDK providing one-line service invocation:
 
 ```typescript
-// Coming soon
-const result = await ivxp.requestService(providerUrl, {
-  type: "research",
+import { createIVXPClient } from "@ivxp/sdk";
+
+const client = createIVXPClient({ privateKey: "0x..." });
+
+const result = await client.requestService({
+  providerUrl: "https://provider.example.com",
+  serviceType: "research",
   description: "AGI safety analysis",
-  budget_usdc: 50,
+  budgetUsdc: 50,
 });
 ```
 
@@ -138,6 +152,7 @@ Client Agent                              Provider Agent
 
 - [Product Requirements (PRD v2.0)](./docs/PRD-IVXP-Protocol-v2.0.en.md)
 - [v1 Protocol Reference](./docs/knowledge-reference/original-protocol/)
+- [Project Context for AI Agents](./_bmad-output/project-context.md)
 
 ## Contributing
 
