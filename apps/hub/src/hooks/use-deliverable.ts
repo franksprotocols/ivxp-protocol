@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useIVXPClient } from "./use-ivxp-client";
 import { verifyContentHash } from "@/lib/verify-content-hash";
+import { useOrderStore } from "@/stores/order-store";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -79,6 +80,7 @@ export function triggerDownload(content: ArrayBuffer, filename: string, contentT
 
 export function useDeliverable(orderId: string): UseDeliverableReturn {
   const client = useIVXPClient();
+  const order = useOrderStore((state) => state.orders.find((item) => item.orderId === orderId));
   const [content, setContent] = useState<ArrayBuffer | null>(null);
   const [contentType, setContentType] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -105,11 +107,6 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
   }, [orderId]);
 
   const download = useCallback(async () => {
-    if (!client) {
-      setError("IVXP client not available");
-      return;
-    }
-
     if (isLoading) return;
 
     setIsLoading(true);
@@ -117,7 +114,9 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
     setHashStatus("verifying");
 
     try {
-      const response = await client.downloadDeliverable(orderId);
+      const providerUrl =
+        order?.providerEndpointUrl ?? process.env.NEXT_PUBLIC_PROVIDER_URL ?? "http://localhost:3001";
+      const response = await client.downloadDeliverable(providerUrl, orderId);
 
       // Verify content hash using shared utility
       const result = await verifyContentHash(response.content, response.contentHash);
@@ -129,7 +128,7 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
         setContentHash(response.contentHash);
         setHashStatus("verified");
         setError(null);
-        client.emit?.("order.delivered", {
+        client.emit("order.delivered", {
           orderId,
           contentHash: response.contentHash,
         });
@@ -149,7 +148,7 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [client, orderId, isLoading]);
+  }, [client, orderId, isLoading, order?.providerEndpointUrl]);
 
   return {
     content,

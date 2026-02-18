@@ -19,13 +19,20 @@ vi.mock("wagmi", () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Mock delivery API
+// Mock IVXP client adapter
 // ---------------------------------------------------------------------------
 
 const mockRequestDelivery = vi.fn();
-
-vi.mock("@/lib/api/delivery", () => ({
-  requestDelivery: (...args: unknown[]) => mockRequestDelivery(...args),
+vi.mock("@/hooks/use-ivxp-client", () => ({
+  useIVXPClient: () => ({
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+    requestQuote: vi.fn(),
+    requestDelivery: mockRequestDelivery,
+    getOrderStatus: vi.fn(),
+    downloadDeliverable: vi.fn(),
+  }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -33,9 +40,21 @@ vi.mock("@/lib/api/delivery", () => ({
 // ---------------------------------------------------------------------------
 
 const mockUpdateOrderSignature = vi.fn();
+const mockGetOrder = vi.fn();
 vi.mock("@/stores/order-store", () => ({
-  useOrderStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({ updateOrderSignature: mockUpdateOrderSignature }),
+  useOrderStore: Object.assign(
+    (selector: (s: Record<string, unknown>) => unknown) =>
+      selector({
+        updateOrderSignature: mockUpdateOrderSignature,
+        getOrder: mockGetOrder,
+      }),
+    {
+      getState: () => ({
+        updateOrderSignature: mockUpdateOrderSignature,
+        getOrder: mockGetOrder,
+      }),
+    },
+  ),
 }));
 
 // ---------------------------------------------------------------------------
@@ -70,6 +89,7 @@ describe("SignatureDialog", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetOrder.mockReturnValue(undefined);
     mockSignMessageAsync.mockResolvedValue(FAKE_SIGNATURE);
     mockRequestDelivery.mockResolvedValue({
       order_id: ORDER_ID,

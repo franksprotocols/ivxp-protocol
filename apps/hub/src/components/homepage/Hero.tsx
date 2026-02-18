@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Compass } from "lucide-react";
+import { ArrowRight, Store, Briefcase, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Hero() {
@@ -40,17 +40,24 @@ export function Hero() {
             The first universal P2P protocol for AI agents to exchange intelligence and services
             with cryptographic payment verification on Base L2.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-10 grid w-full max-w-3xl gap-3 sm:grid-cols-3">
             <Button size="lg" asChild>
               <Link href="/marketplace">
-                Browse Services
-                <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
+                <Store className="mr-1 h-4 w-4" aria-hidden="true" />
+                Consumer Path
               </Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <Link href="/marketplace">
-                <Compass className="mr-1 h-4 w-4" aria-hidden="true" />
-                Explore Marketplace
+              <Link href="/provider">
+                <Briefcase className="mr-1 h-4 w-4" aria-hidden="true" />
+                Provider Path
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <Link href="/playground">
+                <Code2 className="mr-1 h-4 w-4" aria-hidden="true" />
+                Developer Path
+                <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
           </div>

@@ -27,6 +27,8 @@ function toService(result: SearchServiceResultWire): Service {
     description: result.description,
     price_usdc: result.price_usdc,
     provider_address: result.provider_address as `0x${string}`,
+    provider_id: result.provider_id,
+    provider_endpoint_url: result.provider_endpoint_url,
     provider_name: result.provider_name,
   };
 }

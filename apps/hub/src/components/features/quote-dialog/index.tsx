@@ -21,6 +21,8 @@ export interface Quote {
   readonly serviceType: string;
   readonly priceUsdc: string;
   readonly providerAddress: Address;
+  readonly providerId?: string;
+  readonly providerEndpointUrl?: string;
   readonly expiresAt: Date;
 }
 
@@ -71,6 +73,8 @@ export function QuoteDialog({
       serviceType: quote.serviceType,
       priceUsdc: quote.priceUsdc,
       providerAddress: quote.providerAddress,
+      providerId: quote.providerId,
+      providerEndpointUrl: quote.providerEndpointUrl,
       clientAddress: address,
       status: "quoted",
       createdAt: Date.now(),

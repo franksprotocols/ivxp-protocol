@@ -90,6 +90,8 @@ describe("Marketplace Integration", () => {
       description: "Echo back your text",
       price_usdc: "0.50",
       provider_address: "0x1234567890abcdef1234567890abcdef12345678",
+      provider_id: "prov-001",
+      provider_endpoint_url: "https://echo.example.com",
       provider_name: "Echo Labs",
       category: "Demo",
     };
@@ -118,7 +120,7 @@ describe("Marketplace Integration", () => {
       renderWithProviders(<ServiceCard service={testService} />);
 
       const link = screen.getByRole("link", { name: /view details/i });
-      expect(link).toHaveAttribute("href", "/marketplace/text_echo");
+      expect(link).toHaveAttribute("href", "/marketplace/prov-001/text_echo");
       expect(screen.queryByRole("button", { name: /view details/i })).not.toBeInTheDocument();
     });
 

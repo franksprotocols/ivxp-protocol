@@ -24,9 +24,16 @@ vi.mock("wagmi", () => ({
 // ---------------------------------------------------------------------------
 
 const mockRequestDelivery = vi.fn();
-
-vi.mock("@/lib/api/delivery", () => ({
-  requestDelivery: (...args: unknown[]) => mockRequestDelivery(...args),
+vi.mock("./use-ivxp-client", () => ({
+  useIVXPClient: () => ({
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+    requestQuote: vi.fn(),
+    requestDelivery: mockRequestDelivery,
+    getOrderStatus: vi.fn(),
+    downloadDeliverable: vi.fn(),
+  }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -34,9 +41,21 @@ vi.mock("@/lib/api/delivery", () => ({
 // ---------------------------------------------------------------------------
 
 const mockUpdateOrderSignature = vi.fn();
+const mockGetOrder = vi.fn();
 vi.mock("@/stores/order-store", () => ({
-  useOrderStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({ updateOrderSignature: mockUpdateOrderSignature }),
+  useOrderStore: Object.assign(
+    (selector: (s: Record<string, unknown>) => unknown) =>
+      selector({
+        updateOrderSignature: mockUpdateOrderSignature,
+        getOrder: mockGetOrder,
+      }),
+    {
+      getState: () => ({
+        updateOrderSignature: mockUpdateOrderSignature,
+        getOrder: mockGetOrder,
+      }),
+    },
+  ),
 }));
 
 // ---------------------------------------------------------------------------
@@ -65,6 +84,7 @@ describe("useIdentitySignature", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAddress = "0xUserAddress0000000000000000000000000001" as Address;
+    mockGetOrder.mockReturnValue(undefined);
     mockSignMessageAsync.mockResolvedValue(FAKE_SIGNATURE);
     mockRequestDelivery.mockResolvedValue({
       order_id: ORDER_ID,
@@ -224,6 +244,7 @@ describe("useIdentitySignature", () => {
     });
 
     expect(mockRequestDelivery).toHaveBeenCalledWith(
+      "http://localhost:3001",
       expect.objectContaining({
         order_id: ORDER_ID,
         payment: expect.objectContaining({
@@ -314,5 +335,41 @@ describe("useIdentitySignature", () => {
     expect(result.current.step).toBe("error");
     expect(result.current.error).toBe("Wallet not connected.");
     expect(result.current.errorCode).toBe(SIGNATURE_ERROR_CODES.WALLET_DISCONNECTED);
+  });
+
+  it("uses provider endpoint from order context for delivery and retries", async () => {
+    mockGetOrder.mockReturnValue({
+      orderId: ORDER_ID,
+      providerEndpointUrl: "http://provider.custom:3001",
+    });
+    mockRequestDelivery
+      .mockRejectedValueOnce(new Error("Temporary failure"))
+      .mockResolvedValueOnce({ order_id: ORDER_ID, status: "processing" });
+
+    const { result } = renderHook(() =>
+      useIdentitySignature({ orderId: ORDER_ID, txHash: TX_HASH }),
+    );
+
+    await act(async () => {
+      await result.current.signAndDeliver();
+    });
+
+    expect(result.current.step).toBe("error");
+    expect(mockRequestDelivery).toHaveBeenNthCalledWith(
+      1,
+      "http://provider.custom:3001",
+      expect.any(Object),
+    );
+
+    await act(async () => {
+      await result.current.retryDelivery();
+    });
+
+    expect(mockRequestDelivery).toHaveBeenNthCalledWith(
+      2,
+      "http://provider.custom:3001",
+      expect.any(Object),
+    );
+    expect(result.current.step).toBe("submitted");
   });
 });

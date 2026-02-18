@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { ServiceTester, validateInputs } from "./service-tester";
 import { MOCK_SERVICE_DETAILS } from "@/lib/mock-data/service-details";
 
-const testServices = MOCK_SERVICE_DETAILS.slice(0, 2);
+const testServices = Array.from(
+  new Map(MOCK_SERVICE_DETAILS.map((service) => [service.service_type, service])).values(),
+).slice(0, 2);
 
 // Radix Select uses pointer capture APIs not available in jsdom
 beforeAll(() => {
@@ -18,6 +20,7 @@ describe("ServiceTester", () => {
   it("renders the service tester card", () => {
     render(<ServiceTester services={testServices} providerUrl="https://test" />);
     expect(screen.getByTestId("service-tester")).toBeInTheDocument();
+    expect(screen.getByTestId("simulation-note")).toBeInTheDocument();
   });
 
   it("renders the service select dropdown", () => {
@@ -71,6 +74,7 @@ describe("ServiceTester", () => {
     );
 
     expect(onResult).toHaveBeenCalled();
+    expect(screen.getByTestId("real-flow-cta")).toHaveAttribute("href", "/marketplace");
   });
 
   it("emits protocol events during execution", async () => {

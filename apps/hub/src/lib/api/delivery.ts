@@ -64,10 +64,12 @@ export type DeliveryErrorCode = (typeof DELIVERY_ERROR_CODES)[keyof typeof DELIV
 
 export class DeliveryError extends Error {
   readonly code: DeliveryErrorCode;
-  constructor(message: string, code: DeliveryErrorCode) {
+  readonly status?: number;
+  constructor(message: string, code: DeliveryErrorCode, status?: number) {
     super(message);
     this.name = "DeliveryError";
     this.code = code;
+    this.status = status;
   }
 }
 
@@ -76,7 +78,7 @@ export class DeliveryError extends Error {
 // ---------------------------------------------------------------------------
 
 /** Default provider base URL. In production, this comes from the service registry. */
-const DEFAULT_PROVIDER_URL = process.env.NEXT_PUBLIC_PROVIDER_URL ?? "http://localhost:8080";
+const DEFAULT_PROVIDER_URL = process.env.NEXT_PUBLIC_PROVIDER_URL ?? "http://localhost:3001";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -125,7 +127,8 @@ export async function requestDelivery(
   }
 
   const validated = parseResult.data;
-  const url = `${providerUrl}/ivxp/orders/${encodeURIComponent(validated.order_id)}/delivery`;
+  const normalizedProviderUrl = providerUrl.replace(/\/+$/, "");
+  const url = `${normalizedProviderUrl}/ivxp/orders/${encodeURIComponent(validated.order_id)}/delivery`;
 
   let response: Response;
   try {
@@ -142,7 +145,11 @@ export async function requestDelivery(
   }
 
   if (!response.ok) {
-    throw new DeliveryError(sanitizeHttpError(response.status), DELIVERY_ERROR_CODES.SERVER_ERROR);
+    throw new DeliveryError(
+      sanitizeHttpError(response.status),
+      DELIVERY_ERROR_CODES.SERVER_ERROR,
+      response.status,
+    );
   }
 
   let rawData: unknown;

@@ -75,6 +75,18 @@ describe("requestDelivery", () => {
     );
   });
 
+  it("sanitizes trailing slash in provider URL override", async () => {
+    const payload = validPayload();
+    mockFetch.mockResolvedValueOnce(jsonResponse({ order_id: "order-123", status: "processing" }));
+
+    await requestDelivery(payload, "http://test-provider.com/");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://test-provider.com/ivxp/orders/order-123/delivery",
+      expect.any(Object),
+    );
+  });
+
   // --- Validation errors ---
 
   it("rejects empty order_id", async () => {

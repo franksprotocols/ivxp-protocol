@@ -28,16 +28,31 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Browse Services CTA linking to /marketplace", () => {
+  it("renders Consumer path CTA linking to /marketplace", () => {
     renderWithProviders(<HomePage />);
-    const link = screen.getByRole("link", { name: /browse services/i });
+    const link = screen.getByRole("link", { name: /consumer path/i });
     expect(link).toHaveAttribute("href", "/marketplace");
   });
 
-  it("renders Explore Marketplace CTA", () => {
+  it("renders Provider and Developer CTAs", () => {
     renderWithProviders(<HomePage />);
-    const link = screen.getByRole("link", { name: /explore marketplace/i });
-    expect(link).toHaveAttribute("href", "/marketplace");
+    expect(screen.getByRole("link", { name: /provider path/i })).toHaveAttribute(
+      "href",
+      "/provider",
+    );
+    expect(screen.getByRole("link", { name: /developer path/i })).toHaveAttribute(
+      "href",
+      "/playground",
+    );
+  });
+
+  it("renders role section entries", () => {
+    renderWithProviders(<HomePage />);
+    expect(screen.getByRole("heading", { level: 2, name: /choose your path/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open marketplace/i })).toHaveAttribute(
+      "href",
+      "/marketplace",
+    );
   });
 
   it("renders all four sections", () => {

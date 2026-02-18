@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { Loader2, Play } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,11 @@ const HEX_LENGTHS = {
   signature: 130,
   contentHash: 64,
 } as const;
+
+function getServiceOptionValue(service: ServiceDetail): string {
+  const providerKey = service.provider_id ?? service.provider_address;
+  return `${providerKey}::${service.service_type}`;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -198,23 +204,23 @@ export function ServiceTester({
   onTransition,
   onResult,
 }: ServiceTesterProps) {
-  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedServiceKey, setSelectedServiceKey] = useState<string>("");
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [phase, setPhase] = useState<FlowPhase>("idle");
   const [result, setResult] = useState<ExecutionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<readonly string[]>([]);
 
-  const selectedService = services.find((s) => s.service_type === selectedType);
+  const selectedService = services.find((s) => getServiceOptionValue(s) === selectedServiceKey);
 
   const handleServiceSelect = useCallback(
-    (serviceType: string) => {
-      setSelectedType(serviceType);
+    (serviceKey: string) => {
+      setSelectedServiceKey(serviceKey);
       setResult(null);
       setError(null);
       setValidationErrors([]);
       setPhase("idle");
-      const svc = services.find((s) => s.service_type === serviceType);
+      const svc = services.find((s) => getServiceOptionValue(s) === serviceKey);
       if (svc) {
         setInputValues(buildDefaultValues(svc));
       }
@@ -264,19 +270,26 @@ export function ServiceTester({
   return (
     <Card data-testid="service-tester">
       <CardHeader>
-        <CardTitle>Test a Service</CardTitle>
+        <CardTitle>Test a Service (Simulated)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div
+          className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900"
+          data-testid="simulation-note"
+        >
+          This tester emits simulated protocol artifacts for learning. For real provider execution,
+          use the marketplace flow.
+        </div>
         {/* Service selector */}
         <div className="space-y-2">
           <Label htmlFor="service-select">Select Service</Label>
-          <Select value={selectedType} onValueChange={handleServiceSelect}>
+          <Select value={selectedServiceKey} onValueChange={handleServiceSelect}>
             <SelectTrigger id="service-select" data-testid="service-select">
               <SelectValue placeholder="Choose a service..." />
             </SelectTrigger>
             <SelectContent>
               {services.map((s) => (
-                <SelectItem key={s.service_type} value={s.service_type}>
+                <SelectItem key={getServiceOptionValue(s)} value={getServiceOptionValue(s)}>
                   {s.service_type} ({s.price_usdc} USDC)
                 </SelectItem>
               ))}
@@ -388,7 +401,7 @@ function DynamicInputFields({
 function ResultDisplay({ result }: { readonly result: ExecutionResult }) {
   return (
     <div className="rounded-lg border bg-muted/50 p-4 space-y-2" data-testid="execution-result">
-      <h4 className="font-medium text-sm">Execution Complete</h4>
+      <h4 className="font-medium text-sm">Simulated Execution Complete</h4>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
         <dt className="font-medium text-muted-foreground">Order ID</dt>
         <dd className="font-mono break-all">{result.orderId}</dd>
@@ -403,6 +416,13 @@ function ResultDisplay({ result }: { readonly result: ExecutionResult }) {
           {JSON.stringify(result.deliverable, null, 2)}
         </pre>
       </details>
+      <Link
+        href="/marketplace"
+        className="inline-block text-xs text-primary underline underline-offset-2"
+        data-testid="real-flow-cta"
+      >
+        Run real marketplace flow
+      </Link>
     </div>
   );
 }

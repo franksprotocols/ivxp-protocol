@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { getServiceByType, getAllServiceTypes, formatPrice, formatServiceName } from "./services";
+import {
+  getServiceByType,
+  getAllServiceTypes,
+  formatPrice,
+  formatServiceName,
+  getServiceByProviderAndType,
+  resolveLegacyServiceRoute,
+  getCanonicalServiceParams,
+} from "./services";
 
 describe("getServiceByType", () => {
   it("returns service detail for a valid service type", () => {
@@ -47,6 +55,50 @@ describe("getAllServiceTypes", () => {
     const types = getAllServiceTypes();
     const unique = new Set(types);
     expect(unique.size).toBe(types.length);
+  });
+});
+
+describe("provider-aware service lookup", () => {
+  it("returns service detail for canonical provider+service key", () => {
+    const service = getServiceByProviderAndType("prov-001", "text_echo");
+    expect(service).not.toBeNull();
+    expect(service?.provider_id).toBe("prov-001");
+    expect(service?.service_type).toBe("text_echo");
+  });
+
+  it("returns null for unknown provider+service key", () => {
+    expect(getServiceByProviderAndType("prov-missing", "text_echo")).toBeNull();
+  });
+});
+
+describe("resolveLegacyServiceRoute", () => {
+  it("returns unique resolution when one provider offers the service type", () => {
+    const resolution = resolveLegacyServiceRoute("image_gen");
+    expect(resolution).toEqual({
+      kind: "unique",
+      providerId: "prov-002",
+      serviceType: "image_gen",
+    });
+  });
+
+  it("returns multi resolution when multiple providers offer the service type", () => {
+    const resolution = resolveLegacyServiceRoute("text_echo");
+    expect(resolution.kind).toBe("multi");
+  });
+
+  it("returns none for unknown service type", () => {
+    expect(resolveLegacyServiceRoute("missing_service")).toEqual({ kind: "none" });
+  });
+});
+
+describe("getCanonicalServiceParams", () => {
+  it("returns provider-aware static params", () => {
+    const params = getCanonicalServiceParams();
+    expect(params.length).toBeGreaterThan(0);
+    expect(params).toContainEqual({
+      providerId: "prov-001",
+      serviceType: "text_echo",
+    });
   });
 });
 

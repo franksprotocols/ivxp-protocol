@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { useAccount, useChainId } from "wagmi";
 import { QuickStartGuide } from "./quick-start-guide";
 import { FaucetLinks } from "./faucet-links";
@@ -11,6 +12,7 @@ import { ProtocolInspector } from "./protocol-inspector";
 import { DEMO_PROVIDER_URL, BASE_SEPOLIA_CHAIN_ID } from "./playground-constants";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { ServiceDetail } from "@/lib/types/service";
 import type { ProtocolEvent, StateTransition } from "@/hooks/use-protocol-events";
 import { MOCK_SERVICE_DETAILS } from "@/lib/mock-data/service-details";
@@ -57,6 +59,9 @@ export function PlaygroundContent() {
 
       {/* Connection status */}
       <div className="flex flex-wrap gap-2" data-testid="connection-status">
+        <Badge variant="secondary" data-testid="playground-mode-badge">
+          Simulation Mode
+        </Badge>
         <Badge variant={isConnected ? "default" : "destructive"}>
           {isConnected ? "Wallet Connected" : "Wallet Not Connected"}
         </Badge>
@@ -84,6 +89,19 @@ export function PlaygroundContent() {
           </AlertDescription>
         </Alert>
       )}
+
+      <Alert data-testid="playground-mode-note">
+        <AlertTitle>Simulation vs Real Flow</AlertTitle>
+        <AlertDescription className="space-y-2">
+          <p>
+            Playground execution below is simulated for protocol learning. For real provider-backed
+            quote/payment/signature/status/download, continue in marketplace.
+          </p>
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/marketplace">Run Real Marketplace Flow</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
 
       {/* Faucet links */}
       <FaucetLinks />

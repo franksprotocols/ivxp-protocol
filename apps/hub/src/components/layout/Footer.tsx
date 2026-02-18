@@ -4,6 +4,9 @@ import { ExternalLink } from "lucide-react";
 const CURRENT_YEAR = new Date().getFullYear();
 
 const INTERNAL_LINKS = [
+  { href: "/marketplace", label: "Consumer" },
+  { href: "/provider", label: "Provider" },
+  { href: "/playground", label: "Developer" },
   { href: "/docs", label: "Docs" },
   { href: "/community", label: "Community" },
 ] as const;

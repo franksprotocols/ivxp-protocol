@@ -10,6 +10,8 @@ const mockService: Service = {
   description: "Generate AI images from text prompts",
   price_usdc: "1.50",
   provider_address: "0xabcdef1234567890abcdef1234567890abcdef12",
+  provider_id: "prov-pixelmind",
+  provider_endpoint_url: "https://pixelmind.example.com",
   provider_name: "PixelMind AI",
   category: "AI",
 };
@@ -51,6 +53,16 @@ describe("ServiceCard", () => {
 
   it("renders View Details as a link when no callback provided", () => {
     renderWithProviders(<ServiceCard service={mockService} />);
+    const link = screen.getByRole("link", { name: /view details/i });
+    expect(link).toHaveAttribute("href", "/marketplace/prov-pixelmind/image_gen");
+  });
+
+  it("falls back to legacy route when provider_id is missing", () => {
+    const serviceWithoutProviderId: Service = {
+      ...mockService,
+      provider_id: undefined,
+    };
+    renderWithProviders(<ServiceCard service={serviceWithoutProviderId} />);
     const link = screen.getByRole("link", { name: /view details/i });
     expect(link).toHaveAttribute("href", "/marketplace/image_gen");
   });
