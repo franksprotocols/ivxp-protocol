@@ -4,28 +4,49 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
+      time: "03:00"
+      timezone: "UTC"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
+      - "dependabot"
     groups:
-      dev-dependencies:
-        dependency-type: "development"
+      npm-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+      npm-minor:
+        patterns:
+          - "*"
         update-types:
           - "minor"
-          - "patch"
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "patch"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
+      time: "03:30"
+      timezone: "UTC"
     open-pull-requests-limit: 5
     labels:
       - "ci"
       - "dependencies"
+      - "dependabot"
+    groups:
+      github-actions-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+      github-actions-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
