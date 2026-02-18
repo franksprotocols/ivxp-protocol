@@ -22,7 +22,7 @@ export function Hero() {
         aria-hidden="true"
       />
 
-      <div className="container px-4">
+      <div className="container mx-auto px-4">
         <div className="mx-auto max-w-3xl text-center">
           <p className="mb-4 text-sm font-medium tracking-wider text-muted-foreground uppercase">
             Intelligence Value Exchange Protocol
