@@ -24,11 +24,11 @@
       ],
       "status": "active",
       "registered_at": "2025-01-15T00:00:00Z",
-      "updated_at": "2025-01-15T00:00:00Z",
+      "updated_at": "2026-02-18T04:02:38.686Z",
       "verification_status": "pending",
       "last_verified_at": null,
-      "last_check_at": null,
-      "consecutive_failures": 0
+      "last_check_at": "2026-02-18T04:02:38.686Z",
+      "consecutive_failures": 1
     },
     {
       "provider_id": "prov-002",
@@ -54,11 +54,11 @@
       ],
       "status": "active",
       "registered_at": "2025-02-01T00:00:00Z",
-      "updated_at": "2025-02-01T00:00:00Z",
+      "updated_at": "2026-02-18T04:02:38.691Z",
       "verification_status": "pending",
       "last_verified_at": null,
-      "last_check_at": null,
-      "consecutive_failures": 0
+      "last_check_at": "2026-02-18T04:02:38.691Z",
+      "consecutive_failures": 1
     },
     {
       "provider_id": "prov-003",
@@ -81,6 +81,29 @@
       "verification_status": "pending",
       "last_verified_at": null,
       "last_check_at": null,
+      "consecutive_failures": 0
+    },
+    {
+      "provider_id": "prov-eee54359-33f8-4373-992e-d223bf44b10b",
+      "provider_address": "0xE3b065B016bF9A914D488E413ACBF8Ba7d0e8Feb",
+      "name": "text_echo",
+      "description": "text_echotext_echotext_echotext_echo",
+      "endpoint_url": "http://localhost:3001",
+      "services": [
+        {
+          "service_type": "text_echo",
+          "name": "Text Echo Service",
+          "description": "Text Echo Service",
+          "price_usdc": "0.50",
+          "estimated_time_seconds": 60
+        }
+      ],
+      "status": "active",
+      "registered_at": "2026-02-18T04:35:40.388Z",
+      "updated_at": "2026-02-18T04:35:40.388Z",
+      "verification_status": "verified",
+      "last_verified_at": "2026-02-18T04:35:40.388Z",
+      "last_check_at": "2026-02-18T04:35:40.388Z",
       "consecutive_failures": 0
     }
   ]

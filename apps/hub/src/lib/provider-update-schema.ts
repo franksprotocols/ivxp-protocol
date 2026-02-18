@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAllowedProviderEndpointUrl } from "./provider-endpoint-url";
 
 export const providerUpdateFormSchema = z.object({
   name: z
@@ -12,7 +13,10 @@ export const providerUpdateFormSchema = z.object({
   endpointUrl: z
     .string()
     .url("Must be a valid URL")
-    .startsWith("https://", "Endpoint URL must use HTTPS"),
+    .refine(
+      isAllowedProviderEndpointUrl,
+      "Endpoint URL must use HTTPS, or http://localhost (127.0.0.1 / [::1]) for local dev",
+    ),
 });
 
 export type ProviderUpdateFormData = z.infer<typeof providerUpdateFormSchema>;

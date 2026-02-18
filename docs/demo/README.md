@@ -10,6 +10,45 @@ A step-by-step walkthrough of the IVXP protocol: from wallet setup to purchasing
 
 ---
 
+## Demo Startup Overview
+
+The local demo consists of two services:
+
+1. **Demo Provider** (`http://localhost:3001`)
+   - IVXP API endpoints: `/health`, `/ivxp/catalog`, `/ivxp/request`, `/ivxp/deliver`,
+     `/ivxp/status/:orderId`, `/ivxp/download/:orderId`
+2. **Hub** (`http://localhost:3000`)
+   - Wallet connection, Marketplace, Playground, and Protocol Inspector UI
+   - The Playground reads Provider URL from `NEXT_PUBLIC_DEMO_PROVIDER_URL`
+
+### Quick Start (Local)
+
+```bash
+cd ivxp-protocol
+pnpm install
+pnpm build
+
+# Terminal 1: start demo provider
+PROVIDER_PRIVATE_KEY=0xyour64hexprivatekey \
+NETWORK=base-sepolia \
+CORS_ALLOWED_ORIGINS=http://localhost:3000 \
+pnpm --filter @ivxp/demo-provider dev
+
+# Terminal 2: start hub and point it to local provider
+NEXT_PUBLIC_DEMO_PROVIDER_URL=http://localhost:3001 \
+pnpm --filter @ivxp/hub dev
+
+# Terminal 3: run health checks
+./scripts/health-check.sh --local
+```
+
+Open:
+
+- Hub: `http://localhost:3000`
+- Playground: `http://localhost:3000/playground`
+
+---
+
 ## Prerequisites
 
 Before starting, ensure you have:
@@ -358,11 +397,18 @@ pnpm install
 pnpm build
 
 # Start demo Provider (terminal 1)
-# Requires PROVIDER_PRIVATE_KEY in .env
-pnpm --filter demo-provider start
+# Requires a valid private key in the environment
+PROVIDER_PRIVATE_KEY=0xyour64hexprivatekey \
+NETWORK=base-sepolia \
+CORS_ALLOWED_ORIGINS=http://localhost:3000 \
+pnpm --filter @ivxp/demo-provider dev
 
 # Start Hub (terminal 2)
-pnpm --filter hub dev
+NEXT_PUBLIC_DEMO_PROVIDER_URL=http://localhost:3001 \
+pnpm --filter @ivxp/hub dev
+
+# Verify demo readiness (terminal 3)
+./scripts/health-check.sh --local
 ```
 
 Then use `scripts/setup-demo.sh` for automated setup and `scripts/health-check.sh` to verify everything is running.

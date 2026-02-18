@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAccount, useConnect } from "wagmi";
-import { Loader2, Wallet, AlertCircle } from "lucide-react";
+import { Loader2, Wallet, AlertCircle, CircleCheck } from "lucide-react";
 import type { ServiceDetail } from "@/lib/types/service";
 import { buildZodSchema, buildDefaultValues } from "@/lib/schema-to-zod";
 import { useServiceRequest } from "@/hooks/use-service-request";
@@ -38,6 +39,7 @@ export function ServiceRequestForm({ service, onQuoteReceived }: ServiceRequestF
   const { isConnected } = useAccount();
   const { connectors, connect } = useConnect();
   const { submitRequest, isLoading, error, reset } = useServiceRequest();
+  const [latestQuote, setLatestQuote] = useState<ServiceQuote | null>(null);
 
   const schema = buildZodSchema(service.input_schema);
   const defaultValues = buildDefaultValues(service.input_schema);
@@ -73,9 +75,11 @@ export function ServiceRequestForm({ service, onQuoteReceived }: ServiceRequestF
   }
 
   const onSubmit = async (data: Record<string, unknown>) => {
+    setLatestQuote(null);
     const providerUrl = resolveProviderUrl(service);
     const quote = await submitRequest(service.service_type, providerUrl, data);
     if (quote) {
+      setLatestQuote(quote);
       onQuoteReceived?.(quote);
     }
   };
@@ -95,6 +99,22 @@ export function ServiceRequestForm({ service, onQuoteReceived }: ServiceRequestF
             <Button variant="outline" size="sm" onClick={reset} data-testid="retry-button">
               Dismiss
             </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      {isLoading && (
+        <Alert data-testid="request-pending">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertTitle>Request Sent</AlertTitle>
+          <AlertDescription>Waiting for provider response...</AlertDescription>
+        </Alert>
+      )}
+      {latestQuote && !isLoading && !error && (
+        <Alert data-testid="request-success">
+          <CircleCheck className="h-4 w-4" />
+          <AlertTitle>Quote Received</AlertTitle>
+          <AlertDescription>
+            order_id: <code>{latestQuote.order_id}</code>
           </AlertDescription>
         </Alert>
       )}

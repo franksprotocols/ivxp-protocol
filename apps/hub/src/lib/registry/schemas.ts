@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAllowedProviderEndpointUrl } from "@/lib/provider-endpoint-url";
 
 const MAX_SERVICES_PER_PROVIDER = 20;
 
@@ -59,7 +60,10 @@ export const registerProviderBodySchema = z.object({
   endpoint_url: z
     .string()
     .url("endpoint_url must be a valid URL")
-    .startsWith("https://", "endpoint_url must use HTTPS"),
+    .refine(
+      isAllowedProviderEndpointUrl,
+      "endpoint_url must use HTTPS, or http://localhost (127.0.0.1 / [::1]) for local dev",
+    ),
   services: z
     .array(providerServiceSchema)
     .min(1, "At least one service is required")
@@ -92,7 +96,10 @@ export const updateProviderBodySchema = z.object({
   endpoint_url: z
     .string()
     .url("endpoint_url must be a valid URL")
-    .startsWith("https://", "endpoint_url must use HTTPS"),
+    .refine(
+      isAllowedProviderEndpointUrl,
+      "endpoint_url must use HTTPS, or http://localhost (127.0.0.1 / [::1]) for local dev",
+    ),
   signature: z
     .string()
     .regex(/^0x[a-fA-F0-9]{130}$/, "Invalid signature format (must be 0x + 130 hex chars)"),
