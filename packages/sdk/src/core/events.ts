@@ -170,6 +170,7 @@ export class EventEmitter<Events extends Record<string, unknown>> {
       } catch (error: unknown) {
         // Log handler errors to aid debugging, but do not propagate
         // them to the emitting code path or other handlers.
+        // eslint-disable-next-line no-console
         console.error(`Error in event handler for "${event}":`, error);
       }
     }

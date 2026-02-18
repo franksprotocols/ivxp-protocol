@@ -19,6 +19,7 @@ if (process.env.NODE_ENV === "production") {
     mkdirSync(destDir, { recursive: true });
     copyFileSync(srcPath, destPath);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.warn("Failed to copy providers.json:", error);
   }
 }

@@ -61,6 +61,7 @@ export async function GET(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
+    // eslint-disable-next-line no-console
     console.error("Service search API error:", error);
 
     const errorResponse: RegistryErrorResponseWire = {

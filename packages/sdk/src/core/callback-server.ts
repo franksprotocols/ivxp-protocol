@@ -388,6 +388,7 @@ export async function createCallbackServer(
     const requestHandler = (req: IncomingMsg, res: ServerRes): void => {
       handleRequest(req, res, onDelivery, onRejected, crypto.createHash).catch((error: unknown) => {
         // Log the error so it is not silently swallowed.
+        // eslint-disable-next-line no-console
         console.error("Unexpected error in callback server request handler:", error);
         if (!res.headersSent) {
           res.writeHead(500, { "Content-Type": "application/json" });

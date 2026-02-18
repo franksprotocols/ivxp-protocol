@@ -201,7 +201,7 @@ describe("validateStatusTransition", () => {
     expect(() =>
       validateStatusTransition({
         reachable: true,
-        previousStatus: "invalid" as any,
+        previousStatus: "invalid" as unknown as "pending" | "verified" | "unresponsive",
         consecutiveFailures: 0,
         gracePeriodFailures: 3,
       }),

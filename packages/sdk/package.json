@@ -67,6 +67,7 @@
   },
   "devDependencies": {
     "@ivxp/test-utils": "workspace:*",
+    "@vitest/coverage-v8": "4.0.18",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0"
   },

@@ -73,6 +73,7 @@ export function filterServicesByPriceRange(
 
     // Skip services with invalid prices
     if (isNaN(price)) {
+      // eslint-disable-next-line no-console
       console.warn(`Invalid price_usdc for service ${s.service_type}: "${s.price_usdc}"`);
       return false;
     }
@@ -80,6 +81,7 @@ export function filterServicesByPriceRange(
     if (minPrice !== undefined) {
       const min = parseFloat(minPrice);
       if (isNaN(min)) {
+        // eslint-disable-next-line no-console
         console.warn(`Invalid minPrice filter: "${minPrice}"`);
         return true; // Don't filter out if filter value is invalid
       }
@@ -89,6 +91,7 @@ export function filterServicesByPriceRange(
     if (maxPrice !== undefined) {
       const max = parseFloat(maxPrice);
       if (isNaN(max)) {
+        // eslint-disable-next-line no-console
         console.warn(`Invalid maxPrice filter: "${maxPrice}"`);
         return true; // Don't filter out if filter value is invalid
       }

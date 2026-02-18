@@ -17,12 +17,14 @@ export async function verifyRegistrationSignature(params: {
     // Validate timestamp to prevent replay attacks
     const timestampMatch = params.message.match(/Timestamp: (.+)$/m);
     if (!timestampMatch) {
+      // eslint-disable-next-line no-console
       console.warn("Registration signature verification failed: missing timestamp");
       return false;
     }
 
     const timestamp = new Date(timestampMatch[1]);
     if (isNaN(timestamp.getTime())) {
+      // eslint-disable-next-line no-console
       console.warn("Registration signature verification failed: invalid timestamp format");
       return false;
     }
@@ -30,6 +32,7 @@ export async function verifyRegistrationSignature(params: {
     const now = Date.now();
     const timeDiff = Math.abs(now - timestamp.getTime());
     if (timeDiff > TIMESTAMP_TOLERANCE_MS) {
+      // eslint-disable-next-line no-console
       console.warn(
         `Registration signature verification failed: timestamp outside tolerance window (${timeDiff}ms)`,
       );
@@ -45,6 +48,7 @@ export async function verifyRegistrationSignature(params: {
     return recoveredAddress.toLowerCase() === params.expectedAddress.toLowerCase();
   } catch (error) {
     // Invalid signature format - return false, don't throw
+    // eslint-disable-next-line no-console
     console.warn("Registration signature verification failed:", error);
     return false;
   }
