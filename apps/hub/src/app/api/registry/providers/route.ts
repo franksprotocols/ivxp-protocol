@@ -154,9 +154,9 @@ export async function POST(
       status: "active",
       registered_at: now,
       updated_at: now,
-      verification_status: "pending",
-      last_verified_at: null,
-      last_check_at: null,
+      verification_status: "verified",
+      last_verified_at: now,
+      last_check_at: now,
       consecutive_failures: 0,
     };
 

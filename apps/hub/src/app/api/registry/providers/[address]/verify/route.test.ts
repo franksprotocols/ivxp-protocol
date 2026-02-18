@@ -35,7 +35,7 @@ function createRequest(url: string): NextRequest {
   });
 }
 
-describe("POST /api/registry/providers/[providerId]/verify", () => {
+describe("POST /api/registry/providers/[address]/verify", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockResolvedValue({
@@ -46,7 +46,7 @@ describe("POST /api/registry/providers/[providerId]/verify", () => {
 
   it("returns updated provider and verification result", async () => {
     const response = await POST(createRequest("/api/registry/providers/prov-001/verify"), {
-      params: Promise.resolve({ providerId: "prov-001" }),
+      params: Promise.resolve({ address: "prov-001" }),
     });
     const body = await response.json();
 
@@ -59,7 +59,7 @@ describe("POST /api/registry/providers/[providerId]/verify", () => {
 
   it("returns 404 for non-existent provider", async () => {
     const response = await POST(createRequest("/api/registry/providers/prov-999/verify"), {
-      params: Promise.resolve({ providerId: "prov-999" }),
+      params: Promise.resolve({ address: "prov-999" }),
     });
     const body = await response.json();
 
@@ -69,7 +69,7 @@ describe("POST /api/registry/providers/[providerId]/verify", () => {
 
   it("returns verification result with snake_case fields", async () => {
     const response = await POST(createRequest("/api/registry/providers/prov-001/verify"), {
-      params: Promise.resolve({ providerId: "prov-001" }),
+      params: Promise.resolve({ address: "prov-001" }),
     });
     const body = await response.json();
 
@@ -83,7 +83,7 @@ describe("POST /api/registry/providers/[providerId]/verify", () => {
 
   it("returns updated provider with verification fields", async () => {
     const response = await POST(createRequest("/api/registry/providers/prov-001/verify"), {
-      params: Promise.resolve({ providerId: "prov-001" }),
+      params: Promise.resolve({ address: "prov-001" }),
     });
     const body = await response.json();
 

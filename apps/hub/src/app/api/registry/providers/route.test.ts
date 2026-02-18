@@ -117,7 +117,7 @@ describe("GET /api/registry/providers", () => {
   });
 });
 
-async function buildValidRequest(): Promise<{
+async function buildValidRequest(endpointUrl = "https://test.example.com"): Promise<{
   body: Record<string, unknown>;
 }> {
   const account = privateKeyToAccount(TEST_PRIVATE_KEY);
@@ -126,7 +126,7 @@ async function buildValidRequest(): Promise<{
     "IVXP Provider Registration",
     `Address: ${account.address}`,
     "Name: Test Provider",
-    "Endpoint: https://test.example.com",
+    `Endpoint: ${endpointUrl}`,
     `Timestamp: ${timestamp}`,
   ].join("\n");
 
@@ -137,7 +137,7 @@ async function buildValidRequest(): Promise<{
       provider_address: account.address,
       name: "Test Provider",
       description: "A test provider for unit testing the registration flow",
-      endpoint_url: "https://test.example.com",
+      endpoint_url: endpointUrl,
       services: [
         {
           service_type: "text_echo",
@@ -230,6 +230,15 @@ describe("POST /api/registry/providers", () => {
     expect(response.status).toBe(400);
     expect(data.error.code).toBe("INVALID_PARAMETERS");
     expect(data.error.details?.endpoint_url).toBeDefined();
+  });
+
+  it("accepts localhost HTTP endpoint_url for local development", async () => {
+    const { body } = await buildValidRequest("http://localhost:3001");
+    const response = await POST(createPostRequest(body));
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.provider.endpoint_url).toBe("http://localhost:3001");
   });
 
   it("returns 422 when provider endpoint is unreachable", async () => {

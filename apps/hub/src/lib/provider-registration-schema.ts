@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAllowedProviderEndpointUrl } from "./provider-endpoint-url";
 
 const serviceEntrySchema = z.object({
   serviceType: z
@@ -28,7 +29,10 @@ export const providerRegistrationFormSchema = z.object({
   endpointUrl: z
     .string()
     .url("Must be a valid URL")
-    .startsWith("https://", "Endpoint URL must use HTTPS"),
+    .refine(
+      isAllowedProviderEndpointUrl,
+      "Endpoint URL must use HTTPS, or http://localhost (127.0.0.1 / [::1]) for local dev",
+    ),
   services: z
     .array(serviceEntrySchema)
     .min(1, "At least one service is required")

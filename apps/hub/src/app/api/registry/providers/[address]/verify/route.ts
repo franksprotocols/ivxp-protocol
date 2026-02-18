@@ -11,7 +11,7 @@ import type {
 } from "@/lib/registry/types";
 
 interface RouteParams {
-  params: Promise<{ providerId: string }>;
+  params: Promise<{ address: string }>;
 }
 
 export async function POST(
@@ -24,17 +24,20 @@ export async function POST(
   >
 > {
   try {
-    const { providerId } = await params;
+    const { address } = await params;
 
     const allProviders = loadProviders();
-    const provider = allProviders.find((p) => p.provider_id === providerId);
+    const provider = allProviders.find(
+      (p) =>
+        p.provider_id === address || p.provider_address.toLowerCase() === address.toLowerCase(),
+    );
 
     if (!provider) {
       return NextResponse.json(
         {
           error: {
             code: "PROVIDER_NOT_FOUND",
-            message: `Provider with ID '${providerId}' not found.`,
+            message: `Provider '${address}' not found.`,
           },
         },
         { status: 404 },
@@ -45,7 +48,7 @@ export async function POST(
     const updatedProvider = applyVerificationResult(provider, result);
 
     const updates = new Map<string, Partial<RegistryProviderWire>>();
-    updates.set(providerId, {
+    updates.set(provider.provider_id, {
       verification_status: updatedProvider.verification_status,
       last_verified_at: updatedProvider.last_verified_at,
       last_check_at: updatedProvider.last_check_at,
@@ -74,7 +77,7 @@ export async function POST(
     );
   } catch (error) {
     logError("Single provider verification failed", error, {
-      endpoint: "/api/registry/providers/[providerId]/verify",
+      endpoint: "/api/registry/providers/[address]/verify",
     });
 
     return NextResponse.json(
