@@ -51,6 +51,7 @@ export async function GET(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
+    // eslint-disable-next-line no-console
     console.error("[Registry API] Unexpected error:", error);
 
     const errorResponse: RegistryErrorResponseWire = {
@@ -202,6 +203,7 @@ export async function POST(
       return NextResponse.json(errorResponse, { status: 409 });
     }
 
+    // eslint-disable-next-line no-console
     console.error("[Registry API] POST error:", error);
 
     const errorResponse: RegistryErrorResponseWire = {

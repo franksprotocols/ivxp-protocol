@@ -145,6 +145,7 @@ export async function POST(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
+    // eslint-disable-next-line no-console
     console.error("[Ratings API] POST error:", sanitizeErrorForLog(error));
 
     const errorResponse: RatingErrorResponseWire = {

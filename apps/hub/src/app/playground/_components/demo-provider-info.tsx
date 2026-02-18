@@ -89,7 +89,7 @@ export function DemoProviderInfo({ url, onCatalogLoaded }: DemoProviderInfoProps
       controller.abort();
     };
     // onCatalogLoaded intentionally excluded to avoid re-fetch loops
-  }, [url]); // eslint-disable-line
+  }, [url]);
 
   return (
     <Card data-testid="demo-provider-info">

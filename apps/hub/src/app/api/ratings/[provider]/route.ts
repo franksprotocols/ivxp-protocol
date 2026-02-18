@@ -7,6 +7,7 @@ import type {
   RatingErrorResponseWire,
   RatingSortOption,
 } from "@/lib/ratings/types";
+import { logError } from "@/lib/logger";
 
 const VALID_SORT_OPTIONS: readonly string[] = ["newest", "oldest", "highest", "lowest"];
 
@@ -80,8 +81,7 @@ export async function GET(
 
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message.slice(0, 200) : "Unknown error";
-    console.error("[Ratings API] GET error:", message);
+    logError("[Ratings API] GET error", error);
 
     const errorResponse: RatingErrorResponseWire = {
       error: {

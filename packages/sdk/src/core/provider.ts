@@ -948,6 +948,7 @@ export class IVXPProvider {
     return new Promise((resolve, reject) => {
       const requestHandler = (req: IncomingMsg, res: ServerRes): void => {
         this.handleRequest(req, res).catch((error: unknown) => {
+          // eslint-disable-next-line no-console
           console.error("Unexpected error in provider request handler:", error);
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "Internal server error" }));
@@ -1334,6 +1335,7 @@ export class IVXPProvider {
    */
   private processOrderAsync(order: StoredOrder, handler: ServiceHandler): void {
     this.processOrder(order, handler).catch((error: unknown) => {
+      // eslint-disable-next-line no-console
       console.error(
         `Order processing error for ${order.orderId}:`,
         error instanceof Error ? error.message : error,
@@ -1387,6 +1389,7 @@ export class IVXPProvider {
       }
     } catch (handlerError: unknown) {
       // Handler threw: transition to "delivery_failed"
+      // eslint-disable-next-line no-console
       console.error(
         `Service handler error for order ${order.orderId}:`,
         handlerError instanceof Error ? handlerError.message : handlerError,
@@ -1395,6 +1398,7 @@ export class IVXPProvider {
       try {
         await this.orderStore.update(order.orderId, { status: "delivery_failed" });
       } catch (updateError: unknown) {
+        // eslint-disable-next-line no-console
         console.error(
           `Failed to update order ${order.orderId} to delivery_failed:`,
           updateError instanceof Error ? updateError.message : updateError,

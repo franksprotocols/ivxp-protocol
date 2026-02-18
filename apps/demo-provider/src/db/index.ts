@@ -73,6 +73,7 @@ export function initializeDatabase(options: DatabaseOptions): DatabaseInstance {
   const { dbPath, verbose = false } = options;
 
   const db = new Database(dbPath, {
+    // eslint-disable-next-line no-console
     verbose: verbose ? console.log : undefined,
   });
 
