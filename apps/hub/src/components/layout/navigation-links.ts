@@ -10,6 +10,5 @@ export const NAVIGATION_LINKS: readonly NavigationLink[] = [
   { href: "/playground", label: "Playground" },
   { href: "/docs", label: "Docs" },
   { href: "/community", label: "Community" },
-  { href: "/orders", label: "My Orders" },
   { href: "/about", label: "About" },
 ];

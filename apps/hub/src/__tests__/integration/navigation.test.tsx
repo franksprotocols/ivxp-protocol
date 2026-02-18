@@ -88,14 +88,6 @@ describe("Navigation Integration", () => {
       expect(homeLink).not.toHaveAttribute("data-active");
     });
 
-    it("marks My Orders as active when on /orders", () => {
-      mockUsePathname.mockReturnValue("/orders");
-      renderWithProviders(<Navigation />);
-
-      const ordersLink = screen.getByText("My Orders");
-      expect(ordersLink).toHaveAttribute("data-active", "true");
-    });
-
     it("renders links with correct href attributes", () => {
       renderWithProviders(<Navigation />);
 
@@ -103,6 +95,13 @@ describe("Navigation Integration", () => {
         const anchor = screen.getByRole("link", { name: link.label });
         expect(anchor).toHaveAttribute("href", link.href);
       }
+    });
+
+    it("does not render provider and my orders in top navigation", () => {
+      renderWithProviders(<Navigation />);
+
+      expect(screen.queryByRole("link", { name: "Provider" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "My Orders" })).not.toBeInTheDocument();
     });
   });
 

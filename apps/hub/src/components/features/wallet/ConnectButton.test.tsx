@@ -139,6 +139,17 @@ describe("ConnectButton", () => {
     expect(screen.getByText(/disconnect/i)).toBeInTheDocument();
   });
 
+  it("shows provider and my orders options when connected", async () => {
+    setupConnected();
+    const user = userEvent.setup();
+    renderWithProviders(<ConnectButton />);
+
+    await user.click(screen.getByText("0x1234...5678"));
+
+    expect(screen.getByRole("menuitem", { name: "Provider" })).toHaveAttribute("href", "/provider");
+    expect(screen.getByRole("menuitem", { name: "My Orders" })).toHaveAttribute("href", "/orders");
+  });
+
   it("calls disconnect when disconnect option is clicked", async () => {
     const { disconnectFn } = setupConnected();
     const user = userEvent.setup();
