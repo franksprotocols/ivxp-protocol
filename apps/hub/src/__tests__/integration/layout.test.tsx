@@ -145,8 +145,12 @@ describe("Layout Integration", () => {
       // Check that links are present within mobile nav (scoped to avoid desktop nav duplicates)
       expect(within(mobileNav).getByText("Home")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Marketplace")).toBeInTheDocument();
-      expect(within(mobileNav).getByText("My Orders")).toBeInTheDocument();
+      expect(within(mobileNav).getByText("Playground")).toBeInTheDocument();
+      expect(within(mobileNav).getByText("Docs")).toBeInTheDocument();
+      expect(within(mobileNav).getByText("Community")).toBeInTheDocument();
       expect(within(mobileNav).getByText("About")).toBeInTheDocument();
+      expect(within(mobileNav).queryByText("Provider")).not.toBeInTheDocument();
+      expect(within(mobileNav).queryByText("My Orders")).not.toBeInTheDocument();
     });
   });
 

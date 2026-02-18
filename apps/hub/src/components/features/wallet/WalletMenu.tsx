@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut, Copy } from "lucide-react";
+import Link from "next/link";
+import { ClipboardList, Copy, LogOut, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +27,19 @@ export function WalletMenu({ address, onDisconnect, onCopyAddress }: WalletMenuP
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href="/provider">
+            <Store className="mr-2 h-4 w-4" />
+            Provider
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/orders">
+            <ClipboardList className="mr-2 h-4 w-4" />
+            My Orders
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onCopyAddress} aria-label="Copy wallet address to clipboard">
           <Copy className="mr-2 h-4 w-4" />
           Copy Address

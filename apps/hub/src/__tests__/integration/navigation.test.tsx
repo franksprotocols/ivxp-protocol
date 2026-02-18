@@ -72,8 +72,8 @@ describe("Navigation Integration", () => {
       expect(marketplaceLink).toHaveAttribute("data-active", "true");
     });
 
-    it("marks Marketplace as active on sub-routes like /marketplace/text_echo", () => {
-      mockUsePathname.mockReturnValue("/marketplace/text_echo");
+    it("marks Marketplace as active on canonical sub-routes", () => {
+      mockUsePathname.mockReturnValue("/marketplace/prov-001/text_echo");
       renderWithProviders(<Navigation />);
 
       const marketplaceLink = screen.getByText("Marketplace");
@@ -88,14 +88,6 @@ describe("Navigation Integration", () => {
       expect(homeLink).not.toHaveAttribute("data-active");
     });
 
-    it("marks My Orders as active when on /orders", () => {
-      mockUsePathname.mockReturnValue("/orders");
-      renderWithProviders(<Navigation />);
-
-      const ordersLink = screen.getByText("My Orders");
-      expect(ordersLink).toHaveAttribute("data-active", "true");
-    });
-
     it("renders links with correct href attributes", () => {
       renderWithProviders(<Navigation />);
 
@@ -103,6 +95,13 @@ describe("Navigation Integration", () => {
         const anchor = screen.getByRole("link", { name: link.label });
         expect(anchor).toHaveAttribute("href", link.href);
       }
+    });
+
+    it("does not render provider and my orders in top navigation", () => {
+      renderWithProviders(<Navigation />);
+
+      expect(screen.queryByRole("link", { name: "Provider" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "My Orders" })).not.toBeInTheDocument();
     });
   });
 

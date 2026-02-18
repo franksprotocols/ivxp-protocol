@@ -23,8 +23,20 @@ describe("WalletMenu", () => {
 
     await user.click(screen.getByText("0x1234...5678"));
 
+    expect(screen.getByText(/provider/i)).toBeInTheDocument();
+    expect(screen.getByText(/my orders/i)).toBeInTheDocument();
     expect(screen.getByText(/copy address/i)).toBeInTheDocument();
     expect(screen.getByText(/disconnect/i)).toBeInTheDocument();
+  });
+
+  it("renders navigation links for provider and orders", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<WalletMenu {...defaultProps} />);
+
+    await user.click(screen.getByText("0x1234...5678"));
+
+    expect(screen.getByRole("menuitem", { name: "Provider" })).toHaveAttribute("href", "/provider");
+    expect(screen.getByRole("menuitem", { name: "My Orders" })).toHaveAttribute("href", "/orders");
   });
 
   it("calls onCopyAddress when copy is clicked", async () => {
