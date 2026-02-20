@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from "fumadocs-ui/layouts/docs/page";
 import { sdkSource, protocolSource } from "@/lib/source";
 import type { Metadata } from "next";
+import type { MDXContent } from "mdx/types";
+import type { TOCItemType } from "fumadocs-core/toc";
 
 interface PageProps {
   params: Promise<{ slug?: string[] }>;
@@ -37,6 +39,13 @@ function resolvePage(slug: string[] = []) {
   return null;
 }
 
+type ResolvedPageData = {
+  title?: string;
+  description?: string;
+  body: MDXContent;
+  toc: TOCItemType[];
+};
+
 export default async function DocsPageComponent({ params }: PageProps) {
   const { slug } = await params;
   const normalizedSlug = normalizeSlug(slug);
@@ -52,14 +61,15 @@ export default async function DocsPageComponent({ params }: PageProps) {
   }
 
   const { page } = resolved;
-  const MDXContent = page.data.body;
+  const pageData = page.data as ResolvedPageData;
+  const PageContent = pageData.body;
 
   return (
-    <DocsPage toc={page.data.toc}>
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{page.data.description}</DocsDescription>
+    <DocsPage toc={pageData.toc}>
+      <DocsTitle>{pageData.title}</DocsTitle>
+      <DocsDescription>{pageData.description}</DocsDescription>
       <DocsBody>
-        <MDXContent />
+        <PageContent />
       </DocsBody>
     </DocsPage>
   );
