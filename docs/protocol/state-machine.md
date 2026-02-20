@@ -1,3 +1,7 @@
+---
+title: State Machine
+---
+
 # IVXP/1.0 Order State Machine
 
 This document describes the order lifecycle state machine for the IVXP/1.0 protocol.

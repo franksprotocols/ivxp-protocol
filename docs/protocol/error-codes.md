@@ -1,3 +1,7 @@
+---
+title: Error Codes
+---
+
 # IVXP/1.0 Error Codes
 
 This document defines all error codes used in the IVXP/1.0 protocol. Error codes use `SCREAMING_SNAKE_CASE` convention.

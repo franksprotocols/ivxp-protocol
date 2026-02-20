@@ -1,13 +1,20 @@
-/**
- * Basic Client Example
- *
- * Demonstrates the one-line requestService() convenience method
- * for requesting a service from an IVXP provider.
- *
- * Usage:
- *   IVXP_PRIVATE_KEY=0x... npx tsx docs/sdk/examples/basic-client.ts
- */
+---
+title: Basic Client
+description: Minimal example demonstrating the one-line requestService() convenience method for requesting a service from an IVXP provider.
+---
 
+# Basic Client
+
+Demonstrates the one-line `requestService()` convenience method for requesting a service from an IVXP provider.
+
+**Run it:**
+
+```bash
+# Copy this snippet into scripts/basic-client.ts in your project first
+IVXP_PRIVATE_KEY=0x... npx tsx scripts/basic-client.ts
+```
+
+```typescript
 import { createIVXPClient, type RequestServiceResult } from "@ivxp/sdk";
 
 async function main(): Promise<void> {
@@ -47,3 +54,4 @@ async function main(): Promise<void> {
 }
 
 main().catch(console.error);
+```

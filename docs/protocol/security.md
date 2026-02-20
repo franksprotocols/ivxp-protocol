@@ -1,3 +1,7 @@
+---
+title: Security
+---
+
 # IVXP/1.0 Security
 
 This document describes the cryptographic and security requirements for the IVXP/1.0 protocol.

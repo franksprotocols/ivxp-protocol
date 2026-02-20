@@ -1,10 +1,13 @@
-/**
- * Error Recovery Example
- *
- * Demonstrates handling various SDK error types and
- * implementing recovery strategies.
- */
+---
+title: Error Recovery
+description: Demonstrates handling various SDK error types and implementing recovery strategies when calling IVXP services.
+---
 
+# Error Recovery
+
+Demonstrates handling various SDK error types and implementing recovery strategies.
+
+```typescript
 import {
   createIVXPClient,
   IVXPError,
@@ -81,3 +84,4 @@ async function main(): Promise<void> {
 }
 
 main().catch(console.error);
+```

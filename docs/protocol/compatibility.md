@@ -1,3 +1,7 @@
+---
+title: Compatibility
+---
+
 # IVXP/1.0 Wire Format Compatibility
 
 This document describes wire format conventions and cross-implementation compatibility requirements.

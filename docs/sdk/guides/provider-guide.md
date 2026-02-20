@@ -1,3 +1,7 @@
+---
+title: Provider Guide
+---
+
 # Provider SDK Guide
 
 This guide covers the full `IVXPProvider` API for hosting IVXP services.

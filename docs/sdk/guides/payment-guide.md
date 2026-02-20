@@ -1,3 +1,7 @@
+---
+title: Payment Guide
+---
+
 # Payment Guide
 
 IVXP uses USDC (ERC-20) on Base L2 for all payments. This guide covers the payment flow, verification, and error handling.

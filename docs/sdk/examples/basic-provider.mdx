@@ -1,13 +1,20 @@
-/**
- * Basic Provider Example
- *
- * Demonstrates hosting an IVXP service provider with a simple
- * text echo service handler.
- *
- * Usage:
- *   PROVIDER_PRIVATE_KEY=0x... npx tsx docs/sdk/examples/basic-provider.ts
- */
+---
+title: Basic Provider
+description: Minimal example demonstrating how to host an IVXP service provider with a simple text echo service handler.
+---
 
+# Basic Provider
+
+Demonstrates hosting an IVXP service provider with a simple text echo service handler.
+
+**Run it:**
+
+```bash
+# Copy this snippet into scripts/basic-provider.ts in your project first
+PROVIDER_PRIVATE_KEY=0x... npx tsx scripts/basic-provider.ts
+```
+
+```typescript
 import { createIVXPProvider, type IVXPProviderConfig } from "@ivxp/sdk";
 
 async function main(): Promise<void> {
@@ -57,3 +64,4 @@ async function main(): Promise<void> {
 }
 
 main().catch(console.error);
+```
