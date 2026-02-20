@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useOrderStatus, getBackoffInterval } from "./use-order-status";
 import { useOrderStore, type Order } from "@/stores/order-store";
 
@@ -44,13 +44,12 @@ describe("getBackoffInterval", () => {
 
 describe("useOrderStatus", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     vi.clearAllMocks();
     useOrderStore.getState().clearOrders();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    useOrderStore.getState().clearOrders();
   });
 
   it("returns null order and no polling when order not found", () => {
@@ -67,46 +66,46 @@ describe("useOrderStatus", () => {
       .mockResolvedValueOnce({ order_id: MOCK_ORDER.orderId, status: "processing" })
       .mockResolvedValueOnce({ order_id: MOCK_ORDER.orderId, status: "delivered" });
 
-    const { result } = renderHook(() => useOrderStatus(MOCK_ORDER.orderId));
+    const { result, unmount } = renderHook(() => useOrderStatus(MOCK_ORDER.orderId));
     expect(result.current.isPolling).toBe(true);
 
-    await act(async () => {
-      vi.advanceTimersByTime(1500);
-      await Promise.resolve();
-    });
+    await waitFor(
+      () => {
+        expect(useOrderStore.getState().getOrder(MOCK_ORDER.orderId)?.status).toBe("processing");
+      },
+      { timeout: 3_000 },
+    );
 
-    await waitFor(() => {
-      expect(useOrderStore.getState().getOrder(MOCK_ORDER.orderId)?.status).toBe("processing");
-    });
-
-    await act(async () => {
-      vi.advanceTimersByTime(2500);
-      await Promise.resolve();
-    });
-
-    await waitFor(() => {
-      expect(useOrderStore.getState().getOrder(MOCK_ORDER.orderId)?.status).toBe("delivered");
-      expect(result.current.isPolling).toBe(false);
-    });
+    await waitFor(
+      () => {
+        expect(useOrderStore.getState().getOrder(MOCK_ORDER.orderId)?.status).toBe("delivered");
+        expect(result.current.isPolling).toBe(false);
+      },
+      { timeout: 6_000 },
+    );
 
     expect(mockGetOrderStatus).toHaveBeenCalledWith(
       "http://provider.test:3001",
       MOCK_ORDER.orderId,
     );
+    unmount();
   });
 
   it("keeps previous status for unknown provider statuses", async () => {
     useOrderStore.getState().addOrder(MOCK_ORDER);
     mockGetOrderStatus.mockResolvedValue({ order_id: MOCK_ORDER.orderId, status: "queued_custom" });
 
-    renderHook(() => useOrderStatus(MOCK_ORDER.orderId));
+    const { unmount } = renderHook(() => useOrderStatus(MOCK_ORDER.orderId));
 
-    await act(async () => {
-      vi.advanceTimersByTime(1500);
-      await Promise.resolve();
-    });
+    await waitFor(
+      () => {
+        expect(mockGetOrderStatus).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 3_000 },
+    );
 
     expect(useOrderStore.getState().getOrder(MOCK_ORDER.orderId)?.status).toBe("paid");
+    unmount();
   });
 
   it("surfaces polling errors and continues retries", async () => {
@@ -115,24 +114,22 @@ describe("useOrderStatus", () => {
       .mockRejectedValueOnce(new Error("Provider timeout"))
       .mockResolvedValueOnce({ order_id: MOCK_ORDER.orderId, status: "processing" });
 
-    const { result } = renderHook(() => useOrderStatus(MOCK_ORDER.orderId));
+    const { result, unmount } = renderHook(() => useOrderStatus(MOCK_ORDER.orderId));
 
-    await act(async () => {
-      vi.advanceTimersByTime(1500);
-      await Promise.resolve();
-    });
+    await waitFor(
+      () => {
+        expect(typeof result.current.error).toBe("string");
+        expect(result.current.error).toContain("Provider timeout");
+      },
+      { timeout: 3_000 },
+    );
 
-    await waitFor(() => {
-      expect(result.current.error).toContain("Provider timeout");
-    });
-
-    await act(async () => {
-      vi.advanceTimersByTime(2500);
-      await Promise.resolve();
-    });
-
-    await waitFor(() => {
-      expect(useOrderStore.getState().getOrder(MOCK_ORDER.orderId)?.status).toBe("processing");
-    });
+    await waitFor(
+      () => {
+        expect(useOrderStore.getState().getOrder(MOCK_ORDER.orderId)?.status).toBe("processing");
+      },
+      { timeout: 6_000 },
+    );
+    unmount();
   });
 });
