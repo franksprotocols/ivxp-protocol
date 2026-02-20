@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { DemoProviderInfo } from "./demo-provider-info";
+import { MOCK_SERVICE_DETAILS } from "@/lib/mock-data/service-details";
 
 describe("DemoProviderInfo", () => {
   const mockUrl = "https://demo-provider.test";
@@ -78,11 +79,7 @@ describe("DemoProviderInfo", () => {
     const mockServices = [
       {
         service_type: "ping_test",
-        description: "Ping",
-        price_usdc: "0.10",
-        provider_address: "0x1234",
-        input_schema: { type: "object", properties: {} },
-        output_schema: { type: "string" },
+        base_price_usdc: 0.1,
       },
     ];
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -94,7 +91,53 @@ describe("DemoProviderInfo", () => {
     render(<DemoProviderInfo url={mockUrl} onCatalogLoaded={onCatalogLoaded} />);
 
     await waitFor(() => {
-      expect(onCatalogLoaded).toHaveBeenCalledWith(mockServices);
+      expect(onCatalogLoaded).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            service_type: "ping_test",
+          }),
+        ]),
+      );
+    });
+  });
+
+  it("requests IVXP catalog endpoint", async () => {
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ services: [] }), { status: 200 }));
+
+    render(<DemoProviderInfo url={mockUrl} />);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(`${mockUrl}/ivxp/catalog`, expect.any(Object));
+    });
+  });
+
+  it("maps minimal service catalog payload to playable service details", async () => {
+    const onCatalogLoaded = vi.fn();
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          services: [{ type: "text_echo", base_price_usdc: 0.22 }],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    render(<DemoProviderInfo url={mockUrl} onCatalogLoaded={onCatalogLoaded} />);
+
+    const template = MOCK_SERVICE_DETAILS.find((service) => service.service_type === "text_echo");
+    expect(template).toBeDefined();
+
+    await waitFor(() => {
+      expect(onCatalogLoaded).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            service_type: "text_echo",
+            price_usdc: "0.22",
+            input_schema: template!.input_schema,
+          }),
+        ]),
+      );
     });
   });
 
