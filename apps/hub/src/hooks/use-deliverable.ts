@@ -74,6 +74,14 @@ export function triggerDownload(content: ArrayBuffer, filename: string, contentT
   URL.revokeObjectURL(url);
 }
 
+function buildOutputPreview(buffer: ArrayBuffer, type: string): string {
+  if (type.startsWith("text/") || type === "application/json" || type === "application/xml") {
+    const text = new TextDecoder().decode(buffer);
+    return text.length > 4000 ? `${text.slice(0, 4000)}\n...<truncated>` : text;
+  }
+  return `[binary:${type}; bytes=${buffer.byteLength}]`;
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -81,6 +89,7 @@ export function triggerDownload(content: ArrayBuffer, filename: string, contentT
 export function useDeliverable(orderId: string): UseDeliverableReturn {
   const client = useIVXPClient();
   const order = useOrderStore((state) => state.orders.find((item) => item.orderId === orderId));
+  const updateOrderDeliverable = useOrderStore((state) => state.updateOrderDeliverable);
   const [content, setContent] = useState<ArrayBuffer | null>(null);
   const [contentType, setContentType] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -115,19 +124,29 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
 
     try {
       const providerUrl =
-        order?.providerEndpointUrl ?? process.env.NEXT_PUBLIC_PROVIDER_URL ?? "http://localhost:3001";
+        order?.providerEndpointUrl ??
+        process.env.NEXT_PUBLIC_PROVIDER_URL ??
+        "http://localhost:3001";
       const response = await client.downloadDeliverable(providerUrl, orderId);
 
       // Verify content hash using shared utility
       const result = await verifyContentHash(response.content, response.contentHash);
 
       if (result.verified) {
+        const resolvedContentType = response.contentType;
+        const outputPreview = buildOutputPreview(response.content, resolvedContentType);
+
         setContent(response.content);
-        setContentType(response.contentType);
+        setContentType(resolvedContentType);
         setFileName(response.fileName ?? null);
         setContentHash(response.contentHash);
         setHashStatus("verified");
         setError(null);
+        updateOrderDeliverable(orderId, {
+          contentHash: response.contentHash,
+          outputPreview,
+          outputContentType: resolvedContentType,
+        });
         client.emit("order.delivered", {
           orderId,
           contentHash: response.contentHash,
@@ -148,7 +167,7 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [client, orderId, isLoading, order?.providerEndpointUrl]);
+  }, [client, orderId, isLoading, order?.providerEndpointUrl, updateOrderDeliverable]);
 
   return {
     content,

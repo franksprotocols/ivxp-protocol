@@ -36,6 +36,7 @@ export function ServiceDetail({ service }: ServiceDetailProps) {
       orderId: quote.order_id,
       serviceType: quote.service_type,
       priceUsdc: quote.price_usdc,
+      requestInput: quote.request_input,
       providerAddress: quote.payment_address,
       providerId: quote.provider_id ?? service.provider_id,
       providerEndpointUrl:

@@ -136,4 +136,18 @@ describe("createServiceHandlers", () => {
     expect(textEcho).toBeTypeOf("function");
     expect(imageGen).toBeTypeOf("function");
   });
+
+  it("applies text transform when request input is available from context", async () => {
+    const handlers = createServiceHandlers({
+      getOrderInput: () => ({ text: "Hello IVXP", transform: "uppercase" }),
+    });
+    const textEcho = handlers.get("text_echo");
+    expect(textEcho).toBeTypeOf("function");
+
+    const result = await textEcho!(createTestOrder({ serviceType: "text_echo" }));
+    const parsed = JSON.parse(result.content as string);
+
+    expect(parsed.original_text).toBe("Hello IVXP");
+    expect(parsed.echoed_text).toBe("HELLO IVXP");
+  });
 });

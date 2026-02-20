@@ -46,7 +46,9 @@ function resolvePriceUsdc(
   return fallbackPrice ?? "0.10";
 }
 
-function toServiceDetails(rawServices: readonly Record<string, unknown>[]): readonly ServiceDetail[] {
+function toServiceDetails(
+  rawServices: readonly Record<string, unknown>[],
+): readonly ServiceDetail[] {
   const details: ServiceDetail[] = [];
 
   for (const rawService of rawServices) {

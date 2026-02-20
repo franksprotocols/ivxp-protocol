@@ -10,6 +10,7 @@
 
 import { useMemo } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { useAccount } from "wagmi";
 import {
   Dialog,
   DialogContent,
@@ -43,8 +44,8 @@ interface SignatureDialogProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildPreviewMessage(orderId: string): string {
-  return `IVXP Identity Verification | Order: ${orderId} | Address: <your wallet> | Timestamp: <now>`;
+function buildPreviewMessage(orderId: string, address?: string): string {
+  return `IVXP Identity Verification | Order: ${orderId} | Address: ${address ?? "<not connected>"} | Timestamp: <now>`;
 }
 
 function isSigningOrSubmitting(step: SignatureStep): boolean {
@@ -56,11 +57,17 @@ function isSigningOrSubmitting(step: SignatureStep): boolean {
 // ---------------------------------------------------------------------------
 
 export function SignatureDialog({ open, onOpenChange, orderId, txHash }: SignatureDialogProps) {
-  const { step, error, errorCode, signature, signAndDeliver, retryDelivery } = useIdentitySignature(
-    { orderId, txHash },
-  );
+  const { address } = useAccount();
+  const { step, error, errorCode, signature, message, signAndDeliver, retryDelivery } =
+    useIdentitySignature({
+      orderId,
+      txHash,
+    });
 
-  const previewMessage = useMemo(() => buildPreviewMessage(orderId), [orderId]);
+  const previewMessage = useMemo(
+    () => message ?? buildPreviewMessage(orderId, address),
+    [message, orderId, address],
+  );
 
   const isBusy = isSigningOrSubmitting(step);
   // Issue #13: Use errorCode instead of magic string matching

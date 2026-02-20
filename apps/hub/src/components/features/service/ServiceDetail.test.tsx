@@ -16,11 +16,7 @@ vi.mock("wagmi", async () => {
 });
 
 vi.mock("./ServiceActions", () => ({
-  ServiceActions: ({
-    onQuoteReceived,
-  }: {
-    onQuoteReceived?: (quote: ServiceQuote) => void;
-  }) => (
+  ServiceActions: ({ onQuoteReceived }: { onQuoteReceived?: (quote: ServiceQuote) => void }) => (
     <div data-testid="service-actions">
       <button
         type="button"

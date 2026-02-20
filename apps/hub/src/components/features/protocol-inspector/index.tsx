@@ -136,16 +136,20 @@ export function ProtocolInspector({ order }: ProtocolInspectorProps) {
 
   const explorerUrl = order.txHash ? getBlockExplorerTxUrl(order.txHash, chainId) : undefined;
 
+  const requestInput = order.requestInput ? JSON.stringify(order.requestInput) : undefined;
   const wireData = toWireFormat({
     orderId: order.orderId,
     serviceType: order.serviceType,
     priceUsdc: order.priceUsdc,
+    requestInput: order.requestInput ?? null,
     providerAddress: order.providerAddress,
     status: order.status,
     txHash: order.txHash ?? null,
     signedMessage: order.signedMessage ?? null,
     signature: order.signature ?? null,
     contentHash: order.contentHash ?? null,
+    outputPreview: order.outputPreview ?? null,
+    outputContentType: order.outputContentType ?? null,
   });
 
   return (
@@ -184,6 +188,7 @@ export function ProtocolInspector({ order }: ProtocolInspectorProps) {
               value={order.signedMessage}
               tooltipField="signed_message"
             />
+            <CopyField label="request_input" value={requestInput} />
             <CopyField
               label="signature"
               value={order.signature}
@@ -191,6 +196,7 @@ export function ProtocolInspector({ order }: ProtocolInspectorProps) {
               verified={order.signatureVerified}
             />
             <CopyField label="content_hash" value={order.contentHash} tooltipField="content_hash" />
+            <CopyField label="output_preview" value={order.outputPreview} />
             <CopyField label="status" value={order.status} tooltipField="status" />
             <CopyField label="provider" value={order.providerAddress} tooltipField="provider" />
           </section>

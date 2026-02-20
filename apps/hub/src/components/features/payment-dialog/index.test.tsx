@@ -31,6 +31,10 @@ vi.mock("@/hooks/use-payment", () => ({
   }),
 }));
 
+vi.mock("wagmi", () => ({
+  useAccount: () => ({ address: undefined }),
+}));
+
 // ---------------------------------------------------------------------------
 // Mock useIdentitySignature (used by SignatureDialog)
 // ---------------------------------------------------------------------------

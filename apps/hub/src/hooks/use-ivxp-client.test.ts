@@ -13,8 +13,7 @@ function deliveryPayload() {
   return {
     order_id: "ord_123",
     payment: {
-      tx_hash:
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      tx_hash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       network: "base-sepolia" as const,
     },
     signature: {
@@ -83,11 +82,75 @@ describe("useIVXPClient", () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: "boom" }));
 
     const { result } = renderHook(() => useIVXPClient());
-    await expect(result.current.getOrderStatus("http://provider.test", "ord_123")).rejects.toMatchObject(
-      { code: "PROVIDER_UNAVAILABLE" },
-    );
+    await expect(
+      result.current.getOrderStatus("http://provider.test", "ord_123"),
+    ).rejects.toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("parses protocol service_quote payload into hub quote response", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        protocol: "IVXP/1.0",
+        message_type: "service_quote",
+        timestamp: "2026-02-20T00:00:00.000Z",
+        order_id: "ivxp-quote-1",
+        provider_agent: {
+          name: "demo-provider",
+          wallet_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        },
+        quote: {
+          price_usdc: 0.5,
+          estimated_delivery: "2026-02-20T01:00:00.000Z",
+          payment_address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          network: "base-sepolia",
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useIVXPClient());
+    const quote = await result.current.requestQuote("http://provider.test", {
+      service_type: "text_echo",
+      input: { text: "hello" },
+    });
+
+    expect(quote).toEqual({
+      order_id: "ivxp-quote-1",
+      price_usdc: "0.5",
+      payment_address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      expires_at: "2026-02-20T01:00:00.000Z",
+      service_type: "text_echo",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://provider.test/ivxp/request",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("keeps compatibility with flat quote payload and infers service_type", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        order_id: "ord-flat-1",
+        price_usdc: "1.00",
+        payment_address: "0xcccccccccccccccccccccccccccccccccccccccc",
+        expires_at: "2026-02-20T01:00:00.000Z",
+      }),
+    );
+
+    const { result } = renderHook(() => useIVXPClient());
+    const quote = await result.current.requestQuote("http://provider.test", {
+      service_type: "image_gen",
+      input: { prompt: "cat" },
+    });
+
+    expect(quote).toEqual({
+      order_id: "ord-flat-1",
+      price_usdc: "1.00",
+      payment_address: "0xcccccccccccccccccccccccccccccccccccccccc",
+      expires_at: "2026-02-20T01:00:00.000Z",
+      service_type: "image_gen",
+    });
   });
 
   it("decodes non-data-uri base64 deliverable content for binary types", async () => {

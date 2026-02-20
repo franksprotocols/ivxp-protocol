@@ -40,6 +40,7 @@ const MOCK_ORDER: Order = {
   orderId: "ord_test_abc",
   serviceType: "text_echo",
   priceUsdc: "5.00",
+  requestInput: { text: "hello ivxp" },
   providerAddress: "0x1234567890abcdef1234567890abcdef12345678",
   status: "paid",
   createdAt: new Date("2025-06-01T00:00:00Z").getTime(),
@@ -48,6 +49,8 @@ const MOCK_ORDER: Order = {
   signature: "0xsig123abc456def789",
   signatureVerified: true,
   contentHash: "sha256:abcdef1234567890",
+  outputPreview: '{"echoed_text":"hello ivxp"}',
+  outputContentType: "application/json",
 };
 
 // ---------------------------------------------------------------------------
@@ -168,6 +171,14 @@ describe("ProtocolInspector", () => {
     expect(screen.getByText("sha256:abcdef1234567890")).toBeInTheDocument();
   });
 
+  it("displays request_input and output_preview fields", () => {
+    useUiStore.getState().setInspectorOpen(true);
+    render(<ProtocolInspector order={MOCK_ORDER} />);
+
+    expect(screen.getByText('{"text":"hello ivxp"}')).toBeInTheDocument();
+    expect(screen.getByText('{"echoed_text":"hello ivxp"}')).toBeInTheDocument();
+  });
+
   it("hides optional fields when not present on order", () => {
     const orderWithoutOptionals: Order = {
       ...MOCK_ORDER,
@@ -194,6 +205,8 @@ describe("ProtocolInspector", () => {
     const panelContent = screen.getByTestId("inspector-panel").textContent ?? "";
     expect(panelContent).toContain("signed_message");
     expect(panelContent).toContain("content_hash");
+    expect(panelContent).toContain("request_input");
+    expect(panelContent).toContain("output_preview");
   });
 
   it("renders out-of-order events without errors", () => {

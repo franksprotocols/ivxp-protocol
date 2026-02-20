@@ -20,6 +20,7 @@ export interface Quote {
   readonly orderId: string;
   readonly serviceType: string;
   readonly priceUsdc: string;
+  readonly requestInput?: Record<string, unknown>;
   readonly providerAddress: Address;
   readonly providerId?: string;
   readonly providerEndpointUrl?: string;
@@ -72,6 +73,7 @@ export function QuoteDialog({
       orderId: quote.orderId,
       serviceType: quote.serviceType,
       priceUsdc: quote.priceUsdc,
+      requestInput: quote.requestInput,
       providerAddress: quote.providerAddress,
       providerId: quote.providerId,
       providerEndpointUrl: quote.providerEndpointUrl,

@@ -90,9 +90,14 @@ export function getAllServiceTypes(): readonly string[] {
 /**
  * Returns all canonical (providerId, serviceType) params for static generation.
  */
-export function getCanonicalServiceParams(): readonly { providerId: string; serviceType: string }[] {
+export function getCanonicalServiceParams(): readonly {
+  providerId: string;
+  serviceType: string;
+}[] {
   return MOCK_SERVICE_DETAILS.flatMap((service) =>
-    service.provider_id ? [{ providerId: service.provider_id, serviceType: service.service_type }] : [],
+    service.provider_id
+      ? [{ providerId: service.provider_id, serviceType: service.service_type }]
+      : [],
   );
 }
 

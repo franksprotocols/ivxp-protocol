@@ -53,12 +53,24 @@ export interface IVXPClient {
   downloadDeliverable(providerUrl: string, orderId: string): Promise<DeliverableResponse>;
 }
 
-const QuoteResponseSchema = z.object({
+const FlatQuoteResponseSchema = z.object({
   order_id: z.string().min(1),
-  price_usdc: z.string().min(1),
+  price_usdc: z.union([z.string().min(1), z.number().nonnegative()]),
   payment_address: z.string().min(1),
-  expires_at: z.string().min(1),
-  service_type: z.string().min(1),
+  expires_at: z.string().min(1).optional(),
+  estimated_delivery: z.string().min(1).optional(),
+  service_type: z.string().min(1).optional(),
+});
+
+const ProtocolQuoteResponseSchema = z.object({
+  protocol: z.string().min(1),
+  message_type: z.literal("service_quote"),
+  order_id: z.string().min(1),
+  quote: z.object({
+    price_usdc: z.number().nonnegative(),
+    estimated_delivery: z.string().min(1),
+    payment_address: z.string().min(1),
+  }),
 });
 
 const OrderStatusResponseSchema = z.object({
@@ -157,6 +169,40 @@ function mapHttpError(status: number): IVXPClientError {
   return createClientError("Provider request failed.", "REQUEST_FAILED", true);
 }
 
+function normalizePriceUsdc(value: string | number): string {
+  return typeof value === "number" ? value.toString() : value;
+}
+
+function parseQuoteResponse(raw: unknown, requestedServiceType: string): QuoteResponse | null {
+  const flat = FlatQuoteResponseSchema.safeParse(raw);
+  if (flat.success) {
+    const expiresAt = flat.data.expires_at ?? flat.data.estimated_delivery;
+    if (!expiresAt) {
+      return null;
+    }
+    return {
+      order_id: flat.data.order_id,
+      price_usdc: normalizePriceUsdc(flat.data.price_usdc),
+      payment_address: flat.data.payment_address,
+      expires_at: expiresAt,
+      service_type: flat.data.service_type ?? requestedServiceType,
+    };
+  }
+
+  const protocol = ProtocolQuoteResponseSchema.safeParse(raw);
+  if (protocol.success) {
+    return {
+      order_id: protocol.data.order_id,
+      price_usdc: protocol.data.quote.price_usdc.toString(),
+      payment_address: protocol.data.quote.payment_address,
+      expires_at: protocol.data.quote.estimated_delivery,
+      service_type: requestedServiceType,
+    };
+  }
+
+  return null;
+}
+
 async function safeJson(response: Response): Promise<unknown> {
   try {
     return await response.json();
@@ -212,7 +258,11 @@ async function fetchOrderStatus(
   const payload = await safeJson(response);
   const parsed = OrderStatusResponseSchema.safeParse(payload);
   if (!parsed.success) {
-    throw createClientError("Provider returned invalid order status payload.", "INVALID_RESPONSE", false);
+    throw createClientError(
+      "Provider returned invalid order status payload.",
+      "INVALID_RESPONSE",
+      false,
+    );
   }
   return parsed.data;
 }
@@ -273,11 +323,15 @@ class HubIVXPClient implements IVXPClient {
     }
 
     const raw = await safeJson(response);
-    const parsed = QuoteResponseSchema.safeParse(raw);
-    if (!parsed.success) {
-      throw createClientError("Provider returned invalid quote payload.", "INVALID_RESPONSE", false);
+    const parsed = parseQuoteResponse(raw, params.service_type);
+    if (!parsed) {
+      throw createClientError(
+        "Provider returned invalid quote payload.",
+        "INVALID_RESPONSE",
+        false,
+      );
     }
-    return parsed.data;
+    return parsed;
   }
 
   async requestDelivery(

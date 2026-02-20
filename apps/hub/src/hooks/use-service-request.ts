@@ -12,6 +12,7 @@ export interface ServiceQuote {
   readonly payment_address: string;
   readonly expires_at: string;
   readonly service_type: string;
+  readonly request_input?: Record<string, unknown>;
   readonly provider_id?: string;
   readonly provider_endpoint_url?: string;
 }
@@ -63,12 +64,17 @@ export function useServiceRequest(): UseServiceRequestReturn {
           client_address: address,
         });
 
+        const quoteWithInput: ServiceQuote = {
+          ...quote,
+          request_input: input,
+        };
+
         client.emit("order.quoted", {
-          orderId: quote.order_id,
-          priceUsdc: quote.price_usdc,
+          orderId: quoteWithInput.order_id,
+          priceUsdc: quoteWithInput.price_usdc,
         });
 
-        return quote;
+        return quoteWithInput;
       } catch (err) {
         const requestError: ServiceRequestError = {
           message: err instanceof Error ? err.message : "Request failed.",

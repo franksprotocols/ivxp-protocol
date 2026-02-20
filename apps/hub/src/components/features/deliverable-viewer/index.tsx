@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Download, Loader2, CheckCircle2, AlertTriangle, RefreshCw, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -225,6 +225,18 @@ export function DeliverableViewer({ orderId, orderStatus }: DeliverableViewerPro
     retryCount,
     download,
   } = useDeliverable(orderId);
+
+  const autoTriggeredRef = useRef(false);
+  useEffect(() => {
+    autoTriggeredRef.current = false;
+  }, [orderId]);
+
+  useEffect(() => {
+    if (orderStatus !== "delivered") return;
+    if (autoTriggeredRef.current || content || isLoading || error) return;
+    autoTriggeredRef.current = true;
+    void download();
+  }, [orderStatus, content, isLoading, error, download]);
 
   // Only render for delivered orders
   if (orderStatus !== "delivered") {
