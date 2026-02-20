@@ -1,9 +1,8 @@
 "use client";
 
-import { ExternalLink, Download, AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
+import { ExternalLink, AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ProgressStepper } from "./progress-stepper";
 import { getExplorerTxUrl } from "@/lib/usdc-contract";
 import { formatServiceName, formatPrice } from "@/lib/api/services";
@@ -171,17 +170,31 @@ export function OrderDetail({ order, isPolling }: OrderDetailProps) {
             )}
           </dl>
 
-          {order.status === "delivered" && (
-            <div className="pt-2">
-              <Button
-                className="gap-2"
-                disabled
-                title="Download will be available in a future release"
-              >
-                <Download className="h-4 w-4" />
-                Download Deliverable
-              </Button>
+          {(order.requestInput || order.outputPreview) && (
+            <div className="space-y-3 rounded-md border p-3">
+              {order.requestInput && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Request Input</p>
+                  <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
+                    {JSON.stringify(order.requestInput, null, 2)}
+                  </pre>
+                </div>
+              )}
+              {order.outputPreview && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Output Preview</p>
+                  <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
+                    {order.outputPreview}
+                  </pre>
+                </div>
+              )}
             </div>
+          )}
+
+          {order.status === "delivered" && (
+            <p className="text-sm text-muted-foreground">
+              Deliverable is available below and will auto-load when ready.
+            </p>
           )}
 
           {isDeliveryFailed(order.status) && (

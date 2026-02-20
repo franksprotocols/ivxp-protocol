@@ -63,17 +63,17 @@ describe("OrderDetail", () => {
     expect(screen.getByLabelText("Order progress")).toBeInTheDocument();
   });
 
-  it("shows Download button when status is delivered", () => {
+  it("shows deliverable hint when status is delivered", () => {
     const deliveredOrder = { ...BASE_ORDER, status: "delivered" as const };
     render(<OrderDetail order={deliveredOrder} isPolling={false} />);
 
-    expect(screen.getByRole("button", { name: /download/i })).toBeInTheDocument();
+    expect(screen.getByText(/deliverable is available below/i)).toBeInTheDocument();
   });
 
-  it("does not show Download button for non-delivered status", () => {
+  it("does not show deliverable hint for non-delivered status", () => {
     render(<OrderDetail order={BASE_ORDER} isPolling={true} />);
 
-    expect(screen.queryByRole("button", { name: /download/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/deliverable is available below/i)).not.toBeInTheDocument();
   });
 
   it("shows error details when status is delivery_failed", () => {

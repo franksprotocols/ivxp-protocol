@@ -21,6 +21,7 @@ export interface Order {
   readonly orderId: string;
   readonly serviceType: string;
   readonly priceUsdc: string;
+  readonly requestInput?: Record<string, unknown>;
   readonly providerAddress: Address;
   readonly providerId?: string;
   readonly providerEndpointUrl?: string;
@@ -35,6 +36,8 @@ export interface Order {
   /** True when the provider has verified the EIP-191 signature. */
   readonly signatureVerified?: boolean;
   readonly contentHash?: string;
+  readonly outputPreview?: string;
+  readonly outputContentType?: string;
   readonly errorMessage?: string;
 }
 
@@ -61,6 +64,15 @@ interface OrderStoreActions {
       readonly signature: `0x${string}`;
       readonly signedMessage: string;
       readonly signatureVerified: boolean;
+      readonly status?: OrderStatus;
+    },
+  ) => void;
+  readonly updateOrderDeliverable: (
+    orderId: string,
+    fields: {
+      readonly contentHash?: string;
+      readonly outputPreview?: string;
+      readonly outputContentType?: string;
       readonly status?: OrderStatus;
     },
   ) => void;
@@ -117,6 +129,25 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
           signature: fields.signature,
           signedMessage: fields.signedMessage,
           signatureVerified: fields.signatureVerified,
+          ...(fields.status !== undefined ? { status: fields.status } : {}),
+          updatedAt: Date.now(),
+        };
+      }),
+    }));
+  },
+
+  updateOrderDeliverable: (orderId, fields) => {
+    set((state) => ({
+      orders: state.orders.map((o) => {
+        if (o.orderId !== orderId) return o;
+
+        return {
+          ...o,
+          ...(fields.contentHash !== undefined ? { contentHash: fields.contentHash } : {}),
+          ...(fields.outputPreview !== undefined ? { outputPreview: fields.outputPreview } : {}),
+          ...(fields.outputContentType !== undefined
+            ? { outputContentType: fields.outputContentType }
+            : {}),
           ...(fields.status !== undefined ? { status: fields.status } : {}),
           updatedAt: Date.now(),
         };

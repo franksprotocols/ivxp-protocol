@@ -19,6 +19,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { IVXPProvider, IVXPError } from "@ivxp/sdk";
 import type { ServiceRequest, DeliveryRequest } from "@ivxp/protocol";
+import { z } from "zod";
 import type { ProviderConfig } from "./config.js";
 import { DEMO_SERVICES } from "./catalog.js";
 import { createServiceHandlers } from "./handlers.js";
@@ -43,6 +44,41 @@ const MAX_BODY_SIZE = "64kb";
  * reducing the number of preflight requests for repeated API calls.
  */
 const CORS_MAX_AGE_SECONDS = 600;
+const MAX_ORDER_INPUT_CACHE_SIZE = 5_000;
+
+const canonicalDeliveryRequestSchema = z.object({
+  order_id: z.string().min(1),
+  payment: z.object({
+    tx_hash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+    network: z.enum(["base", "base-sepolia"]),
+  }),
+  signature: z.object({
+    message: z.string().min(1),
+    sig: z.string().regex(/^0x[a-fA-F0-9]{130}$/),
+    signer: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+  }),
+});
+
+function toLegacyNetwork(network: "base" | "base-sepolia"): "base-mainnet" | "base-sepolia" {
+  return network === "base" ? "base-mainnet" : "base-sepolia";
+}
+
+function parseRequestInputFromDescription(description: string): unknown {
+  const trimmed = description.trim();
+  if (trimmed.length === 0) {
+    return { text: description };
+  }
+
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+    return { text: description };
+  }
+
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    return { text: description };
+  }
+}
 
 export interface ServerDependencies {
   readonly config: ProviderConfig;
@@ -70,6 +106,7 @@ export interface ServerInstance {
 export function createServer(deps: ServerDependencies): ServerInstance {
   const { config } = deps;
   const logger = deps.logger ?? createLogger(config.logLevel);
+  const orderInputById = new Map<string, unknown>();
 
   // Initialize SQLite database and order repository
   const dbInstance = initializeDatabase({
@@ -85,6 +122,10 @@ export function createServer(deps: ServerDependencies): ServerInstance {
     logger.info({ deletedCount }, "cleaned up expired orders");
   });
 
+  const contextualHandlers = createServiceHandlers({
+    getOrderInput: (orderId: string) => orderInputById.get(orderId),
+  });
+
   const provider =
     deps.provider ??
     new IVXPProvider({
@@ -94,10 +135,14 @@ export function createServer(deps: ServerDependencies): ServerInstance {
       port: 0, // Not used; Express handles HTTP
       host: "0.0.0.0",
       providerName: config.providerName,
-      serviceHandlers: createServiceHandlers(),
+      serviceHandlers: contextualHandlers,
       allowPrivateDeliveryUrls: true,
       orderStore: orderRepository,
     });
+
+  for (const [serviceType, handler] of contextualHandlers.entries()) {
+    provider.registerServiceHandler(serviceType, handler);
+  }
 
   const app = express();
 
@@ -181,6 +226,16 @@ export function createServer(deps: ServerDependencies): ServerInstance {
       const quote = await provider.handleQuoteRequest(
         parseResult.data as unknown as ServiceRequest,
       );
+
+      const requestInput = parseRequestInputFromDescription(parseResult.data.service_request.description);
+      orderInputById.set(quote.order_id, requestInput);
+      if (orderInputById.size > MAX_ORDER_INPUT_CACHE_SIZE) {
+        const oldestOrderId = orderInputById.keys().next().value;
+        if (oldestOrderId) {
+          orderInputById.delete(oldestOrderId);
+        }
+      }
+
       res.json(quote);
     } catch (error: unknown) {
       handleIVXPError(error, res, logger);
@@ -213,6 +268,48 @@ export function createServer(deps: ServerDependencies): ServerInstance {
     }
   });
 
+  // POST /ivxp/orders/:orderId/delivery (canonical delivery route)
+  app.post("/ivxp/orders/:orderId/delivery", async (req: Request, res: Response) => {
+    try {
+      const rawParam = req.params["orderId"];
+      const orderId = Array.isArray(rawParam) ? (rawParam[0] ?? "") : (rawParam ?? "");
+
+      const parseResult = canonicalDeliveryRequestSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const firstIssue = parseResult.error.issues[0];
+        const path = firstIssue?.path.join(".") ?? "unknown";
+        const message = firstIssue?.message ?? "Validation failed";
+        res.status(400).json({ error: `Invalid delivery request: ${path} - ${message}` });
+        return;
+      }
+
+      const payload = parseResult.data;
+      if (payload.order_id !== orderId) {
+        res.status(400).json({ error: "Invalid delivery request: order_id mismatch in URL/body." });
+        return;
+      }
+
+      const legacyPayload: DeliveryRequest = {
+        protocol: "IVXP/1.0",
+        message_type: "delivery_request",
+        timestamp: new Date().toISOString(),
+        order_id: payload.order_id,
+        payment_proof: {
+          tx_hash: payload.payment.tx_hash as `0x${string}`,
+          from_address: payload.signature.signer as `0x${string}`,
+          network: toLegacyNetwork(payload.payment.network),
+        },
+        signature: payload.signature.sig as `0x${string}`,
+        signed_message: payload.signature.message,
+      };
+
+      const accepted = await provider.handleDeliveryRequest(legacyPayload);
+      res.json(accepted);
+    } catch (error: unknown) {
+      handleIVXPError(error, res, logger);
+    }
+  });
+
   // GET /ivxp/status/:orderId
   app.get("/ivxp/status/:orderId", async (req: Request, res: Response) => {
     try {
@@ -225,8 +322,32 @@ export function createServer(deps: ServerDependencies): ServerInstance {
     }
   });
 
+  // GET /ivxp/orders/:orderId (canonical status route)
+  app.get("/ivxp/orders/:orderId", async (req: Request, res: Response) => {
+    try {
+      const rawParam = req.params["orderId"];
+      const orderId = Array.isArray(rawParam) ? (rawParam[0] ?? "") : (rawParam ?? "");
+      const status = await provider.handleStatusRequest(orderId);
+      res.json(status);
+    } catch (error: unknown) {
+      handleIVXPError(error, res, logger);
+    }
+  });
+
   // GET /ivxp/download/:orderId
   app.get("/ivxp/download/:orderId", async (req: Request, res: Response) => {
+    try {
+      const rawParam = req.params["orderId"];
+      const orderId = Array.isArray(rawParam) ? (rawParam[0] ?? "") : (rawParam ?? "");
+      const download = await provider.handleDownloadRequest(orderId);
+      res.json(download);
+    } catch (error: unknown) {
+      handleIVXPError(error, res, logger);
+    }
+  });
+
+  // GET /ivxp/orders/:orderId/deliverable (canonical download route)
+  app.get("/ivxp/orders/:orderId/deliverable", async (req: Request, res: Response) => {
     try {
       const rawParam = req.params["orderId"];
       const orderId = Array.isArray(rawParam) ? (rawParam[0] ?? "") : (rawParam ?? "");

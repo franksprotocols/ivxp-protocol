@@ -74,10 +74,11 @@ describe("DeliverableViewer", () => {
     mockHookReturn = { ...defaultHookReturn, download: mockDownload };
 
     render(<DeliverableViewer orderId="ord_1" orderStatus="delivered" />);
+    expect(mockDownload).toHaveBeenCalledTimes(1); // auto-load on delivered
 
     const downloadBtn = screen.getByRole("button", { name: /download deliverable/i });
     fireEvent.click(downloadBtn);
-    expect(mockDownload).toHaveBeenCalledTimes(1);
+    expect(mockDownload).toHaveBeenCalledTimes(2);
   });
 
   it("shows loading spinner during download", () => {

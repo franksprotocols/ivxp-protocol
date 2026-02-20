@@ -30,6 +30,7 @@ const ORDER_ID_REGEX =
 export async function executeTextEcho(
   orderId: string,
   description: string,
+  echoedText?: string,
 ): Promise<ServiceResult> {
   // Validate orderId format
   if (!orderId || typeof orderId !== "string") {
@@ -55,10 +56,26 @@ export async function executeTextEcho(
     );
   }
 
+  if (echoedText !== undefined) {
+    if (typeof echoedText !== "string") {
+      throw new Error("Invalid input: echoedText must be a string when provided");
+    }
+    if (echoedText.trim().length === 0) {
+      throw new Error("Invalid input: echoedText cannot be empty or whitespace-only");
+    }
+    if (echoedText.length > MAX_DESCRIPTION_LENGTH) {
+      throw new Error(
+        `Invalid input: echoedText exceeds maximum length of ${MAX_DESCRIPTION_LENGTH} characters`,
+      );
+    }
+  }
+
+  const outputText = echoedText ?? description;
+
   const result = {
     service_type: "text_echo",
     original_text: description,
-    echoed_text: description,
+    echoed_text: outputText,
     timestamp: new Date().toISOString(),
     order_id: orderId,
   };

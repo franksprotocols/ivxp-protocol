@@ -119,6 +119,8 @@ describe("SignatureDialog", () => {
     expect(messageBlock).toBeInTheDocument();
     expect(messageBlock.textContent).toContain("IVXP Identity Verification");
     expect(messageBlock.textContent).toContain(ORDER_ID);
+    expect(messageBlock.textContent).toContain("0xUserAddress0000000000000000000000000001");
+    expect(messageBlock.textContent).not.toContain("<your wallet>");
   });
 
   it("calls signAndDeliver when Sign Message is clicked", async () => {

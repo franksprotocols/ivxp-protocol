@@ -13,7 +13,7 @@
 import { useState, useCallback, useRef } from "react";
 import { type Address, parseUnits, formatUnits } from "viem";
 import { useAccount, useWriteContract, usePublicClient, useChainId } from "wagmi";
-import { usdcConfig, USDC_DECIMALS, assertUsdcConfigured } from "@/lib/usdc-contract";
+import { getUsdcConfig, USDC_DECIMALS, assertUsdcConfigured } from "@/lib/usdc-contract";
 import { isSupportedChain, getTargetChain } from "@/lib/network-constants";
 import { useOrderStore } from "@/stores/order-store";
 import { useIVXPClient } from "./use-ivxp-client";
@@ -154,7 +154,7 @@ export function usePayment(orderId: string): UsePaymentReturn {
 
       // Fix #1: Validate USDC address is configured
       try {
-        assertUsdcConfigured();
+        assertUsdcConfigured(chainId);
       } catch {
         setStep("error");
         setError({
@@ -171,6 +171,7 @@ export function usePayment(orderId: string): UsePaymentReturn {
       setBlockNumber(null);
 
       const amount = parseUnits(amountUsdc, USDC_DECIMALS);
+      const usdcConfig = getUsdcConfig(chainId);
 
       try {
         // Step 1: Check balance

@@ -50,6 +50,14 @@ describe("executeTextEcho", () => {
     expect(result.metadata!["order_id"]).toBe(TEST_ORDER_ID);
   });
 
+  it("should support transformed echoed output while keeping original text", async () => {
+    const result = await executeTextEcho(TEST_ORDER_ID, "Hello IVXP", "HELLO IVXP");
+    const parsed = JSON.parse(result.content as string);
+
+    expect(parsed.original_text).toBe("Hello IVXP");
+    expect(parsed.echoed_text).toBe("HELLO IVXP");
+  });
+
   it("should throw for empty description", async () => {
     await expect(executeTextEcho(TEST_ORDER_ID, "")).rejects.toThrow("description is required");
   });

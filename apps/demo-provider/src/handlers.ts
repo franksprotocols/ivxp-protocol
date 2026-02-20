@@ -6,10 +6,10 @@
  * `{ content: string | Uint8Array; content_type: string }`.
  * This module adapts our service implementations to that contract.
  *
- * LIMITATION: The original service request description is not persisted
- * on StoredOrder by the SDK. Handlers use a fallback description based
- * on the order metadata. For production use, consider extending the
- * order storage schema to include the original description field.
+ * Request input support: if the server passes a lookup callback via
+ * HandlerContext, handlers can recover original request input by orderId
+ * and generate richer deliverables (for example text transforms).
+ * Without context, handlers fall back to a default description.
  *
  * RATE LIMITING: Service execution rate limiting is handled at the HTTP
  * layer by Express middleware (see server.ts). The default is 100 requests
@@ -36,6 +36,12 @@ type ServiceHandler = (
   order: StoredOrder,
   params?: Record<string, unknown>,
 ) => Promise<{ content: string | Uint8Array; content_type: string }>;
+
+type TextTransform = "uppercase" | "lowercase" | "reverse";
+
+interface HandlerContext {
+  readonly getOrderInput?: (orderId: string) => unknown;
+}
 
 /** Regex for valid IVXP order IDs: ivxp-{uuid-v4}. */
 const ORDER_ID_REGEX =
@@ -66,60 +72,97 @@ function validateOrder(order: StoredOrder): void {
   }
 }
 
-/**
- * Text echo handler: delegates to the text-echo service implementation.
- *
- * LIMITATION: Uses the order's serviceType as the echo text since the original
- * description is not persisted on StoredOrder. See module-level documentation.
- */
-export const textEchoHandler: ServiceHandler = async (order) => {
-  try {
-    validateOrder(order);
+function applyTransform(text: string, transform?: TextTransform): string {
+  if (!transform) return text;
+  if (transform === "uppercase") return text.toUpperCase();
+  if (transform === "lowercase") return text.toLowerCase();
+  if (transform === "reverse") return text.split("").reverse().join("");
+  return text;
+}
 
-    // Fallback description since original is not available on StoredOrder
-    const description = `Demo ${order.serviceType} service for order ${order.orderId}`;
-    const result = await executeTextEcho(order.orderId, description);
-
-    return {
-      content: result.content,
-      content_type: result.contentType,
-    };
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Text echo handler failed: ${message}`);
+function parseOrderInput(raw: unknown): { text: string; transform?: TextTransform } | null {
+  if (!raw || typeof raw !== "object") return null;
+  const rec = raw as Record<string, unknown>;
+  if (typeof rec.text !== "string" || rec.text.trim().length === 0) {
+    return null;
   }
-};
+
+  const transform =
+    rec.transform === "uppercase" || rec.transform === "lowercase" || rec.transform === "reverse"
+      ? rec.transform
+      : undefined;
+
+  return { text: rec.text, transform };
+}
+
+function createTextEchoHandler(context?: HandlerContext): ServiceHandler {
+  return async (order) => {
+    try {
+      validateOrder(order);
+
+      const requestInput = context?.getOrderInput?.(order.orderId);
+      const parsedInput = parseOrderInput(requestInput);
+      const description =
+        parsedInput?.text ?? `Demo ${order.serviceType} service for order ${order.orderId}`;
+      const transformed = applyTransform(description, parsedInput?.transform);
+      const result = await executeTextEcho(order.orderId, description, transformed);
+
+      return {
+        content: result.content,
+        content_type: result.contentType,
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Text echo handler failed: ${message}`);
+    }
+  };
+}
+
+function createImageGenHandler(context?: HandlerContext): ServiceHandler {
+  return async (order) => {
+    try {
+      validateOrder(order);
+
+      const requestInput = context?.getOrderInput?.(order.orderId);
+      const parsedInput =
+        requestInput && typeof requestInput === "object"
+          ? (requestInput as Record<string, unknown>)
+          : null;
+      const prompt =
+        (parsedInput?.prompt && typeof parsedInput.prompt === "string"
+          ? parsedInput.prompt
+          : null) ??
+        (parsedInput?.text && typeof parsedInput.text === "string" ? parsedInput.text : null);
+      const description = prompt ?? `Demo ${order.serviceType} service for order ${order.orderId}`;
+      const result = await executeImageGen(order.orderId, description);
+
+      return {
+        content: result.content,
+        content_type: result.contentType,
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Image generation handler failed: ${message}`);
+    }
+  };
+}
 
 /**
- * Image generation handler: delegates to the image-gen service implementation.
- *
- * LIMITATION: Uses the order's serviceType as the prompt since the original
- * description is not persisted on StoredOrder. See module-level documentation.
+ * Default text echo handler used by unit tests and baseline provider setup.
  */
-export const imageGenHandler: ServiceHandler = async (order) => {
-  try {
-    validateOrder(order);
+export const textEchoHandler: ServiceHandler = createTextEchoHandler();
 
-    // Fallback description since original is not available on StoredOrder
-    const description = `Demo ${order.serviceType} service for order ${order.orderId}`;
-    const result = await executeImageGen(order.orderId, description);
-
-    return {
-      content: result.content,
-      content_type: result.contentType,
-    };
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Image generation handler failed: ${message}`);
-  }
-};
+/**
+ * Default image generation handler used by unit tests and baseline provider setup.
+ */
+export const imageGenHandler: ServiceHandler = createImageGenHandler();
 
 /**
  * Build a Map of service type -> handler for all demo services.
  */
-export function createServiceHandlers(): Map<string, ServiceHandler> {
+export function createServiceHandlers(context?: HandlerContext): Map<string, ServiceHandler> {
   return new Map<string, ServiceHandler>([
-    ["text_echo", textEchoHandler],
-    ["image_gen", imageGenHandler],
+    ["text_echo", createTextEchoHandler(context)],
+    ["image_gen", createImageGenHandler(context)],
   ]);
 }

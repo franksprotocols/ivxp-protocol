@@ -289,6 +289,57 @@ describe("GET /ivxp/download/:orderId (AC #1)", () => {
   });
 });
 
+describe("canonical /ivxp/orders/* endpoints", () => {
+  it("supports canonical delivery, status, and deliverable routes", async () => {
+    const quoteRes = await fetchJson("/ivxp/request", {
+      method: "POST",
+      body: JSON.stringify(
+        validServiceRequestBody({
+          service_request: {
+            type: "text_echo",
+            description: "Canonical route flow",
+            budget_usdc: 1,
+          },
+        }),
+      ),
+    });
+
+    expect(quoteRes.status).toBe(200);
+    const orderId = quoteRes.body["order_id"] as string;
+
+    const deliveryRes = await fetchJson(`/ivxp/orders/${orderId}/delivery`, {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: orderId,
+        payment: {
+          tx_hash: "0x" + "12".repeat(32),
+          network: "base-sepolia",
+        },
+        signature: {
+          message: `IVXP payment for order ${orderId}`,
+          sig: "0x" + "cd".repeat(65),
+          signer: TEST_ACCOUNTS.client.address,
+        },
+      }),
+    });
+
+    expect(deliveryRes.status).toBe(200);
+    expect(deliveryRes.body["status"]).toBe("accepted");
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const statusRes = await fetchJson(`/ivxp/orders/${orderId}`);
+    expect(statusRes.status).toBe(200);
+    expect(statusRes.body["order_id"]).toBe(orderId);
+    expect(statusRes.body["status"]).toBe("delivered");
+
+    const deliverableRes = await fetchJson(`/ivxp/orders/${orderId}/deliverable`);
+    expect(deliverableRes.status).toBe(200);
+    expect(deliverableRes.body["order_id"]).toBe(orderId);
+    expect(deliverableRes.body["content_hash"]).toBeTypeOf("string");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // AC #3: Complete order lifecycle (quote -> pay -> deliver)
 // ---------------------------------------------------------------------------
@@ -352,6 +403,54 @@ describe("complete order lifecycle (AC #3)", () => {
     expect(content).toContain("text_echo");
     expect(downloadRes.body["content_type"]).toBe("application/json");
     expect(downloadRes.body["content_hash"]).toBeTypeOf("string");
+  });
+
+  it("should preserve request input and return transformed text echo output", async () => {
+    const quoteRes = await fetchJson("/ivxp/request", {
+      method: "POST",
+      body: JSON.stringify(
+        validServiceRequestBody({
+          service_request: {
+            type: "text_echo",
+            description: JSON.stringify({ text: "Hello IVXP", transform: "uppercase" }),
+            budget_usdc: 1,
+          },
+        }),
+      ),
+    });
+
+    expect(quoteRes.status).toBe(200);
+    const orderId = quoteRes.body["order_id"] as string;
+
+    const deliveryRes = await fetchJson(`/ivxp/orders/${orderId}/delivery`, {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: orderId,
+        payment: {
+          tx_hash: "0x" + "ef".repeat(32),
+          network: "base-sepolia",
+        },
+        signature: {
+          message: `IVXP payment for order ${orderId}`,
+          sig: "0x" + "cd".repeat(65),
+          signer: TEST_ACCOUNTS.client.address,
+        },
+      }),
+    });
+
+    expect(deliveryRes.status).toBe(200);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const downloadRes = await fetchJson(`/ivxp/orders/${orderId}/deliverable`);
+    expect(downloadRes.status).toBe(200);
+
+    const deliverablePayload = JSON.parse(downloadRes.body["content"] as string) as Record<
+      string,
+      unknown
+    >;
+    expect(deliverablePayload["service_type"]).toBe("text_echo");
+    expect(deliverablePayload["original_text"]).toBe("Hello IVXP");
+    expect(deliverablePayload["echoed_text"]).toBe("HELLO IVXP");
   });
 });
 

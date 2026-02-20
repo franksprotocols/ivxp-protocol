@@ -3,34 +3,81 @@
  *
  * Provides the contract address, ABI subset, and decimal constant
  * needed for balance checks, allowance checks, approvals, and transfers.
- * The address is read from the NEXT_PUBLIC_USDC_ADDRESS environment variable.
+ * Address resolution priority:
+ * 1) NEXT_PUBLIC_USDC_ADDRESS (global override)
+ * 2) Chain-specific env var
+ * 3) Known Base USDC defaults
  */
 
 import { erc20Abi, type Address } from "viem";
+import { base, baseSepolia } from "wagmi/chains";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+const BASE_USDC_MAINNET = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const;
+const BASE_USDC_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as const;
+
+const KNOWN_USDC_BY_CHAIN: Readonly<Record<number, Address>> = {
+  [base.id]: BASE_USDC_MAINNET,
+  [baseSepolia.id]: BASE_USDC_SEPOLIA,
+};
+
+function getDefaultChainId(): number {
+  return process.env.NODE_ENV === "production" ? base.id : baseSepolia.id;
+}
+
+function getGlobalOverride(): Address | null {
+  const value = process.env.NEXT_PUBLIC_USDC_ADDRESS as Address | undefined;
+  if (!value || value === ZERO_ADDRESS) return null;
+  return value;
+}
+
+function getChainSpecificOverride(chainId: number): Address | null {
+  if (chainId === base.id) {
+    const value = process.env.NEXT_PUBLIC_USDC_ADDRESS_BASE_MAINNET as Address | undefined;
+    return value && value !== ZERO_ADDRESS ? value : null;
+  }
+
+  if (chainId === baseSepolia.id) {
+    const value = process.env.NEXT_PUBLIC_USDC_ADDRESS_BASE_SEPOLIA as Address | undefined;
+    return value && value !== ZERO_ADDRESS ? value : null;
+  }
+
+  return null;
+}
+
+/**
+ * Resolve USDC contract address for a given chain.
+ */
+export function getUsdcAddress(chainId: number = getDefaultChainId()): Address {
+  const globalOverride = getGlobalOverride();
+  if (globalOverride) return globalOverride;
+
+  const chainOverride = getChainSpecificOverride(chainId);
+  if (chainOverride) return chainOverride;
+
+  return KNOWN_USDC_BY_CHAIN[chainId] ?? ZERO_ADDRESS;
+}
 
 /**
  * USDC contract address on Base (Sepolia or Mainnet).
- * Falls back to zero address ONLY in test environments.
- * Throws at runtime if zero address is used outside of test/development.
+ * Uses environment overrides first, then known Base defaults.
  */
-export const USDC_ADDRESS: Address =
-  (process.env.NEXT_PUBLIC_USDC_ADDRESS as Address | undefined) ?? ZERO_ADDRESS;
+export const USDC_ADDRESS: Address = getUsdcAddress();
 
 /**
- * Validate that the USDC address is configured in non-test environments.
+ * Validate that the USDC address is configured for a target chain.
  * Called lazily before any contract interaction to avoid build-time errors.
  */
-export function assertUsdcConfigured(): void {
+export function assertUsdcConfigured(chainId?: number): void {
+  const resolvedAddress = getUsdcAddress(chainId);
   if (
-    USDC_ADDRESS === ZERO_ADDRESS &&
+    resolvedAddress === ZERO_ADDRESS &&
     typeof process !== "undefined" &&
     process.env.NODE_ENV !== "test" &&
     process.env.VITEST !== "true"
   ) {
     throw new Error(
-      "USDC contract address is not configured. Set NEXT_PUBLIC_USDC_ADDRESS environment variable.",
+      "USDC contract address is not configured for this chain.",
     );
   }
 }
@@ -50,6 +97,13 @@ export const EXPLORER_BASE_URL =
  * Uses the standard ERC-20 ABI which includes balanceOf, allowance,
  * approve, and transfer functions.
  */
+export function getUsdcConfig(chainId?: number) {
+  return {
+    address: getUsdcAddress(chainId),
+    abi: erc20Abi,
+  } as const;
+}
+
 export const usdcConfig = {
   address: USDC_ADDRESS,
   abi: erc20Abi,
