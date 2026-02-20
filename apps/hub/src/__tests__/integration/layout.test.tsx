@@ -108,9 +108,12 @@ describe("Layout Integration", () => {
       expect(screen.getByRole("navigation", { name: /footer/i })).toBeInTheDocument();
     });
 
-    it("renders internal links (Docs, Community)", () => {
+    it("renders external Docs and Community links", () => {
       renderWithProviders(<Footer />);
-      expect(screen.getByRole("link", { name: "Docs" })).toHaveAttribute("href", "/docs");
+      const docsLink = screen.getByRole("link", { name: /docs/i });
+      expect(docsLink).toHaveAttribute("href", "https://ivxp-docs.vercel.app");
+      expect(docsLink).toHaveAttribute("target", "_blank");
+      expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
       expect(screen.getByRole("link", { name: "Community" })).toHaveAttribute("href", "/community");
     });
 

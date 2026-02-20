@@ -1,3 +1,7 @@
+---
+title: Events
+---
+
 # Events
 
 The IVXP SDK includes a type-safe event system built on a lightweight `EventEmitter`. The `IVXPClient` extends `EventEmitter<SDKEventMap>` and emits events at each stage of the service flow.

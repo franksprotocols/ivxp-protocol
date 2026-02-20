@@ -1,3 +1,7 @@
+---
+title: Message Formats
+---
+
 # IVXP/1.0 Message Formats
 
 This document defines all request and response message structures for the IVXP/1.0 protocol. All wire protocol fields use `snake_case` for Python compatibility.

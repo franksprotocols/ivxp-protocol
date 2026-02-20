@@ -1,3 +1,7 @@
+---
+title: Signature Guide
+---
+
 # Signature Guide
 
 IVXP uses EIP-191 (`personal_sign`) for all cryptographic signatures. This guide covers signing, verification, and the IVXP message format.

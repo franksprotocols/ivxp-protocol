@@ -1,3 +1,7 @@
+---
+title: Quick Start Provider
+---
+
 # Quick Start: Provider
 
 This guide walks you through hosting an IVXP service provider in under 5 minutes.

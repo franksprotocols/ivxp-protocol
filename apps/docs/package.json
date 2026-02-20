@@ -1,0 +1,38 @@
+{
+  "name": "@ivxp/docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "IVXP Protocol Documentation Site (Fumadocs)",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "prebuild": "pnpm run generate-api-docs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --ignore-pattern .source --ignore-pattern .next",
+    "typecheck": "tsc --noEmit",
+    "generate-api-docs": "tsx scripts/generate-api-docs.ts"
+  },
+  "dependencies": {
+    "fumadocs-core": "^16.6.3",
+    "fumadocs-ui": "^16.6.3",
+    "fumadocs-mdx": "^14.2.7",
+    "fumadocs-openapi": "^10.3.6",
+    "next": "^16.1.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/mdx": "^2.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@tailwindcss/postcss": "^4.1.8",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.1.6",
+    "postcss": "^8.5.0",
+    "tailwindcss": "^4.1.8",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

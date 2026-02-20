@@ -1,10 +1,13 @@
-/**
- * Event Handling Example
- *
- * Demonstrates subscribing to SDK events for monitoring
- * the service request lifecycle.
- */
+---
+title: Event Handling
+description: Demonstrates subscribing to SDK events for monitoring the service request lifecycle using the IVXP client's event emitter.
+---
 
+# Event Handling
+
+Demonstrates subscribing to SDK events for monitoring the service request lifecycle.
+
+```typescript
 import { createIVXPClient, EventEmitter } from "@ivxp/sdk";
 
 async function main(): Promise<void> {
@@ -70,3 +73,4 @@ async function main(): Promise<void> {
 }
 
 main().catch(console.error);
+```

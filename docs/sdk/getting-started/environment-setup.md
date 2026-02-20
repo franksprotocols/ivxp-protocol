@@ -1,3 +1,7 @@
+---
+title: Environment Setup
+---
+
 # Environment Setup
 
 ## Wallet Setup

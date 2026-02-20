@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+.source/
+
+# Environment files
+.env*.local
+
+# OpenAPI-generated MDX content — regenerated at build time
+content/protocol/api/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# OS files
+.DS_Store

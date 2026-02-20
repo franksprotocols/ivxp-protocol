@@ -7,11 +7,14 @@ const INTERNAL_LINKS = [
   { href: "/marketplace", label: "Consumer" },
   { href: "/provider", label: "Provider" },
   { href: "/playground", label: "Developer" },
-  { href: "/docs", label: "Docs" },
   { href: "/community", label: "Community" },
 ] as const;
 
 const EXTERNAL_LINKS = [
+  {
+    href: "https://ivxp-docs.vercel.app",
+    label: "Docs",
+  },
   {
     href: "https://github.com/ivxp-protocol",
     label: "GitHub",

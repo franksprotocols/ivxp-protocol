@@ -102,6 +102,7 @@ CLAUDE.md
 # Project-specific ignores
 # ----------------------------------------
 PRD-IVXP-Protocol-v2.0.cn.md
+/@docs/
 
 # BMAD
 _bmad/*

@@ -1,3 +1,7 @@
+---
+title: README
+---
+
 # IVXP SDK Documentation
 
 > SDK Version: 0.1.0 | Last Updated: 2026-02-17
@@ -28,10 +32,10 @@ The `@ivxp/sdk` is a TypeScript SDK for the Intelligence Value Exchange Protocol
 
 ### Examples
 
-- [Basic Client](./examples/basic-client.ts) -- Minimal client example
-- [Basic Provider](./examples/basic-provider.ts) -- Minimal provider example
-- [Event Handling](./examples/event-handling.ts) -- Working with SDK events
-- [Error Recovery](./examples/error-recovery.ts) -- Handling errors gracefully
+- [Basic Client](./examples/basic-client.mdx) -- Minimal client example
+- [Basic Provider](./examples/basic-provider.mdx) -- Minimal provider example
+- [Event Handling](./examples/event-handling.mdx) -- Working with SDK events
+- [Error Recovery](./examples/error-recovery.mdx) -- Handling errors gracefully
 
 ## Architecture Overview
 
