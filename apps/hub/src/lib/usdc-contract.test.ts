@@ -48,7 +48,8 @@ describe("usdc-contract", () => {
   it("uses chain-specific override when global override is absent", async () => {
     setNodeEnv("development");
     delete process.env.NEXT_PUBLIC_USDC_ADDRESS;
-    process.env.NEXT_PUBLIC_USDC_ADDRESS_BASE_SEPOLIA = "0x2222222222222222222222222222222222222222";
+    process.env.NEXT_PUBLIC_USDC_ADDRESS_BASE_SEPOLIA =
+      "0x2222222222222222222222222222222222222222";
 
     const { getUsdcAddress } = await loadModule();
     expect(getUsdcAddress(baseSepolia.id)).toBe("0x2222222222222222222222222222222222222222");

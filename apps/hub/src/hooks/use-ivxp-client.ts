@@ -258,7 +258,11 @@ async function fetchOrderStatus(
   const payload = await safeJson(response);
   const parsed = OrderStatusResponseSchema.safeParse(payload);
   if (!parsed.success) {
-    throw createClientError("Provider returned invalid order status payload.", "INVALID_RESPONSE", false);
+    throw createClientError(
+      "Provider returned invalid order status payload.",
+      "INVALID_RESPONSE",
+      false,
+    );
   }
   return parsed.data;
 }
@@ -321,7 +325,11 @@ class HubIVXPClient implements IVXPClient {
     const raw = await safeJson(response);
     const parsed = parseQuoteResponse(raw, params.service_type);
     if (!parsed) {
-      throw createClientError("Provider returned invalid quote payload.", "INVALID_RESPONSE", false);
+      throw createClientError(
+        "Provider returned invalid quote payload.",
+        "INVALID_RESPONSE",
+        false,
+      );
     }
     return parsed;
   }

@@ -227,7 +227,9 @@ export function createServer(deps: ServerDependencies): ServerInstance {
         parseResult.data as unknown as ServiceRequest,
       );
 
-      const requestInput = parseRequestInputFromDescription(parseResult.data.service_request.description);
+      const requestInput = parseRequestInputFromDescription(
+        parseResult.data.service_request.description,
+      );
       orderInputById.set(quote.order_id, requestInput);
       if (orderInputById.size > MAX_ORDER_INPUT_CACHE_SIZE) {
         const oldestOrderId = orderInputById.keys().next().value;

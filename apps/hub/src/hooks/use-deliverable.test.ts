@@ -133,6 +133,9 @@ describe("useDeliverable", () => {
       await result.current.download();
     });
 
-    expect(mockDownloadDeliverable).toHaveBeenCalledWith("http://provider.custom:3001", "ord_ctx_1");
+    expect(mockDownloadDeliverable).toHaveBeenCalledWith(
+      "http://provider.custom:3001",
+      "ord_ctx_1",
+    );
   });
 });

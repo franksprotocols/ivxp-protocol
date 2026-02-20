@@ -13,8 +13,7 @@ function deliveryPayload() {
   return {
     order_id: "ord_123",
     payment: {
-      tx_hash:
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      tx_hash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       network: "base-sepolia" as const,
     },
     signature: {
@@ -83,9 +82,9 @@ describe("useIVXPClient", () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: "boom" }));
 
     const { result } = renderHook(() => useIVXPClient());
-    await expect(result.current.getOrderStatus("http://provider.test", "ord_123")).rejects.toMatchObject(
-      { code: "PROVIDER_UNAVAILABLE" },
-    );
+    await expect(
+      result.current.getOrderStatus("http://provider.test", "ord_123"),
+    ).rejects.toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

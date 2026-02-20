@@ -76,9 +76,7 @@ export function assertUsdcConfigured(chainId?: number): void {
     process.env.NODE_ENV !== "test" &&
     process.env.VITEST !== "true"
   ) {
-    throw new Error(
-      "USDC contract address is not configured for this chain.",
-    );
+    throw new Error("USDC contract address is not configured for this chain.");
   }
 }
 

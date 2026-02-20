@@ -124,7 +124,9 @@ export function useDeliverable(orderId: string): UseDeliverableReturn {
 
     try {
       const providerUrl =
-        order?.providerEndpointUrl ?? process.env.NEXT_PUBLIC_PROVIDER_URL ?? "http://localhost:3001";
+        order?.providerEndpointUrl ??
+        process.env.NEXT_PUBLIC_PROVIDER_URL ??
+        "http://localhost:3001";
       const response = await client.downloadDeliverable(providerUrl, orderId);
 
       // Verify content hash using shared utility

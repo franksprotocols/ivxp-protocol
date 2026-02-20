@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ServiceDetail } from "@/components/features/service";
-import {
-  formatServiceName,
-  getCanonicalServiceParams,
-} from "@/lib/api/services";
+import { formatServiceName, getCanonicalServiceParams } from "@/lib/api/services";
 import { resolveServiceDetail } from "@/lib/api/service-detail-resolver";
 
 interface CanonicalServiceDetailPageProps {
@@ -34,7 +31,9 @@ export function generateStaticParams() {
   }));
 }
 
-export default async function CanonicalServiceDetailPage({ params }: CanonicalServiceDetailPageProps) {
+export default async function CanonicalServiceDetailPage({
+  params,
+}: CanonicalServiceDetailPageProps) {
   const { serviceId, serviceType } = await params;
   const service = resolveServiceDetail(serviceId, serviceType);
 

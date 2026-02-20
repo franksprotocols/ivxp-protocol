@@ -26,7 +26,9 @@ export default function CommunityPage() {
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>1. Run a complete marketplace flow (quote → pay → sign → status → download).</p>
             <p>2. Report friction points, unclear copy, and missing protocol signals.</p>
-            <p>3. Share logs/screenshots with `order_id`, `tx_hash`, `status`, and `content_hash`.</p>
+            <p>
+              3. Share logs/screenshots with `order_id`, `tx_hash`, `status`, and `content_hash`.
+            </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Button asChild>
                 <a

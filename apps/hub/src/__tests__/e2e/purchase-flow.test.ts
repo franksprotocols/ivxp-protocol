@@ -254,7 +254,10 @@ describe("E2E: Complete Purchase Flow", () => {
       const providerBaseUrl = env!.mockProvider.baseUrl;
 
       mockRefs.ivxpClient.current.requestQuote.mockImplementation(
-        async (_providerUrl: string, params: { service_type: string; input: Record<string, unknown> }) => {
+        async (
+          _providerUrl: string,
+          params: { service_type: string; input: Record<string, unknown> },
+        ) => {
           const quote = await env!.mockProvider.requestQuote({
             service_type: params.service_type,
             input: params.input,
@@ -353,16 +356,22 @@ describe("E2E: Complete Purchase Flow", () => {
       const { result: orderStatusHook } = renderHook(() => useOrderStatus(quote!.order_id));
       expect(orderStatusHook.current.isPolling).toBe(true);
 
-      await waitFor(() => {
-        expect(mockRefs.ivxpClient.current.getOrderStatus).toHaveBeenCalledWith(
-          providerBaseUrl,
-          quote!.order_id,
-        );
-      }, { timeout: 5_000 });
+      await waitFor(
+        () => {
+          expect(mockRefs.ivxpClient.current.getOrderStatus).toHaveBeenCalledWith(
+            providerBaseUrl,
+            quote!.order_id,
+          );
+        },
+        { timeout: 5_000 },
+      );
 
-      await waitFor(() => {
-        expect(orderStatusHook.current.order?.status).toBe("delivered");
-      }, { timeout: 5_000 });
+      await waitFor(
+        () => {
+          expect(orderStatusHook.current.order?.status).toBe("delivered");
+        },
+        { timeout: 5_000 },
+      );
 
       // Download
       const { result: deliverableHook } = renderHook(() => useDeliverable(quote!.order_id));

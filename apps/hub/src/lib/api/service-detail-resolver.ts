@@ -21,7 +21,10 @@ function formatEstimatedTime(seconds: number): string | undefined {
   return `${seconds}s`;
 }
 
-export function resolveServiceDetail(providerId: string, serviceType: string): ServiceDetail | null {
+export function resolveServiceDetail(
+  providerId: string,
+  serviceType: string,
+): ServiceDetail | null {
   const canonical = getServiceByProviderAndType(providerId, serviceType);
   if (canonical) {
     return canonical;
@@ -49,7 +52,8 @@ export function resolveServiceDetail(providerId: string, serviceType: string): S
     provider_reputation: template?.provider_reputation,
     category: template?.category,
     tags: template?.tags ?? [],
-    estimated_time: template?.estimated_time ?? formatEstimatedTime(registryService.estimated_time_seconds),
+    estimated_time:
+      template?.estimated_time ?? formatEstimatedTime(registryService.estimated_time_seconds),
     input_schema: template?.input_schema ?? FALLBACK_INPUT_SCHEMA,
     output_schema: template?.output_schema ?? FALLBACK_OUTPUT_SCHEMA,
     examples: template?.examples,

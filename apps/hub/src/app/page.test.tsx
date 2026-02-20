@@ -48,7 +48,9 @@ describe("HomePage", () => {
 
   it("renders role section entries", () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getByRole("heading", { level: 2, name: /choose your path/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /choose your path/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /open marketplace/i })).toHaveAttribute(
       "href",
       "/marketplace",

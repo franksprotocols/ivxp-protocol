@@ -161,6 +161,8 @@ describe("ServiceActions", () => {
     await user.click(screen.getByTestId("mock-quote-success"));
 
     expect(onQuoteReceived).toHaveBeenCalledWith(expect.objectContaining({ order_id: "ord_123" }));
-    expect(screen.queryByText("Fill in the details below to request a quote for this service.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Fill in the details below to request a quote for this service."),
+    ).not.toBeInTheDocument();
   });
 });
