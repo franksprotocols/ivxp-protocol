@@ -66,6 +66,32 @@ function getClientIp(request: NextRequest): string {
  * - Referrer-Policy: Limits referrer information
  * - Permissions-Policy: Restricts browser features
  */
+function resolveAllowedConnectOrigins(): string {
+  const sources = new Set<string>(["'self'", "https:"]);
+
+  if (process.env.NODE_ENV !== "production") {
+    sources.add("http://localhost:3001");
+    sources.add("http://127.0.0.1:3001");
+  }
+
+  for (const envKey of ["NEXT_PUBLIC_DEMO_PROVIDER_URL", "NEXT_PUBLIC_PROVIDER_URL"] as const) {
+    const value = process.env[envKey];
+    if (!value) continue;
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        sources.add(parsed.origin);
+      }
+    } catch {
+      // Ignore invalid URLs and keep strict defaults.
+    }
+  }
+
+  return Array.from(sources).join(" ");
+}
+
+const CONNECT_SRC = resolveAllowedConnectOrigins();
+
 const SECURITY_HEADERS: Record<string, string> = {
   "Content-Security-Policy":
     "default-src 'self'; " +
@@ -73,7 +99,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "style-src 'self' 'unsafe-inline'; " +
     "img-src 'self' data: https:; " +
     "font-src 'self' data:; " +
-    "connect-src 'self' https:; " +
+    `connect-src ${CONNECT_SRC}; ` +
     "frame-ancestors 'none'; " +
     "base-uri 'self'; " +
     "form-action 'self'",

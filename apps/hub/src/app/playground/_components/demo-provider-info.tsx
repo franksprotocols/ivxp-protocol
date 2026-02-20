@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { ServiceDetail } from "@/lib/types/service";
+import { MOCK_SERVICE_DETAILS } from "@/lib/mock-data/service-details";
 
 type ConnectionStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -14,8 +15,54 @@ interface DemoProviderInfoProps {
 }
 
 interface CatalogResponse {
-  readonly services: readonly ServiceDetail[];
-  readonly provider_address: string;
+  readonly services?: readonly Record<string, unknown>[];
+  readonly provider_address?: string;
+  readonly provider_name?: string;
+}
+
+function resolveServiceType(service: Record<string, unknown>): string | null {
+  const serviceType = service["service_type"];
+  if (typeof serviceType === "string" && serviceType.length > 0) return serviceType;
+  const type = service["type"];
+  if (typeof type === "string" && type.length > 0) return type;
+  return null;
+}
+
+function resolvePriceUsdc(
+  service: Record<string, unknown>,
+  fallbackPrice: string | undefined,
+): string {
+  const priceUsdc = service["price_usdc"];
+  if (typeof priceUsdc === "string" && priceUsdc.length > 0) return priceUsdc;
+  if (typeof priceUsdc === "number" && Number.isFinite(priceUsdc) && priceUsdc >= 0) {
+    return priceUsdc.toFixed(2);
+  }
+
+  const basePrice = service["base_price_usdc"];
+  if (typeof basePrice === "number" && Number.isFinite(basePrice) && basePrice >= 0) {
+    return basePrice.toFixed(2);
+  }
+
+  return fallbackPrice ?? "0.10";
+}
+
+function toServiceDetails(rawServices: readonly Record<string, unknown>[]): readonly ServiceDetail[] {
+  const details: ServiceDetail[] = [];
+
+  for (const rawService of rawServices) {
+    const serviceType = resolveServiceType(rawService);
+    if (!serviceType) continue;
+
+    const template = MOCK_SERVICE_DETAILS.find((service) => service.service_type === serviceType);
+    if (!template) continue;
+
+    details.push({
+      ...template,
+      price_usdc: resolvePriceUsdc(rawService, template.price_usdc),
+    });
+  }
+
+  return details;
 }
 
 /**
@@ -45,7 +92,7 @@ async function fetchCatalog(
   signal: AbortSignal,
 ): Promise<{ services: readonly ServiceDetail[]; error: string | null }> {
   try {
-    const response = await fetch(`${url}/catalog`, {
+    const response = await fetch(`${url}/ivxp/catalog`, {
       signal,
     });
     if (!response.ok) {
@@ -55,7 +102,8 @@ async function fetchCatalog(
       };
     }
     const data = (await response.json()) as CatalogResponse;
-    return { services: data.services ?? [], error: null };
+    const rawServices = Array.isArray(data.services) ? data.services : [];
+    return { services: toServiceDetails(rawServices), error: null };
   } catch (err) {
     return { services: [], error: classifyError(err) };
   }

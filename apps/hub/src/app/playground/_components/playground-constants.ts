@@ -1,5 +1,5 @@
 export const DEMO_PROVIDER_URL =
-  process.env.NEXT_PUBLIC_DEMO_PROVIDER_URL ?? "https://demo-provider.railway.app";
+  process.env.NEXT_PUBLIC_DEMO_PROVIDER_URL ?? "http://localhost:3001";
 
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
 
