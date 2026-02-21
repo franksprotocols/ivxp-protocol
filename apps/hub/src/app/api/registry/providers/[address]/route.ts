@@ -34,24 +34,32 @@ export async function GET(
     );
   }
 
-  const allProviders = loadProviders();
-  const provider = allProviders.find(
-    (p) => p.provider_address.toLowerCase() === address.toLowerCase(),
-  );
+  try {
+    const allProviders = loadProviders();
+    const provider = allProviders.find(
+      (p) => p.provider_address.toLowerCase() === address.toLowerCase(),
+    );
 
-  if (!provider) {
-    return NextResponse.json(
-      {
-        error: {
-          code: "PROVIDER_NOT_FOUND",
-          message: "No provider registered with this wallet address.",
+    if (!provider) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "PROVIDER_NOT_FOUND",
+            message: "No provider registered with this wallet address.",
+          },
         },
-      },
-      { status: 404 },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ provider }, { status: 200 });
+  } catch (error) {
+    logError("[Registry API] GET /providers/[address] error", error, { address });
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred." } },
+      { status: 500 },
     );
   }
-
-  return NextResponse.json({ provider }, { status: 200 });
 }
 
 export async function PUT(

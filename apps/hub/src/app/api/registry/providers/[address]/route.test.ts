@@ -123,6 +123,19 @@ describe("GET /api/registry/providers/[address]", () => {
     expect(response.status).toBe(200);
     expect(body.provider).toBeDefined();
   });
+
+  it("returns 500 with INTERNAL_ERROR when provider loading fails", async () => {
+    const { loadProviders } = await import("@/lib/registry/loader");
+    (loadProviders as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error("registry unavailable");
+    });
+
+    const response = await GET(createGetRequest(validAddress), routeParams);
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error.code).toBe("INTERNAL_ERROR");
+  });
 });
 
 describe("PUT /api/registry/providers/[address]", () => {

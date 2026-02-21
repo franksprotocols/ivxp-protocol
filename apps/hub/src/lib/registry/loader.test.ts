@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { loadProviders, clearProviderCache } from "./loader";
 
 describe("loadProviders", () => {
@@ -54,6 +54,20 @@ describe("loadProviders", () => {
 
     for (const status of statuses) {
       expect(["active", "inactive"]).toContain(status);
+    }
+  });
+
+  it("falls back to bundled registry data when runtime files are unavailable", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue("/tmp/ivxp-no-registry-files");
+
+    try {
+      const providers = loadProviders();
+      expect(providers).toBeInstanceOf(Array);
+      expect(providers.length).toBeGreaterThan(0);
+    } finally {
+      cwdSpy.mockRestore();
+      vi.unstubAllEnvs();
     }
   });
 });
