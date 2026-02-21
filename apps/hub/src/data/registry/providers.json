@@ -88,7 +88,7 @@
       "provider_address": "0xE3b065B016bF9A914D488E413ACBF8Ba7d0e8Feb",
       "name": "text_echo",
       "description": "text_echotext_echotext_echotext_echo",
-      "endpoint_url": "http://localhost:3001",
+      "endpoint_url": "https://ivxp-demo-provider-production.up.railway.app",
       "services": [
         {
           "service_type": "text_echo",
