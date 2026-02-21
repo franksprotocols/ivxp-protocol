@@ -7,7 +7,7 @@
 # schema creation.
 #
 # Usage:
-#   ./scripts/db/init-provider-db.sh [--remote] [--db-path PATH]
+#   ./scripts/db/init-provider-db.sh [--remote] [--db-path PATH] [--service NAME]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../utils/common.sh"
@@ -15,17 +15,20 @@ source "$SCRIPT_DIR/../utils/common.sh"
 PROJECT_ROOT="$(find_project_root)"
 REMOTE=0
 DB_PATH=""
+RAILWAY_SERVICE="${RAILWAY_SERVICE:-demo-provider}"
 
 for arg in "$@"; do
   case "$arg" in
     --remote)    REMOTE=1 ;;
     --db-path=*) DB_PATH="${arg#*=}" ;;
+    --service=*) RAILWAY_SERVICE="${arg#*=}" ;;
     --help|-h)
-      echo "Usage: init-provider-db.sh [--remote] [--db-path=PATH]"
+      echo "Usage: init-provider-db.sh [--remote] [--db-path=PATH] [--service=NAME]"
       echo ""
       echo "Options:"
       echo "  --remote       Run migration on Railway (via railway run)"
       echo "  --db-path=PATH Custom database file path"
+      echo "  --service=NAME Railway service name (default: demo-provider)"
       exit 0
       ;;
   esac
@@ -33,11 +36,11 @@ done
 
 if [ "$REMOTE" = "1" ]; then
   require_command "railway" "npm i -g @railway/cli"
-  log_info "Initializing database on Railway..."
+  log_info "Initializing database on Railway service: $RAILWAY_SERVICE"
 
   # The provider auto-creates the schema on startup via initializeDatabase().
   # We trigger a health check to confirm the DB is ready.
-  run_cmd railway run --service demo-provider -- node -e 'console.log("Database initialization triggered via provider startup."); process.exit(0);'
+  run_cmd railway run --service "$RAILWAY_SERVICE" -- node -e 'console.log("Database initialization triggered via provider startup."); process.exit(0);'
   log_success "Remote database initialization complete"
 else
   cd "$PROJECT_ROOT/apps/demo-provider"

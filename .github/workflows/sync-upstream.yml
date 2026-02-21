@@ -1,0 +1,53 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync fork default branch from upstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.repository != 'franksprotocols/ivxp-protocol'
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Configure upstream remote
+        run: |
+          git remote add upstream https://github.com/franksprotocols/ivxp-protocol.git 2>/dev/null || true
+          git remote set-url upstream https://github.com/franksprotocols/ivxp-protocol.git
+          git fetch upstream --prune --tags
+
+      - name: Fast-forward default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git checkout "${DEFAULT_BRANCH}"
+
+          if ! git merge --ff-only "upstream/${DEFAULT_BRANCH}"; then
+            echo "::warning::Cannot fast-forward ${DEFAULT_BRANCH}. Branch contains local-only commits or diverged history."
+            echo "::warning::Resolve manually, then rerun this workflow."
+            exit 0
+          fi
+
+          if git diff --quiet "origin/${DEFAULT_BRANCH}" "${DEFAULT_BRANCH}"; then
+            echo "No upstream updates."
+            exit 0
+          fi
+
+          git push origin "${DEFAULT_BRANCH}"
+          echo "Synced ${DEFAULT_BRANCH} from upstream."
