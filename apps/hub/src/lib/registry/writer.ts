@@ -1,9 +1,17 @@
-import { readFileSync, writeFileSync, renameSync, unlinkSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import {
+  readFileSync,
+  writeFileSync,
+  renameSync,
+  unlinkSync,
+  existsSync,
+  mkdirSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import * as lockfile from "proper-lockfile";
 import type { RegistryProviderWire } from "./types";
-import { clearProviderCache } from "./loader";
+import { clearProviderCache, loadProviders } from "./loader";
 import { clearAggregatorCache } from "./service-aggregator";
 
 interface RegistryData {
@@ -25,7 +33,53 @@ const LOCK_OPTIONS = {
   stale: LOCK_STALE_MS,
 } as const;
 
+const RUNTIME_REGISTRY_FILE_PATH = join(tmpdir(), "ivxp-registry", "providers.json");
+
+function getReadableRegistrySeedPath(): string | null {
+  const cwd = process.cwd();
+  const candidates = [
+    join(cwd, ".next", "server", "data", "registry", "providers.json"),
+    join(cwd, "apps", "hub", ".next", "server", "data", "registry", "providers.json"),
+    join(cwd, "src", "data", "registry", "providers.json"),
+    join(cwd, "apps", "hub", "src", "data", "registry", "providers.json"),
+  ];
+
+  for (const path of candidates) {
+    if (existsSync(path)) {
+      return path;
+    }
+  }
+
+  return null;
+}
+
+function ensureRuntimeRegistryFile(): string {
+  if (existsSync(RUNTIME_REGISTRY_FILE_PATH)) {
+    return RUNTIME_REGISTRY_FILE_PATH;
+  }
+
+  mkdirSync(dirname(RUNTIME_REGISTRY_FILE_PATH), { recursive: true });
+
+  const seedPath = getReadableRegistrySeedPath();
+  if (seedPath) {
+    const seedRaw = readFileSync(seedPath, "utf-8");
+    writeFileSync(RUNTIME_REGISTRY_FILE_PATH, seedRaw, "utf-8");
+    return RUNTIME_REGISTRY_FILE_PATH;
+  }
+
+  const fallbackData: RegistryData = {
+    providers: loadProviders(),
+  };
+  writeFileSync(RUNTIME_REGISTRY_FILE_PATH, JSON.stringify(fallbackData, null, 2), "utf-8");
+  return RUNTIME_REGISTRY_FILE_PATH;
+}
+
 function getRegistryFilePath(): string {
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    // Vercel server runtime bundle is read-only; use /tmp for mutable registry writes.
+    return ensureRuntimeRegistryFile();
+  }
+
   return join(process.cwd(), "src", "data", "registry", "providers.json");
 }
 

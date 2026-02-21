@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import bundledRegistryData from "@/data/registry/providers.json";
 import type { RegistryProviderWire } from "./types";
@@ -8,6 +9,7 @@ export interface RegistryData {
 }
 
 let cachedProviders: RegistryProviderWire[] | null = null;
+const RUNTIME_REGISTRY_FILE_PATH = join(tmpdir(), "ivxp-registry", "providers.json");
 
 /**
  * Candidate locations for providers.json.
@@ -18,6 +20,7 @@ let cachedProviders: RegistryProviderWire[] | null = null;
 function getProvidersFileCandidates(): string[] {
   const cwd = process.cwd();
   const candidates = [
+    RUNTIME_REGISTRY_FILE_PATH,
     join(cwd, ".next", "server", "data", "registry", "providers.json"),
     join(cwd, "apps", "hub", ".next", "server", "data", "registry", "providers.json"),
     join(cwd, "src", "data", "registry", "providers.json"),
