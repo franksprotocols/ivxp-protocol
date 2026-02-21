@@ -26,6 +26,27 @@ const DEFAULT_DB_PATH = "./orders.db";
 
 /** Default order TTL: 7 days in seconds. */
 const DEFAULT_ORDER_TTL_SECONDS = 7 * 24 * 60 * 60;
+const DEFAULT_CORS_ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://ivxp-protocol.vercel.app",
+] as const;
+
+function normalizeCorsOrigin(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return "";
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.origin;
+    }
+  } catch {
+    // Fall through to best-effort normalization for malformed entries.
+  }
+
+  return trimmed.replace(/\/+$/, "");
+}
 
 /**
  * Validated configuration for the demo provider.
@@ -68,11 +89,15 @@ export function loadConfig(): ProviderConfig {
   }
 
   // CORS_ALLOWED_ORIGINS (optional, comma-separated)
-  const rawOrigins = process.env["CORS_ALLOWED_ORIGINS"] ?? "http://localhost:3000";
-  const corsAllowedOrigins = rawOrigins
-    .split(",")
-    .map((o) => o.trim())
-    .filter((o) => o.length > 0);
+  const rawOrigins = process.env["CORS_ALLOWED_ORIGINS"] ?? DEFAULT_CORS_ALLOWED_ORIGINS.join(",");
+  const corsAllowedOrigins = Array.from(
+    new Set(
+      rawOrigins
+        .split(",")
+        .map((origin) => normalizeCorsOrigin(origin))
+        .filter((origin) => origin.length > 0),
+    ),
+  );
 
   // LOG_LEVEL (optional, default "info")
   const rawLogLevel = (process.env["LOG_LEVEL"] ?? "info") as LogLevel;

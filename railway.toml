@@ -12,4 +12,5 @@ restartPolicyMaxRetries = 3
 [deploy.envVars]
 PORT = "3001"
 NODE_ENV = "production"
+CORS_ALLOWED_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000,https://ivxp-protocol.vercel.app"
 # PROVIDER_PRIVATE_KEY must be set via Railway dashboard (secret)

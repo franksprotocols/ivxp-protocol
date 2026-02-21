@@ -33,7 +33,11 @@ describe("loadConfig", () => {
     expect(config.port).toBe(3001);
     expect(config.logLevel).toBe("info");
     expect(config.network).toBe("base-sepolia");
-    expect(config.corsAllowedOrigins).toEqual(["http://localhost:3000"]);
+    expect(config.corsAllowedOrigins).toEqual([
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://ivxp-protocol.vercel.app",
+    ]);
     expect(config.rateLimitMax).toBe(100);
     expect(config.rateLimitWindowMs).toBe(60_000);
   });
@@ -63,6 +67,17 @@ describe("loadConfig", () => {
 
     const config = loadConfig();
     expect(config.corsAllowedOrigins).toEqual(["http://a.com", "http://b.com"]);
+  });
+
+  it("should normalize CORS origins with trailing slashes and dedupe entries", () => {
+    vi.stubEnv("PROVIDER_PRIVATE_KEY", VALID_KEY);
+    vi.stubEnv(
+      "CORS_ALLOWED_ORIGINS",
+      "https://ivxp-protocol.vercel.app/, https://ivxp-protocol.vercel.app",
+    );
+
+    const config = loadConfig();
+    expect(config.corsAllowedOrigins).toEqual(["https://ivxp-protocol.vercel.app"]);
   });
 
   it("should accept custom rate limit values", () => {
