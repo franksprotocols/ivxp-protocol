@@ -112,6 +112,21 @@ describe("DemoProviderInfo", () => {
     });
   });
 
+  it("normalizes provider URL when protocol is missing", async () => {
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ services: [] }), { status: 200 }));
+
+    render(<DemoProviderInfo url="demo-provider.test" />);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://demo-provider.test/ivxp/catalog",
+        expect.any(Object),
+      );
+    });
+    expect(screen.getByText("https://demo-provider.test")).toBeInTheDocument();
+  });
+
   it("maps minimal service catalog payload to playable service details", async () => {
     const onCatalogLoaded = vi.fn();
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(

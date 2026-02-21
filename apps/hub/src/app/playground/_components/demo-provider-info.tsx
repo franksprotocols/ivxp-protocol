@@ -20,6 +20,18 @@ interface CatalogResponse {
   readonly provider_name?: string;
 }
 
+function normalizeProviderUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+
+  const hasProtocol = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmed);
+  if (hasProtocol) return trimmed.replace(/\/+$/, "");
+
+  const isLocalhost = /^(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(trimmed);
+  const prefix = isLocalhost ? "http://" : "https://";
+  return `${prefix}${trimmed}`.replace(/\/+$/, "");
+}
+
 function resolveServiceType(service: Record<string, unknown>): string | null {
   const serviceType = service["service_type"];
   if (typeof serviceType === "string" && serviceType.length > 0) return serviceType;
@@ -112,6 +124,7 @@ async function fetchCatalog(
 }
 
 export function DemoProviderInfo({ url, onCatalogLoaded }: DemoProviderInfoProps) {
+  const normalizedUrl = normalizeProviderUrl(url);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [services, setServices] = useState<readonly ServiceDetail[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -122,7 +135,7 @@ export function DemoProviderInfo({ url, onCatalogLoaded }: DemoProviderInfoProps
     setStatus("connecting");
     setErrorMessage(null);
 
-    fetchCatalog(url, controller.signal).then(({ services: fetched, error }) => {
+    fetchCatalog(normalizedUrl, controller.signal).then(({ services: fetched, error }) => {
       if (cancelled) return;
       if (error) {
         setStatus("error");
@@ -139,7 +152,7 @@ export function DemoProviderInfo({ url, onCatalogLoaded }: DemoProviderInfoProps
       controller.abort();
     };
     // onCatalogLoaded intentionally excluded to avoid re-fetch loops
-  }, [url]);
+  }, [normalizedUrl]);
 
   return (
     <Card data-testid="demo-provider-info">
@@ -148,7 +161,7 @@ export function DemoProviderInfo({ url, onCatalogLoaded }: DemoProviderInfoProps
           Demo Provider
           <StatusIndicator status={status} />
         </CardTitle>
-        <CardDescription className="break-all">{url}</CardDescription>
+        <CardDescription className="break-all">{normalizedUrl || url}</CardDescription>
       </CardHeader>
       <CardContent>
         {status === "connecting" && (
