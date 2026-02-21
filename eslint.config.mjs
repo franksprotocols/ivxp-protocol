@@ -47,6 +47,7 @@ export default tseslint.config(
       "**/dist/**",
       "**/node_modules/**",
       "**/.next/**",
+      "**/.source/**",
       "**/coverage/**",
       "_bmad/**",
       "_bmad-output/**",

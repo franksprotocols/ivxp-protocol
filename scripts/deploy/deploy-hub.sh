@@ -42,11 +42,17 @@ done
 log_info "Deploying IVXP Hub to Vercel ($ENVIRONMENT)"
 
 # ── Prerequisites ───────────────────────────────────────────────────
-require_command "vercel" "npm i -g vercel"
 require_command "pnpm" "npm i -g pnpm"
 require_env_var "VERCEL_TOKEN" "Vercel API token"
 require_env_var "VERCEL_ORG_ID" "Vercel organization ID"
 require_env_var "VERCEL_PROJECT_ID" "Vercel project ID"
+
+# Prefer global CLI; fall back to temporary CLI to avoid hard dependency.
+VERCEL_CMD=("vercel")
+if ! command -v vercel >/dev/null 2>&1; then
+  log_warn "'vercel' not found globally, using pnpm dlx vercel@latest (engine-strict disabled for this command)"
+  VERCEL_CMD=("env" "npm_config_engine_strict=false" "pnpm" "dlx" "vercel@latest")
+fi
 
 cd "$PROJECT_ROOT"
 
@@ -66,11 +72,24 @@ if [ "$ENVIRONMENT" = "production" ]; then
 fi
 
 log_info "Deploying to Vercel..."
-DEPLOY_OUTPUT=$(run_cmd vercel "${VERCEL_ARGS[@]}" 2>&1)
-DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | tail -1 | grep -oE 'https://[a-zA-Z0-9.-]+\.vercel\.app' | head -1)
+set +e
+DEPLOY_OUTPUT=$(run_cmd "${VERCEL_CMD[@]}" "${VERCEL_ARGS[@]}" 2>&1)
+DEPLOY_EXIT_CODE=$?
+set -e
+
+if [ -n "$DEPLOY_OUTPUT" ]; then
+  echo "$DEPLOY_OUTPUT"
+fi
+
+if [ "$DEPLOY_EXIT_CODE" -ne 0 ]; then
+  log_error "Vercel deployment command failed (exit code: $DEPLOY_EXIT_CODE)"
+  exit "$DEPLOY_EXIT_CODE"
+fi
 
 if [ "$DRY_RUN" = "1" ]; then
   DEPLOY_URL="https://dry-run.vercel.app"
+else
+  DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.vercel\.app' | head -1 || true)
 fi
 
 if [ -z "$DEPLOY_URL" ]; then

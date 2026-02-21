@@ -59,6 +59,7 @@ function bashSyntaxCheck(relativePath: string): boolean {
 const EXPECTED_SCRIPTS = [
   "deploy/deploy-hub.sh",
   "deploy/deploy-provider.sh",
+  "deploy/sync-provider-env.sh",
   "deploy/setup-env.sh",
   "deploy/rollback.sh",
   "health/check-hub.sh",
@@ -218,6 +219,16 @@ describe("Deployment Scripts: deploy-provider.sh", () => {
     expect(content).toContain("--skip-migrate");
   });
 
+  it("supports --service flag", () => {
+    expect(content).toContain("--service=");
+    expect(content).toContain("RAILWAY_SERVICE");
+  });
+
+  it("supports --env-file flag", () => {
+    expect(content).toContain("--env-file=");
+    expect(content).toContain("PROVIDER_ENV_FILE");
+  });
+
   it("runs database initialization", () => {
     expect(content).toContain("init-provider-db.sh");
   });
@@ -229,6 +240,32 @@ describe("Deployment Scripts: deploy-provider.sh", () => {
 
   it("shows help with --help flag", () => {
     const help = runHelp("deploy/deploy-provider.sh");
+    expect(help).toContain("Usage");
+  });
+});
+
+describe("Deployment Scripts: sync-provider-env.sh", () => {
+  const content = readScript("deploy/sync-provider-env.sh");
+
+  it("supports --env-file flag", () => {
+    expect(content).toContain("--env-file=");
+  });
+
+  it("supports --service flag", () => {
+    expect(content).toContain("--service=");
+  });
+
+  it("uses railway variable set", () => {
+    expect(content).toContain("railway variable set");
+  });
+
+  it("validates PROVIDER_PRIVATE_KEY format", () => {
+    expect(content).toContain("PROVIDER_PRIVATE_KEY");
+    expect(content).toContain("0x-prefixed");
+  });
+
+  it("shows help with --help flag", () => {
+    const help = runHelp("deploy/sync-provider-env.sh");
     expect(help).toContain("Usage");
   });
 });
@@ -291,6 +328,11 @@ describe("Deployment Scripts: rollback.sh", () => {
 
   it("supports --deployment-id flag", () => {
     expect(content).toContain("--deployment-id");
+  });
+
+  it("supports --service flag for provider rollback", () => {
+    expect(content).toContain("--service=");
+    expect(content).toContain("RAILWAY_SERVICE");
   });
 
   it("requires --target argument", () => {
