@@ -11,6 +11,10 @@ password.txt
 .env
 .env.*
 !.env.example
+# Production env files may contain real private keys — never commit
+.env.production
+.env.local
+.env.staging
 
 # ----------------------------------------
 # Node.js / TypeScript
@@ -97,6 +101,12 @@ ivxp-orders.json
 .agent/*
 AGENTS.md
 CLAUDE.md
+
+# ----------------------------------------
+# Internal scripts (deployment, AI workflows, devops tooling)
+# Not intended for public contributors
+# ----------------------------------------
+scripts/
 
 # ----------------------------------------
 # Project-specific ignores
