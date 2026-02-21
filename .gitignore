@@ -113,6 +113,8 @@ scripts/
 # ----------------------------------------
 PRD-IVXP-Protocol-v2.0.cn.md
 /@docs/
+# Internal AI workflow reference material (not for public contributors)
+docs/knowledge-reference/
 
 # BMAD
 _bmad/*
