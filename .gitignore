@@ -11,6 +11,10 @@ password.txt
 .env
 .env.*
 !.env.example
+# Production env files may contain real private keys — never commit
+.env.production
+.env.local
+.env.staging
 
 # ----------------------------------------
 # Node.js / TypeScript
@@ -99,10 +103,18 @@ AGENTS.md
 CLAUDE.md
 
 # ----------------------------------------
+# Internal scripts (deployment, AI workflows, devops tooling)
+# Not intended for public contributors
+# ----------------------------------------
+scripts/
+
+# ----------------------------------------
 # Project-specific ignores
 # ----------------------------------------
 PRD-IVXP-Protocol-v2.0.cn.md
 /@docs/
+# Internal AI workflow reference material (not for public contributors)
+docs/knowledge-reference/
 
 # BMAD
 _bmad/*
