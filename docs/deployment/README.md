@@ -143,19 +143,19 @@ Set in Vercel Dashboard Project Settings -> Environment Variables.
 
 Set in Railway service variables.
 
-| Variable               | Required | Default                 | Validation                       |
-| ---------------------- | -------- | ----------------------- | -------------------------------- |
-| `PORT`                 | Yes      | `3001`                  | integer `1..65535`               |
-| `PROVIDER_PRIVATE_KEY` | Yes      | none                    | `0x` + 64 hex chars              |
-| `NETWORK`              | Yes      | `base-sepolia`          | `base-mainnet` or `base-sepolia` |
-| `NODE_ENV`             | Yes      | `development`           | use `production` on Railway      |
-| `PROVIDER_NAME`        | No       | `IVXP Demo Provider`    | string                           |
-| `CORS_ALLOWED_ORIGINS` | No       | `http://localhost:3000` | comma-separated origins          |
+| Variable               | Required | Default                 | Validation                                         |
+| ---------------------- | -------- | ----------------------- | -------------------------------------------------- |
+| `PORT`                 | Yes      | `3001`                  | integer `1..65535`                                 |
+| `PROVIDER_PRIVATE_KEY` | Yes      | none                    | `0x` + 64 hex chars                                |
+| `NETWORK`              | Yes      | `base-sepolia`          | `base-mainnet` or `base-sepolia`                   |
+| `NODE_ENV`             | Yes      | `development`           | use `production` on Railway                        |
+| `PROVIDER_NAME`        | No       | `IVXP Demo Provider`    | string                                             |
+| `CORS_ALLOWED_ORIGINS` | No       | `http://localhost:3000` | comma-separated origins                            |
 | `LOG_LEVEL`            | No       | `info`                  | one of: `fatal,error,warn,info,debug,trace,silent` |
-| `RATE_LIMIT_MAX`       | No       | `100`                   | positive integer                 |
-| `RATE_LIMIT_WINDOW_MS` | No       | `60000`                 | integer >= `1000`                |
-| `DB_PATH`              | No       | `./orders.db`           | file path or `:memory:`          |
-| `ORDER_TTL_SECONDS`    | No       | `604800`                | integer >= `60`                  |
+| `RATE_LIMIT_MAX`       | No       | `100`                   | positive integer                                   |
+| `RATE_LIMIT_WINDOW_MS` | No       | `60000`                 | integer >= `1000`                                  |
+| `DB_PATH`              | No       | `./orders.db`           | file path or `:memory:`                            |
+| `ORDER_TTL_SECONDS`    | No       | `604800`                | integer >= `60`                                    |
 
 Recommended provider env file example:
 
