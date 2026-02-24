@@ -3,15 +3,13 @@ stateDiagram-v2
     quoted --> paid : payment verified on-chain
     paid --> processing : delivery accepted (POST /ivxp/deliver)
     processing --> delivered : deliverable ready (P2P push or store)
-    processing --> delivery_failed : processing error or push failure
+    processing --> delivery_failed : push failure after deliverable creation
 
     delivered --> confirmed : client signs confirmation (IVXP/1.1)
     confirmed --> [*]
 
     quoted --> expired : TTL exceeded (payment_timeout)
     paid --> refunded : payment verification failed post-acceptance
-    delivery_failed --> delivered : retry delivery / client downloads
-
     expired --> [*]
     refunded --> [*]
     delivered --> [*]

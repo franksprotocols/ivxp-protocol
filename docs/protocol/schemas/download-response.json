@@ -11,7 +11,8 @@
     "order_id",
     "status",
     "provider_agent",
-    "deliverable"
+    "deliverable",
+    "content_hash"
   ],
   "properties": {
     "protocol": {

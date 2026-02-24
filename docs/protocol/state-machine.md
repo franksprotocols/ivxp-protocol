@@ -14,14 +14,13 @@ stateDiagram-v2
     quoted --> paid : payment verified on-chain
     paid --> processing : delivery accepted (POST /ivxp/deliver)
     processing --> delivered : deliverable ready
-    processing --> delivery_failed : processing error or push failure
+    processing --> delivery_failed : push failure after deliverable creation
 
     delivered --> confirmed : client signs confirmation (IVXP/1.1)
     confirmed --> [*]
 
     quoted --> expired : TTL exceeded (payment_timeout)
     paid --> refunded : payment verification failed
-    delivery_failed --> delivered : retry / client downloads
 
     expired --> [*]
     refunded --> [*]
@@ -39,7 +38,7 @@ See also: [diagrams/state-machine.mmd](./diagrams/state-machine.mmd)
 | `paid`            | Payment verified on-chain, awaiting processing   | No       |
 | `processing`      | Service handler actively processing the order    | No       |
 | `delivered`       | Deliverable ready (P2P push succeeded or stored) | Yes\*    |
-| `delivery_failed` | P2P push failed; deliverable still downloadable  | No       |
+| `delivery_failed` | P2P push failed after deliverable creation; deliverable still downloadable | Yes      |
 | `confirmed`       | Client signed receipt confirmation (IVXP/1.1)    | Yes      |
 | `expired`         | Payment timeout exceeded                         | Yes      |
 | `refunded`        | Payment failed post-acceptance verification      | Yes      |
@@ -114,19 +113,22 @@ See also: [diagrams/state-machine.mmd](./diagrams/state-machine.mmd)
 
 ### `processing` -> `delivery_failed`
 
-**Trigger:** Service handler fails or P2P push fails
+**Trigger:** P2P push fails after deliverable creation
 
 **Actions:**
 
-1. If processing error: order marked as `delivery_failed`
-2. If P2P push fails: deliverable is stored, status is `delivery_failed`
+1. Deliverable is already stored when push attempt occurs
+2. If P2P push fails: status is `delivery_failed`
 3. Client can still download via `GET /ivxp/download/{order_id}`
 
 **Recovery:**
 
 - Client polls `GET /ivxp/status/{order_id}` and sees `delivery_failed`
 - Client downloads deliverable via `GET /ivxp/download/{order_id}`
-- Successful download effectively resolves the failure
+
+### Processing Failure Before Deliverable Creation
+
+If the handler fails before any deliverable is created, provider must return an explicit error response (for example `INTERNAL_ERROR`) and must not claim Store & Forward availability for that order.
 
 ### `quoted` -> `expired`
 
@@ -204,7 +206,7 @@ See: [diagrams/delivery-sequence.mmd](./diagrams/delivery-sequence.mmd)
 | ----------------- | -------------------------------------------- | --------------------------------------------- |
 | `expired`         | Payment not received within timeout          | Create a new service request                  |
 | `refunded`        | Payment verification failed after acceptance | Check transaction, retry with correct payment |
-| `delivery_failed` | Processing error or P2P push failure         | Download via `GET /ivxp/download/{order_id}`  |
+| `delivery_failed` | P2P push failure after deliverable creation  | Download via `GET /ivxp/download/{order_id}`  |
 
 ### Retry Strategy
 
@@ -222,3 +224,4 @@ For `delivery_failed` orders:
 - Providers MUST always enforce a payment timeout
 - After timeout, order transitions to `expired`
 - Expired orders cannot be resumed; create a new request
+- For deliverable retention expiry, providers should return `410 ORDER_EXPIRED` with `details.reason = "delivery_retention_elapsed"`

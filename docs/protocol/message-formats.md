@@ -219,6 +219,7 @@ Every IVXP message includes a `message_type` field for routing:
   "message_type": "delivery_request",
   "timestamp": "2026-02-05T12:05:00Z",
   "order_id": "ivxp-550e8400-e29b-41d4-a716-446655440000",
+  "nonce": "a1b2c3d4e5f6g7h8",
   "payment_proof": {
     "tx_hash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
     "from_address": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
@@ -229,7 +230,7 @@ Every IVXP message includes a `message_type` field for routing:
   },
   "delivery_endpoint": "https://my-agent.example.com/ivxp/callback",
   "signature": "0x1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c1b",
-  "signed_message": "Order: ivxp-550e8400-e29b-41d4-a716-446655440000 | Payment: 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890 | Timestamp: 2026-02-05T12:05:00Z"
+  "signed_message": "IVXP-DELIVER | Order: ivxp-550e8400-e29b-41d4-a716-446655440000 | Payment: 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890 | Nonce: a1b2c3d4e5f6g7h8 | Timestamp: 2026-02-05T12:05:00Z"
 }
 ```
 
@@ -239,10 +240,11 @@ Every IVXP message includes a `message_type` field for routing:
 | `message_type`      | `"delivery_request"` | Yes      | Message discriminator  |
 | `timestamp`         | `ISOTimestamp`       | Yes      | Request timestamp      |
 | `order_id`          | `string`             | Yes      | Order ID from quote    |
+| `nonce`             | `string`             | Yes      | Unique nonce (min 16)  |
 | `payment_proof`     | `PaymentProof`       | Yes      | On-chain payment proof |
 | `delivery_endpoint` | `string` (URL)       | No       | P2P push endpoint      |
 | `signature`         | `HexSignature`       | Yes      | EIP-191 signature      |
-| `signed_message`    | `string`             | Yes      | Signed message text    |
+| `signed_message`    | `string`             | Yes      | Canonical signed message text |
 
 ### `PaymentProof`
 
@@ -257,11 +259,12 @@ Every IVXP message includes a `message_type` field for routing:
 
 ### Signed Message Format
 
-```
+```text
 IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}
 ```
 
 The `nonce` is a unique random string (min 16 chars) generated per request to prevent replay attacks.
+`timestamp` in the request body and in the signed message must be identical.
 
 ---
 
@@ -315,6 +318,8 @@ The `nonce` is a unique random string (min 16 chars) generated per request to pr
 
 Status values: `"quoted"`, `"paid"`, `"processing"`, `"delivered"`, `"delivery_failed"`
 
+`delivery_failed` indicates push delivery failed after the deliverable was created. A processing failure before deliverable creation should be represented by an error response, not by claiming downloadable output.
+
 ---
 
 ## 7. Download Deliverable
@@ -354,7 +359,7 @@ Status values: `"quoted"`, `"paid"`, `"processing"`, `"delivered"`, `"delivery_f
 | `status`         | `"completed"`           | Yes      | Always `"completed"`         |
 | `provider_agent` | `DeliveryProviderAgent` | Yes      | Provider info                |
 | `deliverable`    | `Deliverable`           | Yes      | The deliverable payload      |
-| `content_hash`   | `string`                | No       | SHA-256 integrity hash       |
+| `content_hash`   | `string`                | Yes      | SHA-256 integrity hash       |
 | `delivered_at`   | `ISOTimestamp`          | No       | Production timestamp         |
 | `signature`      | `HexSignature`          | No       | Provider's EIP-191 signature |
 | `signed_message` | `string`                | No       | Signed message text          |

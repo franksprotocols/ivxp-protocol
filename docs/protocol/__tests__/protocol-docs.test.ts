@@ -184,6 +184,7 @@ describe("Example Message Validation (ajv)", () => {
       message_type: "delivery_request",
       timestamp: "2026-02-05T12:05:00Z",
       order_id: "ivxp-550e8400-e29b-41d4-a716-446655440000",
+      nonce: "a1b2c3d4e5f6g7h8",
       payment_proof: {
         tx_hash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
         from_address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
@@ -192,7 +193,7 @@ describe("Example Message Validation (ajv)", () => {
       signature:
         "0x59a400bbe14d0f961ba603e687de19706b4ad75dd7da4dd903d15955a42ee0bf8886ef0203e567d086b7fad237c97721e2ab1e4f0955954c187ce202c6d38898f2",
       signed_message:
-        "IVXP-DELIVER | Order: ivxp-550e8400-e29b-41d4-a716-446655440000 | Payment: 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890 | Nonce: abc123 | Timestamp: 2026-02-05T12:05:00Z",
+        "IVXP-DELIVER | Order: ivxp-550e8400-e29b-41d4-a716-446655440000 | Payment: 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890 | Nonce: a1b2c3d4e5f6g7h8 | Timestamp: 2026-02-05T12:05:00Z",
     };
 
     const valid = validate(example);
@@ -208,6 +209,7 @@ describe("Example Message Validation (ajv)", () => {
       message_type: "delivery_request",
       timestamp: "2026-02-05T12:05:00Z",
       order_id: "ivxp-550e8400-e29b-41d4-a716-446655440000",
+      nonce: "a1b2c3d4e5f6g7h8",
       payment_proof: {
         tx_hash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
         from_address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
@@ -270,6 +272,7 @@ describe("Example Message Validation (ajv)", () => {
         format: "markdown",
         content: "## Results\n\nNo issues found.",
       },
+      content_hash: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     };
 
     const valid = validate(example);
@@ -338,6 +341,7 @@ describe("Schema Structure", () => {
     expect(required).toContain("protocol");
     expect(required).toContain("message_type");
     expect(required).toContain("order_id");
+    expect(required).toContain("nonce");
     expect(required).toContain("payment_proof");
     expect(required).toContain("signature");
     expect(required).toContain("signed_message");

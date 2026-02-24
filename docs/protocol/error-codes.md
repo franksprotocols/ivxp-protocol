@@ -36,7 +36,7 @@ These errors indicate problems with the client's request.
 | ------------------------------ | ----------- | ------------------------------------------------------------ | --------------------------------------------- |
 | `SIGNATURE_INVALID`            | 401         | EIP-191 signature verification failed                        | Re-sign with the correct private key          |
 | `ORDER_NOT_FOUND`              | 404         | The specified order ID does not exist                        | Verify the order_id from the quote            |
-| `ORDER_EXPIRED`                | 410         | The order's payment timeout has elapsed                      | Create a new service request                  |
+| `ORDER_EXPIRED`                | 410         | The order is no longer available (payment timeout or retention elapsed) | Create a new service request                  |
 | `SERVICE_TYPE_NOT_SUPPORTED`   | 400         | The requested service type is not in the catalog             | Check `GET /ivxp/catalog` for available types |
 | `BUDGET_TOO_LOW`               | 400         | The budget is below the service's base price                 | Increase `budget_usdc` to meet the price      |
 | `PROTOCOL_VERSION_UNSUPPORTED` | 400         | The protocol version is not supported                        | Use `"IVXP/1.0"`                              |
@@ -161,7 +161,7 @@ Complete list of all IVXP/1.0 error codes:
 | `SERVICE_TYPE_NOT_SUPPORTED`   | Client   | 400  | Service type not in catalog               |
 | `BUDGET_TOO_LOW`               | Client   | 400  | Budget below service price                |
 | `PAYMENT_TIMEOUT`              | Payment  | 408  | Payment not received in time              |
-| `ORDER_EXPIRED`                | Client   | 410  | Order TTL exceeded                        |
+| `ORDER_EXPIRED`                | Client   | 410  | Order expired or deliverable retention elapsed |
 | `PROTOCOL_VERSION_UNSUPPORTED` | Client   | 400  | Unsupported protocol version              |
 | `INTERNAL_ERROR`               | Server   | 500  | Unexpected provider error                 |
 | `INVALID_TIMESTAMP`            | Client   | 400  | Timestamp too old or in the future        |

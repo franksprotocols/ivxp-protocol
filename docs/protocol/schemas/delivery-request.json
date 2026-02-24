@@ -9,6 +9,7 @@
     "message_type",
     "timestamp",
     "order_id",
+    "nonce",
     "payment_proof",
     "signature",
     "signed_message"
@@ -34,6 +35,12 @@
       "minLength": 1,
       "description": "Order identifier from the quote."
     },
+    "nonce": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128,
+      "description": "Unique nonce generated per delivery request."
+    },
     "payment_proof": {
       "$ref": "#/$defs/PaymentProof"
     },
@@ -50,7 +57,8 @@
     "signed_message": {
       "type": "string",
       "minLength": 1,
-      "description": "The message that was signed. Format: 'Order: {order_id} | Payment: {tx_hash} | Timestamp: {timestamp}'"
+      "pattern": "^IVXP-DELIVER \\| Order: .+ \\| Payment: 0x[a-fA-F0-9]{64} \\| Nonce: .{16,} \\| Timestamp: .+$",
+      "description": "The message that was signed. Canonical format: 'IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}'."
     }
   },
   "additionalProperties": false,

@@ -114,6 +114,7 @@ scripts/*
 # Project-specific ignores
 # ----------------------------------------
 PRD-IVXP-Protocol-v2.0.cn.md
+PRD-IVXP-Protocol-v3.0.en.md
 /@docs/
 # Internal AI workflow reference material (not for public contributors)
 docs/knowledge-reference/
