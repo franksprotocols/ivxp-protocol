@@ -5,7 +5,7 @@ import { renderWithProviders } from "@/test/test-utils";
 import { Navigation } from "@/components/layout/Navigation";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Header } from "@/components/layout/Header";
-import { NAVIGATION_LINKS } from "@/components/layout/navigation-links";
+import { NAVIGATION_LINKS, PROVIDER_REGISTER_PATH } from "@/components/layout/navigation-links";
 import {
   createWagmiMocks,
   applyDisconnectedState,
@@ -156,6 +156,7 @@ describe("Navigation Integration", () => {
       renderWithProviders(<Header />);
 
       expect(screen.getByRole("navigation", { name: /main/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Provider Register" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /open menu/i })).toBeInTheDocument();
     });
 
@@ -192,6 +193,14 @@ describe("Navigation Integration", () => {
 
       const aboutLink = screen.getByText("About");
       expect(aboutLink).toHaveAttribute("data-active", "true");
+    });
+
+    it("provider register link is active on /provider/register", () => {
+      mockUsePathname.mockReturnValue(PROVIDER_REGISTER_PATH);
+      renderWithProviders(<Navigation />);
+
+      const registerLink = screen.getByText("Provider Register");
+      expect(registerLink).toHaveAttribute("data-active", "true");
     });
   });
 });

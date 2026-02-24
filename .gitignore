@@ -106,7 +106,9 @@ CLAUDE.md
 # Internal scripts (deployment, AI workflows, devops tooling)
 # Not intended for public contributors
 # ----------------------------------------
-scripts/
+scripts/*
+!scripts/setup-demo.sh
+!scripts/health-check.sh
 
 # ----------------------------------------
 # Project-specific ignores
