@@ -3,10 +3,13 @@ export interface NavigationLink {
   readonly label: string;
 }
 
+export const PROVIDER_REGISTER_PATH = "/provider/register";
+
 export const NAVIGATION_LINKS: readonly NavigationLink[] = [
   { href: "/", label: "Home" },
   { href: "/marketplace", label: "Marketplace" },
   { href: "/playground", label: "Playground" },
+  { href: PROVIDER_REGISTER_PATH, label: "Provider Register" },
   { href: "http://localhost:3004", label: "Docs" },
   { href: "/community", label: "Community" },
   { href: "/about", label: "About" },

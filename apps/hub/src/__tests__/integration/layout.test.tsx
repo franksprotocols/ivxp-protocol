@@ -149,6 +149,7 @@ describe("Layout Integration", () => {
       expect(within(mobileNav).getByText("Home")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Marketplace")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Playground")).toBeInTheDocument();
+      expect(within(mobileNav).getByText("Provider Register")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Docs")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Community")).toBeInTheDocument();
       expect(within(mobileNav).getByText("About")).toBeInTheDocument();
