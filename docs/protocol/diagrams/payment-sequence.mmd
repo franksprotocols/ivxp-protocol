@@ -14,15 +14,17 @@ sequenceDiagram
     Chain-->>Client: tx_hash, block_number
 
     Note over Client,Provider: Payment Proof Submission
-    Client->>Client: Construct signed_message = "Order: {order_id} | Payment: {tx_hash} | Timestamp: {ts}"
+    Client->>Client: Generate nonce (min 16 chars)
+    Client->>Client: Construct signed_message = "IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {ts}"
     Client->>Client: Sign message with EIP-191 (personal_sign)
-    Client->>Provider: POST /ivxp/deliver { payment_proof: { tx_hash, from_address, network }, signature, signed_message }
+    Client->>Provider: POST /ivxp/deliver { payment_proof: { tx_hash, from_address, network }, nonce, signature, signed_message }
 
     Note over Provider,Chain: On-Chain Verification
     Provider->>Chain: Verify tx_hash exists
     Provider->>Chain: Check to_address == payment_address
-    Provider->>Chain: Check amount >= price_usdc
+    Provider->>Chain: Check amount_raw >= quoted_price_raw (10^6 units)
     Provider->>Chain: Check token contract == USDC
+    Provider->>Chain: Check confirmations >= MIN_CONFIRMATIONS
     Chain-->>Provider: Verification result
 
     alt Payment Verified

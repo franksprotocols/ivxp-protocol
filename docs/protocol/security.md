@@ -16,6 +16,7 @@ IVXP uses [EIP-191](https://eips.ethereum.org/EIPS/eip-191) (version 0x45, `pers
 2. Client signs the message with their Ethereum private key using `personal_sign`
 3. Provider recovers the signer address from the signature
 4. Provider verifies the recovered address matches the claimed `from_address`
+5. Provider verifies `signed_message` is the canonical rendering of request fields
 
 ### Signed Message Format
 
@@ -40,6 +41,7 @@ IVXP-DELIVER | Order: ivxp-550e8400-e29b-41d4-a716-446655440000 | Payment: 0xabc
 ```
 
 The `nonce` field prevents replay attacks even if the same `order_id` and `tx_hash` are reused across different sessions. Providers MUST track seen nonces per order and reject duplicates.
+The request's top-level `nonce` and `timestamp` fields MUST exactly match the values embedded in `signed_message`.
 
 ### Signature Format
 
@@ -57,7 +59,8 @@ The `nonce` field prevents replay attacks even if the same `order_id` and `tx_ha
 4. recovered_address = ecrecover(hash, signature)
 5. assert recovered_address == from_address
 6. assert nonce has not been seen before for this order_id
-7. assert timestamp is within MAX_TIMESTAMP_AGE of current time
+7. assert signed_message equals canonical message built from request fields
+8. assert timestamp is within MAX_TIMESTAMP_AGE of current time
 ```
 
 ---
@@ -88,6 +91,9 @@ The provider performs these checks when verifying a payment:
 3. **Sufficient amount:** The transferred amount must be >= the `price_usdc` from the quote
 4. **Correct token:** The transaction must be a USDC transfer (correct token contract)
 5. **Correct sender:** The `from` address must match the client's `wallet_address`
+6. **Finality depth:** Transaction must meet `MIN_CONFIRMATIONS` (default: 1, provider-configurable)
+
+Amount comparisons MUST use integer micro-USDC (`10^6`) arithmetic, not floating-point values.
 
 ### Payment Proof
 
@@ -133,7 +139,11 @@ Optional fields: `to_address`, `amount_usdc`, `block_number` (provider verifies 
 
 ### Double-Spending
 
-**Mitigation:** The provider verifies payments on-chain after block confirmation. The `tx_hash` is unique per transaction and cannot be reused.
+**Mitigation:** The provider verifies payments on-chain after confirmation depth (`MIN_CONFIRMATIONS`). The `tx_hash` is unique per transaction and cannot be reused.
+
+### Push Delivery SSRF
+
+**Mitigation:** For `delivery_endpoint`, providers should enforce HTTPS-only URLs, block localhost/private/link-local targets, and apply strict timeout/retry/payload limits.
 
 ---
 
