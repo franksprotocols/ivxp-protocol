@@ -150,6 +150,12 @@ export interface PaymentResult {
 
   /** The updated order status (typically "paid"). */
   readonly status: OrderStatus;
+
+  /**
+   * Optional SSE stream URL for real-time order updates.
+   * Present when the provider supports SSE streaming.
+   */
+  readonly streamUrl?: string;
 }
 
 // ---------------------------------------------------------------------------

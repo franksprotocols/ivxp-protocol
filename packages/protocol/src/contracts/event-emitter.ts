@@ -81,6 +81,13 @@ export type SDKEvent =
         readonly expectedHash: string;
         readonly computedHash: string;
       };
+    }
+  | {
+      readonly type: "sse_fallback";
+      readonly payload: {
+        readonly orderId: string;
+        readonly reason: string;
+      };
     };
 
 /**

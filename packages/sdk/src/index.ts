@@ -181,3 +181,16 @@ export type {
  * frameworks (Express, Fastify, Next.js, Hono, etc.).
  */
 export type { IVXPClientAdapter, IVXPProviderAdapter } from "./adapters/index.js";
+
+// ---------------------------------------------------------------------------
+// SSE module
+// ---------------------------------------------------------------------------
+
+/**
+ * Server-Sent Events client for real-time order streaming.
+ *
+ * Use `SSEClient` directly for advanced SSE usage, or use
+ * `IVXPClient.subscribeToStream()` for the integrated experience.
+ */
+export { SSEClient, SSEExhaustedError } from "./sse/index.js";
+export type { SSEEvent, SSEHandlers, SSEClientOptions, SSEConnectOptions } from "./sse/index.js";

@@ -37,6 +37,18 @@ describe("DeliveryAcceptedSchema", () => {
     expect(result.status).toBe("accepted");
     expect(result.orderId).toBe("ivxp-test-order");
     expect(result.message).toBe("Order accepted and processing");
+    expect(result.streamUrl).toBeUndefined();
+  });
+
+  it("should parse optional stream_url", () => {
+    const result = DeliveryAcceptedSchema.parse({
+      status: "accepted",
+      order_id: "ivxp-test-order",
+      message: "Order accepted and processing",
+      stream_url: "https://provider.test/ivxp/stream/ivxp-test-order",
+    });
+
+    expect(result.streamUrl).toBe("https://provider.test/ivxp/stream/ivxp-test-order");
   });
 
   it("should reject non-'accepted' status", () => {
@@ -64,6 +76,17 @@ describe("DeliveryAcceptedSchema", () => {
         status: "accepted",
         order_id: "ivxp-test",
         message: "",
+      }),
+    ).toThrow();
+  });
+
+  it("should reject invalid stream_url", () => {
+    expect(() =>
+      DeliveryAcceptedSchema.parse({
+        status: "accepted",
+        order_id: "ivxp-test",
+        message: "accepted",
+        stream_url: "not-a-url",
       }),
     ).toThrow();
   });

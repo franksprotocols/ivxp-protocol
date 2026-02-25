@@ -80,6 +80,7 @@ function createFullFlowMockHttp(overrides?: {
   quote?: ReturnType<typeof createMockQuote>;
   deliveryResponse?: ReturnType<typeof createMockDeliveryResponse>;
   orderStatus?: ReturnType<typeof createMockOrderStatusResponse>;
+  paymentResponse?: Record<string, unknown>;
 }): MockHttpClient {
   const orderId = DEFAULT_ORDER_ID;
   const quote = overrides?.quote ?? createMockQuote({ order_id: orderId });
@@ -87,6 +88,7 @@ function createFullFlowMockHttp(overrides?: {
     overrides?.deliveryResponse ?? createMockDeliveryResponse({ order_id: orderId });
   const orderStatus =
     overrides?.orderStatus ?? createMockOrderStatusResponse("delivered", { order_id: orderId });
+  const paymentResponse = overrides?.paymentResponse ?? { status: "paid" };
 
   // Validate orderId consistency: if overrides are provided, all must
   // share the same order_id to prevent silent mismatches in test data.
@@ -116,7 +118,7 @@ function createFullFlowMockHttp(overrides?: {
 
   // POST /ivxp/orders/{id}/payment -> success
   mockHttp.onPost(`${PROVIDER_URL}/ivxp/orders/${encodeURIComponent(orderId)}/payment`, () => ({
-    status: "paid",
+    ...paymentResponse,
   }));
 
   // GET /ivxp/orders/{id}/deliverable -> delivery
@@ -147,6 +149,24 @@ const DEFAULT_PARAMS: RequestServiceParams = {
   budgetUsdc: 50,
 };
 
+function makeSseStream(events: string[], keepOpen = false): Response {
+  const body = new ReadableStream({
+    start(controller) {
+      for (const chunk of events) {
+        controller.enqueue(new TextEncoder().encode(chunk));
+      }
+      if (!keepOpen) {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(body, {
+    status: 200,
+    headers: { "Content-Type": "text/event-stream" },
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -154,6 +174,10 @@ const DEFAULT_PARAMS: RequestServiceParams = {
 describe("IVXPClient.requestService()", () => {
   beforeEach(() => {
     resetOrderCounter();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   // -------------------------------------------------------------------------
@@ -248,6 +272,53 @@ describe("IVXPClient.requestService()", () => {
       const postCalls = mockHttp.getPostCalls();
       const confirmCall = postCalls.find((c) => c.url.includes("/confirm"));
       expect(confirmCall).toBeDefined();
+    });
+
+    it("should use SSE path when payment returns stream_url", async () => {
+      const mockHttp = createFullFlowMockHttp({
+        paymentResponse: {
+          status: "accepted",
+          order_id: DEFAULT_ORDER_ID,
+          message: "processing",
+          stream_url: "http://provider.test/ivxp/stream/ivxp-1",
+        },
+      });
+      const client = createMockedClient(mockHttp);
+      const fetchSpy = vi.fn(async () =>
+        makeSseStream(["event: completed\ndata: {\"orderId\":\"ivxp-1\"}\n\n"], true),
+      );
+      vi.stubGlobal("fetch", fetchSpy);
+
+      const result = await client.requestService(DEFAULT_PARAMS);
+
+      expect(result.status).toBe("confirmed");
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]?.[0]).toBe("http://provider.test/ivxp/stream/ivxp-1");
+    });
+
+    it("should emit sse_fallback and continue via polling when SSE exhausts", async () => {
+      const mockHttp = createFullFlowMockHttp({
+        paymentResponse: {
+          status: "accepted",
+          order_id: DEFAULT_ORDER_ID,
+          message: "processing",
+          stream_url: "http://provider.test/ivxp/stream/ivxp-1",
+        },
+      });
+      const client = createMockedClient(mockHttp);
+      const fetchSpy = vi.fn(async () => {
+        throw new Error("ECONNREFUSED");
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+      const onFallback = vi.fn();
+      client.on("sse_fallback", onFallback);
+
+      const result = await client.requestService(DEFAULT_PARAMS);
+
+      expect(result.status).toBe("confirmed");
+      expect(onFallback).toHaveBeenCalledTimes(1);
+      expect(onFallback.mock.calls[0]?.[0]?.orderId).toBe(DEFAULT_ORDER_ID);
+      expect(fetchSpy).toHaveBeenCalledTimes(3); // maxRetries on initial SSE connect
     });
   });
 

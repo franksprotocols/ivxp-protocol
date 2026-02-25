@@ -25,6 +25,9 @@ export interface DeliveryAccepted {
 
   /** Human-readable message. */
   readonly message: string;
+
+  /** Optional SSE stream URL for real-time progress updates. */
+  readonly stream_url?: string;
 }
 
 // ---------------------------------------------------------------------------
