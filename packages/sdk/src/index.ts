@@ -169,3 +169,15 @@ export type {
   OrderStatusResponseOutput,
   DeliveryResponseOutput,
 } from "@ivxp/protocol";
+
+// ---------------------------------------------------------------------------
+// Adapter interfaces (type-only, zero runtime cost)
+// ---------------------------------------------------------------------------
+
+/**
+ * Framework adapter interfaces for IVXP client and provider implementations.
+ *
+ * These interfaces define the contract for integrating IVXP into different
+ * frameworks (Express, Fastify, Next.js, Hono, etc.).
+ */
+export type { IVXPClientAdapter, IVXPProviderAdapter } from "./adapters/index.js";
