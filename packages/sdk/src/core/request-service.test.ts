@@ -285,7 +285,7 @@ describe("IVXPClient.requestService()", () => {
       });
       const client = createMockedClient(mockHttp);
       const fetchSpy = vi.fn(async () =>
-        makeSseStream(["event: completed\ndata: {\"orderId\":\"ivxp-1\"}\n\n"], true),
+        makeSseStream(['event: completed\ndata: {"orderId":"ivxp-1"}\n\n'], true),
       );
       vi.stubGlobal("fetch", fetchSpy);
 

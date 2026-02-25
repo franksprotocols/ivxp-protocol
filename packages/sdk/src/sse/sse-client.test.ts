@@ -48,10 +48,10 @@ describe("SSEClient", () => {
 
   it("dispatches all 4 event types to handlers", async () => {
     const chunks = [
-      "event: status_update\ndata: {\"status\":\"processing\"}\n\n",
-      "event: progress\ndata: {\"pct\":50}\n\n",
-      "event: completed\ndata: {\"orderId\":\"abc\"}\n\n",
-      "event: failed\ndata: {\"reason\":\"timeout\"}\n\n",
+      'event: status_update\ndata: {"status":"processing"}\n\n',
+      'event: progress\ndata: {"pct":50}\n\n',
+      'event: completed\ndata: {"orderId":"abc"}\n\n',
+      'event: failed\ndata: {"reason":"timeout"}\n\n',
     ];
     vi.stubGlobal("fetch", async () => makeSseStream(chunks));
 
@@ -145,7 +145,7 @@ describe("SSEClient", () => {
   });
 
   it("ignores unknown event types", async () => {
-    const chunks = ["event: unknown_type\ndata: {\"x\":1}\n\n"];
+    const chunks = ['event: unknown_type\ndata: {"x":1}\n\n'];
     vi.stubGlobal("fetch", async () => makeSseStream(chunks));
 
     const handlers = {
@@ -171,10 +171,10 @@ describe("SSEClient", () => {
       callCount += 1;
       if (callCount === 1) {
         // First stream disconnects after one event
-        return makeSseStream(["event: status_update\ndata: {\"phase\":\"processing\"}\n\n"]);
+        return makeSseStream(['event: status_update\ndata: {"phase":"processing"}\n\n']);
       }
       // Reconnected stream remains open after terminal event to avoid extra reconnect loops
-      return makeSseStream(["event: completed\ndata: {\"ok\":true}\n\n"], true);
+      return makeSseStream(['event: completed\ndata: {"ok":true}\n\n'], true);
     });
 
     const handlers = {
@@ -199,7 +199,7 @@ describe("SSEClient", () => {
       callCount += 1;
       if (callCount === 1) {
         // Initial connect succeeds, then closes mid-stream.
-        return makeSseStream(["event: status_update\ndata: {\"phase\":\"processing\"}\n\n"]);
+        return makeSseStream(['event: status_update\ndata: {"phase":"processing"}\n\n']);
       }
       throw new Error("ECONNREFUSED");
     });

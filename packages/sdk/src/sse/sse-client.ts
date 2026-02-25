@@ -221,7 +221,10 @@ export class SSEClient {
       readonly onExhausted: (error: SSEExhaustedError) => void;
       readonly isCancelled: () => boolean;
     },
-  ): Promise<{ readonly reader: ReadableStreamDefaultReader<Uint8Array>; readonly controller: AbortController }> {
+  ): Promise<{
+    readonly reader: ReadableStreamDefaultReader<Uint8Array>;
+    readonly controller: AbortController;
+  }> {
     let attempt = 0;
     let lastError = initialCause;
 
@@ -296,7 +299,8 @@ export class SSEClient {
         // Blank line signals end of event — dispatch if we have both type and data
         if (eventType && dataBuffer) {
           const parsed = safeParseJson(dataBuffer);
-          terminalEventReceived = this.dispatch(eventType, parsed, handlers) || terminalEventReceived;
+          terminalEventReceived =
+            this.dispatch(eventType, parsed, handlers) || terminalEventReceived;
         }
         eventType = "";
         dataBuffer = "";
@@ -334,7 +338,10 @@ export class SSEClient {
 // Private helpers
 // ---------------------------------------------------------------------------
 
-function mergeAbortSignals(primary: AbortSignal, secondary?: AbortSignal): {
+function mergeAbortSignals(
+  primary: AbortSignal,
+  secondary?: AbortSignal,
+): {
   readonly signal: AbortSignal;
   readonly cleanup: () => void;
 } {
