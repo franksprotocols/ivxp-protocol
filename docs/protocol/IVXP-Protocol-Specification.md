@@ -35,7 +35,7 @@ It defines a standard for how any two AI Agents — regardless of the communicat
 
 ### 1.1 The Problem IVXP Solves
 
-As AI Agents become capable of autonomous work, they need to buy and sell capabilities from each other. The missing piece is not communication (A2A, MCP, and similar protocols handle that) — it is *economic exchange*: how does an Agent pay another Agent for a service, with no trusted intermediary, no platform account, and no manual settlement?
+As AI Agents become capable of autonomous work, they need to buy and sell capabilities from each other. The missing piece is not communication (A2A, MCP, and similar protocols handle that) — it is _economic exchange_: how does an Agent pay another Agent for a service, with no trusted intermediary, no platform account, and no manual settlement?
 
 IVXP answers this with a concrete protocol:
 
@@ -45,12 +45,12 @@ IVXP answers this with a concrete protocol:
 
 ### 1.2 What IVXP Is Not
 
-| IVXP is NOT... | Because... |
-|---|---|
-| A communication protocol | It does not define how Agents discover each other or exchange messages in general. Use A2A, MCP, or HTTP for that. |
-| An Agent framework | It does not define Agent behavior, memory, or tool use. |
-| An extension of A2A or any other framework | IVXP is a peer protocol. A2A, LangGraph, AutoGen, and CrewAI are equal implementors of IVXP, not its hosts. |
-| A centralized payment platform | There is no IVXP payment processor. Payments settle on-chain via USDC. |
+| IVXP is NOT...                             | Because...                                                                                                         |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| A communication protocol                   | It does not define how Agents discover each other or exchange messages in general. Use A2A, MCP, or HTTP for that. |
+| An Agent framework                         | It does not define Agent behavior, memory, or tool use.                                                            |
+| An extension of A2A or any other framework | IVXP is a peer protocol. A2A, LangGraph, AutoGen, and CrewAI are equal implementors of IVXP, not its hosts.        |
+| A centralized payment platform             | There is no IVXP payment processor. Payments settle on-chain via USDC.                                             |
 
 ### 1.3 Position in the Agent Protocol Stack
 
@@ -110,21 +110,21 @@ Protocol extensions must not break existing implementations. All new fields are 
 
 ### 3.1 Core Roles
 
-| Role | Description |
-|---|---|
-| **Provider Agent** | An Agent that offers paid services. Runs an HTTP server implementing the IVXP endpoints. Holds an Ethereum wallet to receive USDC payments. |
-| **Client Agent** | An Agent (or human-facing application) that consumes paid services. Holds an Ethereum wallet to send USDC payments and sign delivery requests. |
+| Role               | Description                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Provider Agent** | An Agent that offers paid services. Runs an HTTP server implementing the IVXP endpoints. Holds an Ethereum wallet to receive USDC payments.    |
+| **Client Agent**   | An Agent (or human-facing application) that consumes paid services. Holds an Ethereum wallet to send USDC payments and sign delivery requests. |
 
 A single Agent may act as both Provider and Client in different transactions.
 
 ### 3.2 Core Objects
 
-| Object | Description |
-|---|---|
-| **Order** | A single service transaction. Identified by `order_id` (format: `ivxp-{uuid-v4}`). Tracks state from quote to delivery. |
-| **Quote** | A Provider's response to a service request. Contains `price_usdc`, `payment_address`, and `order_id`. |
-| **PaymentProof** | The Client's evidence of on-chain payment. Contains `tx_hash`, `from_address`, and `network`. |
-| **Deliverable** | The service output. Contains `type`, optional `format`, and `content`. Integrity is verified via `content_hash` (SHA-256). |
+| Object           | Description                                                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Order**        | A single service transaction. Identified by `order_id` (format: `ivxp-{uuid-v4}`). Tracks state from quote to delivery.    |
+| **Quote**        | A Provider's response to a service request. Contains `price_usdc`, `payment_address`, and `order_id`.                      |
+| **PaymentProof** | The Client's evidence of on-chain payment. Contains `tx_hash`, `from_address`, and `network`.                              |
+| **Deliverable**  | The service output. Contains `type`, optional `format`, and `content`. Integrity is verified via `content_hash` (SHA-256). |
 
 ### 3.3 The Eight-Step Transaction Model
 
@@ -210,10 +210,7 @@ interface IVXPClientAdapter {
    * Maps to: POST {providerUrl}/ivxp/request
    * Returns an order_id and price.
    */
-  requestQuote(
-    providerUrl: string,
-    request: ServiceRequestDetails
-  ): Promise<ServiceQuote>;
+  requestQuote(providerUrl: string, request: ServiceRequestDetails): Promise<ServiceQuote>;
 
   /**
    * Submit payment proof and request delivery.
@@ -225,27 +222,21 @@ interface IVXPClientAdapter {
     orderId: string,
     paymentProof: PaymentProof,
     signature: string,
-    signedMessage: string
+    signedMessage: string,
   ): Promise<DeliveryAccepted>;
 
   /**
    * Poll order status.
    * Maps to: GET {providerUrl}/ivxp/status/{orderId}
    */
-  getStatus(
-    providerUrl: string,
-    orderId: string
-  ): Promise<OrderStatusResponse>;
+  getStatus(providerUrl: string, orderId: string): Promise<OrderStatusResponse>;
 
   /**
    * Download the completed deliverable.
    * Maps to: GET {providerUrl}/ivxp/download/{orderId}
    * Only call when status is "delivered" or "delivery_failed".
    */
-  download(
-    providerUrl: string,
-    orderId: string
-  ): Promise<DeliveryResponse>;
+  download(providerUrl: string, orderId: string): Promise<DeliveryResponse>;
 }
 ```
 
@@ -281,14 +272,14 @@ Any IVXP implementation must conform to these identity and payment conventions:
 
 #### Payment Currency and Network
 
-| Parameter | Value |
-|---|---|
-| Token | USDC (ERC-20, 6 decimals) |
-| Network (mainnet) | Base Mainnet — Chain ID `8453` |
-| Network (testnet) | Base Sepolia — Chain ID `84532` |
-| USDC contract (mainnet) | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
-| USDC contract (testnet) | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
-| Raw amount encoding | `amount_usdc * 10^6` as string (e.g., `"5000000"` for 5.0 USDC) |
+| Parameter               | Value                                                           |
+| ----------------------- | --------------------------------------------------------------- |
+| Token                   | USDC (ERC-20, 6 decimals)                                       |
+| Network (mainnet)       | Base Mainnet — Chain ID `8453`                                  |
+| Network (testnet)       | Base Sepolia — Chain ID `84532`                                 |
+| USDC contract (mainnet) | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`                    |
+| USDC contract (testnet) | `0x036CbD53842c5426634e7929541eC2318f3dCF7e`                    |
+| Raw amount encoding     | `amount_usdc * 10^6` as string (e.g., `"5000000"` for 5.0 USDC) |
 
 #### Identity: EIP-191 Signatures
 
@@ -298,13 +289,13 @@ The Client signs a delivery request message using EIP-191 (`personal_sign`). The
 IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}
 ```
 
-| Field | Description |
-|---|---|
-| `IVXP-DELIVER` | Fixed prefix — prevents cross-protocol replay |
-| `order_id` | The order identifier from the quote |
-| `tx_hash` | The on-chain USDC transaction hash |
-| `nonce` | A unique random string (min 16 chars) generated per request |
-| `timestamp` | ISO 8601 timestamp of the delivery request |
+| Field          | Description                                                 |
+| -------------- | ----------------------------------------------------------- |
+| `IVXP-DELIVER` | Fixed prefix — prevents cross-protocol replay               |
+| `order_id`     | The order identifier from the quote                         |
+| `tx_hash`      | The on-chain USDC transaction hash                          |
+| `nonce`        | A unique random string (min 16 chars) generated per request |
+| `timestamp`    | ISO 8601 timestamp of the delivery request                  |
 
 The Provider recovers the signer address from the signature and verifies it matches `payment_proof.from_address`. See [security.md](./security.md) for the full verification algorithm.
 
@@ -364,18 +355,18 @@ stateDiagram-v2
 
 ### 5.2 State Descriptions and Wire Visibility
 
-| State | Description | Terminal | Exposed by `GET /ivxp/status` in IVXP/1.0 |
-|---|---|---|---|
-| `quoted` | Quote issued, awaiting payment | No | Yes |
-| `paid` | Payment verified on-chain, awaiting delivery request | No | Yes |
-| `processing` | Service handler actively executing | No | Yes |
-| `delivered` | Deliverable ready (P2P push succeeded or stored) | Yes* | Yes |
-| `delivery_failed` | P2P push failed after deliverable creation; deliverable is downloadable via GET | Yes | Yes |
-| `confirmed` | Client signed receipt confirmation (IVXP/1.1) | Yes | No (IVXP/1.1 capability) |
-| `expired` | Payment timeout exceeded | Yes | No (provider internal in IVXP/1.0) |
-| `refunded` | Payment verification failed after acceptance | Yes | No (provider internal in IVXP/1.0) |
+| State             | Description                                                                     | Terminal | Exposed by `GET /ivxp/status` in IVXP/1.0 |
+| ----------------- | ------------------------------------------------------------------------------- | -------- | ----------------------------------------- |
+| `quoted`          | Quote issued, awaiting payment                                                  | No       | Yes                                       |
+| `paid`            | Payment verified on-chain, awaiting delivery request                            | No       | Yes                                       |
+| `processing`      | Service handler actively executing                                              | No       | Yes                                       |
+| `delivered`       | Deliverable ready (P2P push succeeded or stored)                                | Yes\*    | Yes                                       |
+| `delivery_failed` | P2P push failed after deliverable creation; deliverable is downloadable via GET | Yes      | Yes                                       |
+| `confirmed`       | Client signed receipt confirmation (IVXP/1.1)                                   | Yes      | No (IVXP/1.1 capability)                  |
+| `expired`         | Payment timeout exceeded                                                        | Yes      | No (provider internal in IVXP/1.0)        |
+| `refunded`        | Payment verification failed after acceptance                                    | Yes      | No (provider internal in IVXP/1.0)        |
 
-*`delivered` is terminal in IVXP/1.0. In IVXP/1.1, it transitions to `confirmed`.
+\*`delivered` is terminal in IVXP/1.0. In IVXP/1.1, it transitions to `confirmed`.
 
 In IVXP/1.0, the normative `OrderStatusResponse.status` enum is exactly: `quoted`, `paid`, `processing`, `delivered`, `delivery_failed`.
 
@@ -386,6 +377,7 @@ In IVXP/1.0, the normative `OrderStatusResponse.status` enum is exactly: `quoted
 **Trigger:** Provider receives a valid `ServiceRequest` via `POST /ivxp/request`.
 
 **Conditions:**
+
 - `protocol` must be `"IVXP/1.0"`
 - `service_request.type` must exist in the Provider's catalog
 - `service_request.budget_usdc` must be >= the service's `base_price_usdc`
@@ -446,11 +438,11 @@ For the complete state machine specification, see [state-machine.md](./state-mac
 
 ### 6.1 Transport
 
-| Parameter | Value |
-|---|---|
-| Transport | HTTPS (TLS 1.2+) |
-| Data format | JSON (`Content-Type: application/json`) |
-| Encoding | UTF-8 |
+| Parameter        | Value                                                              |
+| ---------------- | ------------------------------------------------------------------ |
+| Transport        | HTTPS (TLS 1.2+)                                                   |
+| Data format      | JSON (`Content-Type: application/json`)                            |
+| Encoding         | UTF-8                                                              |
 | Protocol version | `"IVXP/1.0"` (in every request/response that includes a JSON body) |
 
 All IVXP endpoints must be served over HTTPS. HTTP is not acceptable for production deployments.
@@ -459,29 +451,29 @@ For `GET /ivxp/catalog`, `GET /ivxp/status/{order_id}`, and `GET /ivxp/download/
 
 ### 6.2 Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/ivxp/catalog` | Get service catalog |
-| `POST` | `/ivxp/request` | Request a service quote |
-| `POST` | `/ivxp/deliver` | Submit payment proof and request delivery |
-| `GET` | `/ivxp/status/{order_id}` | Check order status |
-| `GET` | `/ivxp/download/{order_id}` | Download completed deliverable |
+| Method | Path                        | Description                               |
+| ------ | --------------------------- | ----------------------------------------- |
+| `GET`  | `/ivxp/catalog`             | Get service catalog                       |
+| `POST` | `/ivxp/request`             | Request a service quote                   |
+| `POST` | `/ivxp/deliver`             | Submit payment proof and request delivery |
+| `GET`  | `/ivxp/status/{order_id}`   | Check order status                        |
+| `GET`  | `/ivxp/download/{order_id}` | Download completed deliverable            |
 
 ### 6.3 HTTP Status Codes
 
-| Code | Meaning | Use Case |
-|---|---|---|
-| `200` | Success | Request handled successfully |
-| `202` | Accepted | Service processing, not yet complete |
-| `400` | Bad Request | Invalid message format or unsupported protocol version |
-| `401` | Unauthorized | Signature verification failed |
-| `402` | Payment Required | On-chain payment verification failed |
-| `408` | Request Timeout | Payment timeout exceeded |
-| `409` | Conflict | Invalid order state or duplicate delivery request |
-| `410` | Gone | Order expired or deliverable retention elapsed |
-| `404` | Not Found | Order missing or deliverable not ready |
-| `500` | Server Error | Internal Provider error |
-| `503` | Service Unavailable | Provider temporarily unavailable |
+| Code  | Meaning             | Use Case                                               |
+| ----- | ------------------- | ------------------------------------------------------ |
+| `200` | Success             | Request handled successfully                           |
+| `202` | Accepted            | Service processing, not yet complete                   |
+| `400` | Bad Request         | Invalid message format or unsupported protocol version |
+| `401` | Unauthorized        | Signature verification failed                          |
+| `402` | Payment Required    | On-chain payment verification failed                   |
+| `408` | Request Timeout     | Payment timeout exceeded                               |
+| `409` | Conflict            | Invalid order state or duplicate delivery request      |
+| `410` | Gone                | Order expired or deliverable retention elapsed         |
+| `404` | Not Found           | Order missing or deliverable not ready                 |
+| `500` | Server Error        | Internal Provider error                                |
+| `503` | Service Unavailable | Provider temporarily unavailable                       |
 
 ### 6.4 Error Response Format
 
@@ -544,10 +536,10 @@ The `nonce` field (min 16 chars, unique per request) prevents replay attacks eve
 
 ### 7.3 Timestamp Freshness
 
-| Parameter | Value |
-|---|---|
+| Parameter           | Value                   |
+| ------------------- | ----------------------- |
 | `MAX_TIMESTAMP_AGE` | 300 seconds (5 minutes) |
-| `MAX_CLOCK_SKEW` | 60 seconds (1 minute) |
+| `MAX_CLOCK_SKEW`    | 60 seconds (1 minute)   |
 
 Providers must reject messages where the timestamp is older than `now - MAX_TIMESTAMP_AGE` or newer than `now + MAX_CLOCK_SKEW`.
 
@@ -578,34 +570,34 @@ npm install @ivxp/sdk
 **Client Agent (one-line service call):**
 
 ```typescript
-import { IVXPAgent } from '@ivxp/sdk';
+import { IVXPAgent } from "@ivxp/sdk";
 
 const agent = new IVXPAgent({
   privateKey: process.env.PRIVATE_KEY,
-  network: 'base-mainnet',
+  network: "base-mainnet",
 });
 
 const result = await agent.callService({
-  provider: 'https://review-bot.example.com',
-  service: 'code_review',
-  input: { code: sourceCode, language: 'typescript' },
+  provider: "https://review-bot.example.com",
+  service: "code_review",
+  input: { code: sourceCode, language: "typescript" },
 });
 ```
 
 **Provider (service handler):**
 
 ```typescript
-import { IVXPProvider } from '@ivxp/sdk';
+import { IVXPProvider } from "@ivxp/sdk";
 
 const provider = new IVXPProvider({
   privateKey: process.env.PRIVATE_KEY,
   port: 5055,
 });
 
-provider.service('code_review', {
+provider.service("code_review", {
   price: 5,
   handler: async (input) => ({
-    type: 'code_review_result',
+    type: "code_review_result",
     content: await reviewCode(input.code),
   }),
 });
@@ -716,15 +708,15 @@ Future versions (e.g., `"IVXP/1.1"`) will introduce optional capabilities (deliv
 
 ## Related Documents
 
-| Document | Description |
-|---|---|
-| [message-formats.md](./message-formats.md) | Complete message schemas with JSON examples |
-| [state-machine.md](./state-machine.md) | Order lifecycle state transitions and sequence diagrams |
-| [security.md](./security.md) | EIP-191 signatures, payment verification, threat model |
-| [error-codes.md](./error-codes.md) | Complete error code taxonomy with HTTP mappings |
-| [compatibility.md](./compatibility.md) | Wire format conventions, cross-implementation notes |
-| [openapi.yaml](./openapi.yaml) | OpenAPI 3.1 specification |
+| Document                                   | Description                                             |
+| ------------------------------------------ | ------------------------------------------------------- |
+| [message-formats.md](./message-formats.md) | Complete message schemas with JSON examples             |
+| [state-machine.md](./state-machine.md)     | Order lifecycle state transitions and sequence diagrams |
+| [security.md](./security.md)               | EIP-191 signatures, payment verification, threat model  |
+| [error-codes.md](./error-codes.md)         | Complete error code taxonomy with HTTP mappings         |
+| [compatibility.md](./compatibility.md)     | Wire format conventions, cross-implementation notes     |
+| [openapi.yaml](./openapi.yaml)             | OpenAPI 3.1 specification                               |
 
 ---
 
-*IVXP Protocol Specification v1.0 — Intelligence Value Exchange Protocol*
+_IVXP Protocol Specification v1.0 — Intelligence Value Exchange Protocol_

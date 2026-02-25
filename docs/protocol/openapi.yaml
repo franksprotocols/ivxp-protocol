@@ -525,7 +525,7 @@ components:
           type: string
           minLength: 1
           pattern: "^IVXP-DELIVER \\| Order: .+ \\| Payment: 0x[a-fA-F0-9]{64} \\| Nonce: .{16,} \\| Timestamp: .+$"
-          description: Canonical signed payload. Must equal "IVXP-DELIVER | Order: {order_id} | Payment: {payment_proof.tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}"
+          description: 'Canonical signed payload. Must equal "IVXP-DELIVER | Order: {order_id} | Payment: {payment_proof.tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}"'
 
     DeliveryAccepted:
       type: object

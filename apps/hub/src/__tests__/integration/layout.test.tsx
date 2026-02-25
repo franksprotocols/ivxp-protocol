@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { DOCS_URL } from "@/lib/docs-url";
 import {
   createWagmiMocks,
   applyDisconnectedState,
@@ -89,6 +90,12 @@ describe("Layout Integration", () => {
       renderWithProviders(<Header />);
       expect(screen.getByRole("banner")).toBeInTheDocument();
     });
+
+    it("renders docs link in header navigation with configured URL", () => {
+      renderWithProviders(<Header />);
+      const docsLinks = screen.getAllByRole("link", { name: "Docs" });
+      expect(docsLinks[0]).toHaveAttribute("href", DOCS_URL);
+    });
   });
 
   describe("footer", () => {
@@ -111,7 +118,7 @@ describe("Layout Integration", () => {
     it("renders external Docs and Community links", () => {
       renderWithProviders(<Footer />);
       const docsLink = screen.getByRole("link", { name: /docs/i });
-      expect(docsLink).toHaveAttribute("href", "https://ivxp-docs.vercel.app");
+      expect(docsLink).toHaveAttribute("href", DOCS_URL);
       expect(docsLink).toHaveAttribute("target", "_blank");
       expect(docsLink).toHaveAttribute("rel", "noopener noreferrer");
       expect(screen.getByRole("link", { name: "Community" })).toHaveAttribute("href", "/community");
@@ -150,7 +157,8 @@ describe("Layout Integration", () => {
       expect(within(mobileNav).getByText("Marketplace")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Playground")).toBeInTheDocument();
       expect(within(mobileNav).getByText("Provider Register")).toBeInTheDocument();
-      expect(within(mobileNav).getByText("Docs")).toBeInTheDocument();
+      const docsLink = within(mobileNav).getByRole("link", { name: "Docs" });
+      expect(docsLink).toHaveAttribute("href", DOCS_URL);
       expect(within(mobileNav).getByText("Community")).toBeInTheDocument();
       expect(within(mobileNav).getByText("About")).toBeInTheDocument();
       expect(within(mobileNav).queryByText("Provider")).not.toBeInTheDocument();

@@ -234,16 +234,16 @@ Every IVXP message includes a `message_type` field for routing:
 }
 ```
 
-| Field               | Type                 | Required | Description            |
-| ------------------- | -------------------- | -------- | ---------------------- |
-| `protocol`          | `ProtocolVersion`    | Yes      | Must be `"IVXP/1.0"`   |
-| `message_type`      | `"delivery_request"` | Yes      | Message discriminator  |
-| `timestamp`         | `ISOTimestamp`       | Yes      | Request timestamp      |
-| `order_id`          | `string`             | Yes      | Order ID from quote    |
-| `nonce`             | `string`             | Yes      | Unique nonce (min 16)  |
-| `payment_proof`     | `PaymentProof`       | Yes      | On-chain payment proof |
-| `delivery_endpoint` | `string` (URL)       | No       | P2P push endpoint      |
-| `signature`         | `HexSignature`       | Yes      | EIP-191 signature      |
+| Field               | Type                 | Required | Description                   |
+| ------------------- | -------------------- | -------- | ----------------------------- |
+| `protocol`          | `ProtocolVersion`    | Yes      | Must be `"IVXP/1.0"`          |
+| `message_type`      | `"delivery_request"` | Yes      | Message discriminator         |
+| `timestamp`         | `ISOTimestamp`       | Yes      | Request timestamp             |
+| `order_id`          | `string`             | Yes      | Order ID from quote           |
+| `nonce`             | `string`             | Yes      | Unique nonce (min 16)         |
+| `payment_proof`     | `PaymentProof`       | Yes      | On-chain payment proof        |
+| `delivery_endpoint` | `string` (URL)       | No       | P2P push endpoint             |
+| `signature`         | `HexSignature`       | Yes      | EIP-191 signature             |
 | `signed_message`    | `string`             | Yes      | Canonical signed message text |
 
 ### `PaymentProof`

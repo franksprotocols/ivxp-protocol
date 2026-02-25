@@ -6,12 +6,14 @@
   "description": "IVXP Protocol Documentation Site (Fumadocs)",
   "scripts": {
     "dev": "next dev --port 3001",
-    "prebuild": "pnpm run generate-api-docs",
+    "prebuild": "pnpm run validate-openapi && pnpm run generate-api-docs && pnpm run verify-generated-api-index",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --ignore-pattern .source --ignore-pattern .next",
+    "lint": "eslint . --ignore-pattern .source --ignore-pattern .next --ignore-pattern scripts",
     "typecheck": "tsc --noEmit",
-    "generate-api-docs": "tsx scripts/generate-api-docs.ts"
+    "validate-openapi": "node scripts/validate-openapi.mjs",
+    "generate-api-docs": "node scripts/generate-api-docs.mjs",
+    "verify-generated-api-index": "node scripts/verify-generated-api-index.mjs"
   },
   "dependencies": {
     "fumadocs-core": "^16.6.3",
@@ -32,7 +34,6 @@
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.0",
     "tailwindcss": "^4.1.8",
-    "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }
 }

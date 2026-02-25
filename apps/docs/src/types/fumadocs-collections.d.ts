@@ -3,4 +3,5 @@ declare module "fumadocs-mdx:collections/server" {
 
   export const sdkDocs: DocsCollectionEntry<"sdkDocs">;
   export const protocolDocs: DocsCollectionEntry<"protocolDocs">;
+  export const openApiDocs: DocsCollectionEntry<"openApiDocs">;
 }

@@ -1,62 +1,75 @@
 import Link from "next/link";
+import { HomeLayout } from "fumadocs-ui/layouts/home";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import type { LinkItemType } from "fumadocs-ui/layouts/shared";
+
+const HOME_LINKS: LinkItemType[] = [
+  { text: "SDK", url: "/docs/sdk" },
+  { text: "Protocol", url: "/docs/protocol" },
+  { text: "API Reference", url: "/docs/protocol/api" },
+];
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="border-b bg-fd-card/40">
-        <div className="container mx-auto px-6 py-20 text-center">
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-fd-foreground sm:text-5xl">
+    <HomeLayout
+      links={HOME_LINKS}
+      githubUrl="https://github.com/ivxp-protocol"
+      nav={{ title: "IVXP Docs", url: "/" }}
+    >
+      <section className="relative overflow-hidden border-b">
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-fd-primary/10 via-transparent to-transparent" />
+        <div className="container relative mx-auto px-4 py-24 text-center sm:py-28">
+          <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-fd-muted-foreground">
             IVXP Documentation
+          </p>
+          <h1 className="mx-auto mb-4 max-w-3xl text-4xl font-semibold tracking-tight text-fd-foreground sm:text-5xl">
+            Build and integrate value-exchanging AI agents.
           </h1>
-          <p className="mx-auto max-w-2xl text-lg text-fd-muted-foreground">
-            Intelligence Value Exchange Protocol — SDK guides, wire format reference, and full API
-            documentation.
+          <p className="mx-auto mb-8 max-w-2xl text-base text-fd-muted-foreground sm:text-lg">
+            SDK guides, protocol specifications, and generated API reference for IVXP.
           </p>
+          <div className="flex items-center justify-center gap-3">
+            <Link
+              href="/docs/sdk/getting-started/installation"
+              className="rounded-lg bg-fd-primary px-4 py-2 text-sm font-medium text-fd-primary-foreground transition-colors hover:bg-fd-primary/90"
+            >
+              Get Started
+            </Link>
+            <Link
+              href="/docs/protocol/api"
+              className="rounded-lg border bg-fd-card px-4 py-2 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
+            >
+              API Reference
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Entry cards */}
-      <div className="container mx-auto grid gap-6 px-6 py-16 sm:grid-cols-3">
-        <Link
-          href="/docs/sdk"
-          className="group rounded-xl border bg-fd-card p-6 shadow-sm transition-all hover:border-fd-primary/60 hover:shadow-md"
-        >
-          <div className="mb-3 text-2xl">📦</div>
-          <h2 className="mb-2 text-xl font-semibold text-fd-foreground group-hover:text-fd-primary">
-            SDK
-          </h2>
-          <p className="text-sm text-fd-muted-foreground">
-            Build AI agents that pay and get paid. Installation, guides, and end-to-end examples.
-          </p>
-        </Link>
-
-        <Link
-          href="/docs/protocol"
-          className="group rounded-xl border bg-fd-card p-6 shadow-sm transition-all hover:border-fd-primary/60 hover:shadow-md"
-        >
-          <div className="mb-3 text-2xl">📡</div>
-          <h2 className="mb-2 text-xl font-semibold text-fd-foreground group-hover:text-fd-primary">
-            Protocol
-          </h2>
-          <p className="text-sm text-fd-muted-foreground">
-            Understand the wire format, state machine, security model, and error codes.
-          </p>
-        </Link>
-
-        <Link
-          href="/docs/protocol/api"
-          className="group rounded-xl border bg-fd-card p-6 shadow-sm transition-all hover:border-fd-primary/60 hover:shadow-md"
-        >
-          <div className="mb-3 text-2xl">🔌</div>
-          <h2 className="mb-2 text-xl font-semibold text-fd-foreground group-hover:text-fd-primary">
-            API Reference
-          </h2>
-          <p className="text-sm text-fd-muted-foreground">
-            Browse all endpoints and message schemas from the OpenAPI specification.
-          </p>
-        </Link>
-      </div>
-    </main>
+      <section className="container mx-auto px-4 py-12 sm:py-16">
+        <Cards className="grid-cols-1 gap-4 md:grid-cols-3">
+          <Card
+            title="SDK"
+            description="Install the SDK, connect wallets, request quotes, and process delivery."
+            href="/docs/sdk"
+          >
+            Installation, guides, and code examples
+          </Card>
+          <Card
+            title="Protocol"
+            description="Understand message formats, state machine, errors, and compatibility rules."
+            href="/docs/protocol"
+          >
+            Wire format and security model
+          </Card>
+          <Card
+            title="API Reference"
+            description="Explore generated endpoint docs directly from OpenAPI definitions."
+            href="/docs/protocol/api"
+          >
+            Operation-by-operation reference
+          </Card>
+        </Cards>
+      </section>
+    </HomeLayout>
   );
 }

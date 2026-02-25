@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { DOCS_URL } from "@/lib/docs-url";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -12,7 +13,7 @@ const INTERNAL_LINKS = [
 
 const EXTERNAL_LINKS = [
   {
-    href: "https://ivxp-docs.vercel.app",
+    href: DOCS_URL,
     label: "Docs",
   },
   {

@@ -27,7 +27,9 @@
     "docs:api": "typedoc",
     "docs:api:watch": "typedoc --watch",
     "docs:build": "pnpm docs:api",
-    "docs:validate": "pnpm --filter @ivxp/sdk typecheck && tsc --noEmit --project packages/sdk/tsconfig.json"
+    "docs:validate": "pnpm --filter @ivxp/sdk typecheck && tsc --noEmit --project packages/sdk/tsconfig.json",
+    "docs:dev:site": "./scripts/start-docs.sh",
+    "docs:dev:site:fast": "./scripts/start-docs.sh --skip-prebuild"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

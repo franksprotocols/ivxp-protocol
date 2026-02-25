@@ -1,8 +1,6 @@
 // Primary approach: two defineDocs() calls pointing directly to the monorepo docs directories.
 // Paths are resolved relative to this source.config.ts file (apps/docs/).
-// If cross-root path resolution fails at runtime (visible as missing pages on first `dev` run),
-// fallback: copy content into apps/docs/content/{sdk,protocol}/ and change dirs to './content/sdk'
-// and './content/protocol'.
+// OpenAPI operation pages are generated into ./content/protocol/api by prebuild scripts.
 import { defineDocs, defineConfig } from "fumadocs-mdx/config";
 
 export const sdkDocs = defineDocs({
@@ -11,6 +9,10 @@ export const sdkDocs = defineDocs({
 
 export const protocolDocs = defineDocs({
   dir: "../../docs/protocol",
+});
+
+export const openApiDocs = defineDocs({
+  dir: "./content/protocol/api",
 });
 
 export default defineConfig();

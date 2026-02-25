@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from "fumadocs-ui/layouts/docs/page";
-import { sdkSource, protocolSource } from "@/lib/source";
+import { openApiSource, sdkSource, protocolSource } from "@/lib/source";
 import type { Metadata } from "next";
 import type { MDXContent } from "mdx/types";
 import type { TOCItemType } from "fumadocs-core/toc";
@@ -30,6 +30,17 @@ function resolvePage(slug: string[] = []) {
   }
 
   if (slug[0] === "protocol") {
+    if (slug[1] === "api") {
+      const rest = slug.slice(2);
+      if (rest.length === 0) {
+        return null;
+      }
+
+      const page = openApiSource.getPage(rest);
+      if (page) return { page, source: openApiSource };
+      return null;
+    }
+
     const rest = slug.slice(1);
     const pageSlug = rest.length === 0 ? ["README"] : rest;
     const page = protocolSource.getPage(pageSlug);
@@ -50,7 +61,11 @@ export default async function DocsPageComponent({ params }: PageProps) {
   const { slug } = await params;
   const normalizedSlug = normalizeSlug(slug);
 
-  if (normalizedSlug[0] === "protocol" && normalizedSlug[1] === "api") {
+  if (
+    normalizedSlug[0] === "protocol" &&
+    normalizedSlug[1] === "api" &&
+    normalizedSlug.length === 2
+  ) {
     redirect("/docs/protocol/api");
   }
 
@@ -82,7 +97,10 @@ export async function generateStaticParams() {
   const protocolParams = protocolSource.getPages().map((page) => ({
     slug: ["protocol", ...page.slugs],
   }));
-  return [...sdkParams, ...protocolParams];
+  const openApiParams = openApiSource.getPages().map((page) => ({
+    slug: ["protocol", "api", ...page.slugs],
+  }));
+  return [...sdkParams, ...protocolParams, ...openApiParams];
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
