@@ -23,4 +23,3 @@ describe("getDocsUrl", () => {
     expect(getDocsUrl({ NODE_ENV: "test" })).toBe("https://ivxp-docs.vercel.app");
   });
 });
-

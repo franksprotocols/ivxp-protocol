@@ -32,16 +32,16 @@ See also: [diagrams/state-machine.mmd](./diagrams/state-machine.mmd)
 
 ## Order States
 
-| State             | Description                                      | Terminal |
-| ----------------- | ------------------------------------------------ | -------- |
-| `quoted`          | Quote issued, awaiting payment                   | No       |
-| `paid`            | Payment verified on-chain, awaiting processing   | No       |
-| `processing`      | Service handler actively processing the order    | No       |
-| `delivered`       | Deliverable ready (P2P push succeeded or stored) | Yes\*    |
+| State             | Description                                                                | Terminal |
+| ----------------- | -------------------------------------------------------------------------- | -------- |
+| `quoted`          | Quote issued, awaiting payment                                             | No       |
+| `paid`            | Payment verified on-chain, awaiting processing                             | No       |
+| `processing`      | Service handler actively processing the order                              | No       |
+| `delivered`       | Deliverable ready (P2P push succeeded or stored)                           | Yes\*    |
 | `delivery_failed` | P2P push failed after deliverable creation; deliverable still downloadable | Yes      |
-| `confirmed`       | Client signed receipt confirmation (IVXP/1.1)    | Yes      |
-| `expired`         | Payment timeout exceeded                         | Yes      |
-| `refunded`        | Payment failed post-acceptance verification      | Yes      |
+| `confirmed`       | Client signed receipt confirmation (IVXP/1.1)                              | Yes      |
+| `expired`         | Payment timeout exceeded                                                   | Yes      |
+| `refunded`        | Payment failed post-acceptance verification                                | Yes      |
 
 \*`delivered` is terminal in IVXP/1.0. In IVXP/1.1, it transitions to `confirmed`.
 

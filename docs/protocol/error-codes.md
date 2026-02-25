@@ -32,17 +32,17 @@ All error responses follow this structure:
 
 These errors indicate problems with the client's request.
 
-| Code                           | HTTP Status | Description                                                  | Recovery                                      |
-| ------------------------------ | ----------- | ------------------------------------------------------------ | --------------------------------------------- |
-| `SIGNATURE_INVALID`            | 401         | EIP-191 signature verification failed                        | Re-sign with the correct private key          |
-| `ORDER_NOT_FOUND`              | 404         | The specified order ID does not exist                        | Verify the order_id from the quote            |
+| Code                           | HTTP Status | Description                                                             | Recovery                                      |
+| ------------------------------ | ----------- | ----------------------------------------------------------------------- | --------------------------------------------- |
+| `SIGNATURE_INVALID`            | 401         | EIP-191 signature verification failed                                   | Re-sign with the correct private key          |
+| `ORDER_NOT_FOUND`              | 404         | The specified order ID does not exist                                   | Verify the order_id from the quote            |
 | `ORDER_EXPIRED`                | 410         | The order is no longer available (payment timeout or retention elapsed) | Create a new service request                  |
-| `SERVICE_TYPE_NOT_SUPPORTED`   | 400         | The requested service type is not in the catalog             | Check `GET /ivxp/catalog` for available types |
-| `BUDGET_TOO_LOW`               | 400         | The budget is below the service's base price                 | Increase `budget_usdc` to meet the price      |
-| `PROTOCOL_VERSION_UNSUPPORTED` | 400         | The protocol version is not supported                        | Use `"IVXP/1.0"`                              |
-| `INVALID_TIMESTAMP`            | 400         | Message timestamp is too old or too far in the future        | Synchronize clock and retry                   |
-| `DUPLICATE_DELIVERY_REQUEST`   | 409         | A delivery request for this order has already been processed | Check order status instead                    |
-| `INVALID_ORDER_STATE`          | 409         | The order is not in the expected state for this operation    | Check order status and retry when appropriate |
+| `SERVICE_TYPE_NOT_SUPPORTED`   | 400         | The requested service type is not in the catalog                        | Check `GET /ivxp/catalog` for available types |
+| `BUDGET_TOO_LOW`               | 400         | The budget is below the service's base price                            | Increase `budget_usdc` to meet the price      |
+| `PROTOCOL_VERSION_UNSUPPORTED` | 400         | The protocol version is not supported                                   | Use `"IVXP/1.0"`                              |
+| `INVALID_TIMESTAMP`            | 400         | Message timestamp is too old or too far in the future                   | Synchronize clock and retry                   |
+| `DUPLICATE_DELIVERY_REQUEST`   | 409         | A delivery request for this order has already been processed            | Check order status instead                    |
+| `INVALID_ORDER_STATE`          | 409         | The order is not in the expected state for this operation               | Check order status and retry when appropriate |
 
 ### Example: Invalid Signature
 
@@ -151,25 +151,25 @@ These errors indicate problems on the provider side.
 
 Complete list of all IVXP/1.0 error codes:
 
-| Code                           | Category | HTTP | Description                               |
-| ------------------------------ | -------- | ---- | ----------------------------------------- |
-| `PAYMENT_NOT_VERIFIED`         | Payment  | 402  | On-chain transaction not found or invalid |
-| `SIGNATURE_INVALID`            | Client   | 401  | EIP-191 signature verification failed     |
-| `ORDER_NOT_FOUND`              | Client   | 404  | Order ID not found                        |
-| `SERVICE_UNAVAILABLE`          | Server   | 503  | Provider cannot process requests          |
-| `INSUFFICIENT_BALANCE`         | Payment  | 402  | Insufficient USDC balance                 |
-| `SERVICE_TYPE_NOT_SUPPORTED`   | Client   | 400  | Service type not in catalog               |
-| `BUDGET_TOO_LOW`               | Client   | 400  | Budget below service price                |
-| `PAYMENT_TIMEOUT`              | Payment  | 408  | Payment not received in time              |
+| Code                           | Category | HTTP | Description                                    |
+| ------------------------------ | -------- | ---- | ---------------------------------------------- |
+| `PAYMENT_NOT_VERIFIED`         | Payment  | 402  | On-chain transaction not found or invalid      |
+| `SIGNATURE_INVALID`            | Client   | 401  | EIP-191 signature verification failed          |
+| `ORDER_NOT_FOUND`              | Client   | 404  | Order ID not found                             |
+| `SERVICE_UNAVAILABLE`          | Server   | 503  | Provider cannot process requests               |
+| `INSUFFICIENT_BALANCE`         | Payment  | 402  | Insufficient USDC balance                      |
+| `SERVICE_TYPE_NOT_SUPPORTED`   | Client   | 400  | Service type not in catalog                    |
+| `BUDGET_TOO_LOW`               | Client   | 400  | Budget below service price                     |
+| `PAYMENT_TIMEOUT`              | Payment  | 408  | Payment not received in time                   |
 | `ORDER_EXPIRED`                | Client   | 410  | Order expired or deliverable retention elapsed |
-| `PROTOCOL_VERSION_UNSUPPORTED` | Client   | 400  | Unsupported protocol version              |
-| `INTERNAL_ERROR`               | Server   | 500  | Unexpected provider error                 |
-| `INVALID_TIMESTAMP`            | Client   | 400  | Timestamp too old or in the future        |
-| `DUPLICATE_DELIVERY_REQUEST`   | Client   | 409  | Delivery already requested for this order |
-| `INVALID_NETWORK`              | Payment  | 400  | Unsupported blockchain network            |
-| `INVALID_TOKEN_CONTRACT`       | Payment  | 400  | Token contract is not USDC                |
-| `AMOUNT_MISMATCH`              | Payment  | 402  | Payment amount does not match quote       |
-| `INVALID_ORDER_STATE`          | Client   | 409  | Order not in expected state               |
+| `PROTOCOL_VERSION_UNSUPPORTED` | Client   | 400  | Unsupported protocol version                   |
+| `INTERNAL_ERROR`               | Server   | 500  | Unexpected provider error                      |
+| `INVALID_TIMESTAMP`            | Client   | 400  | Timestamp too old or in the future             |
+| `DUPLICATE_DELIVERY_REQUEST`   | Client   | 409  | Delivery already requested for this order      |
+| `INVALID_NETWORK`              | Payment  | 400  | Unsupported blockchain network                 |
+| `INVALID_TOKEN_CONTRACT`       | Payment  | 400  | Token contract is not USDC                     |
+| `AMOUNT_MISMATCH`              | Payment  | 402  | Payment amount does not match quote            |
+| `INVALID_ORDER_STATE`          | Client   | 409  | Order not in expected state                    |
 
 ---
 
