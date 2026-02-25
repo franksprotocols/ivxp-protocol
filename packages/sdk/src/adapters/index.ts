@@ -54,10 +54,7 @@ export interface IVXPClientAdapter {
    * Request a service quote from the provider.
    * Maps to POST /ivxp/request.
    */
-  requestQuote(
-    providerUrl: string,
-    params: ServiceRequestParams
-  ): Promise<ServiceQuoteOutput>;
+  requestQuote(providerUrl: string, params: ServiceRequestParams): Promise<ServiceQuoteOutput>;
 
   /**
    * Notify the provider of payment and request delivery.
@@ -68,17 +65,14 @@ export interface IVXPClientAdapter {
     orderId: string,
     paymentProof: PaymentProofOutput,
     signature: HexSignature,
-    signedMessage: string
+    signedMessage: string,
   ): Promise<DeliveryAcceptedOutput>;
 
   /**
    * Poll the current status of an order.
    * Maps to GET /ivxp/status/:orderId.
    */
-  getStatus(
-    providerUrl: string,
-    orderId: string
-  ): Promise<OrderStatusResponseOutput>;
+  getStatus(providerUrl: string, orderId: string): Promise<OrderStatusResponseOutput>;
 
   /**
    * Download the completed deliverable.
@@ -87,7 +81,7 @@ export interface IVXPClientAdapter {
   download(
     providerUrl: string,
     orderId: string,
-    options?: DownloadOptions
+    options?: DownloadOptions,
   ): Promise<DeliveryResponseOutput>;
 }
 

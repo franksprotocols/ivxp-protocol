@@ -26,6 +26,7 @@ const DeliveryAcceptedWireSchema = z.object({
   status: z.literal("accepted"),
   order_id: z.string().min(1),
   message: z.string().min(1),
+  stream_url: z.string().url().optional(),
 });
 
 /**
@@ -35,6 +36,7 @@ export const DeliveryAcceptedSchema = DeliveryAcceptedWireSchema.transform((data
   status: data.status,
   orderId: data.order_id,
   message: data.message,
+  streamUrl: data.stream_url,
 }));
 
 // ---------------------------------------------------------------------------

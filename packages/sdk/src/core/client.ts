@@ -21,6 +21,7 @@ import {
   ServiceQuoteSchema,
   OrderStatusResponseSchema,
   DeliveryResponseSchema,
+  DeliveryAcceptedSchema,
   type ServiceCatalogOutput,
   type ServiceQuoteOutput,
   type OrderStatusResponseOutput,
@@ -44,6 +45,12 @@ import {
   type CallbackServerResult,
   type RejectionDetails,
 } from "./callback-server.js";
+import {
+  SSEClient,
+  SSEExhaustedError,
+  type SSEConnectOptions,
+  type SSEHandlers,
+} from "../sse/index.js";
 import type {
   ServiceRequestParams,
   SubmitPaymentQuote,
@@ -861,8 +868,17 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
     };
 
     // 6. Notify provider (POST payment proof)
+    let streamUrl: string | undefined;
     try {
-      await this.httpClient.post<unknown>(paymentUrl, paymentProof as unknown as JsonSerializable);
+      const rawResponse = await this.httpClient.post<unknown>(
+        paymentUrl,
+        paymentProof as unknown as JsonSerializable,
+      );
+      // Attempt to parse stream_url from the payment acceptance response
+      const parsed = DeliveryAcceptedSchema.safeParse(rawResponse);
+      if (parsed.success) {
+        streamUrl = parsed.data.streamUrl;
+      }
     } catch (notificationError) {
       // Payment succeeded but notification failed -- partial success
       const cause = notificationError instanceof Error ? notificationError : undefined;
@@ -882,6 +898,7 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
       orderId,
       txHash,
       status: "paid",
+      streamUrl,
     };
   }
 
@@ -1030,6 +1047,31 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
       ...options,
       targetStatuses: ["delivered", "delivery_failed"],
     });
+  }
+
+  // -------------------------------------------------------------------------
+  // SSE Streaming
+  // -------------------------------------------------------------------------
+
+  /**
+   * Subscribe to a real-time SSE stream for order events.
+   *
+   * Connects to the given `streamUrl` and dispatches typed events to handlers.
+   * Returns an unsubscribe function. Throws `SSEExhaustedError` after
+   * `maxRetries` failed connection attempts.
+   *
+   * @param streamUrl - The SSE stream URL (from DeliveryAccepted response)
+   * @param handlers - Event handlers for status_update, progress, completed, failed
+   * @returns Promise resolving to an unsubscribe function
+   * @throws SSEExhaustedError if all retry attempts fail
+   */
+  async subscribeToStream(
+    streamUrl: string,
+    handlers: SSEHandlers,
+    options: SSEConnectOptions = {},
+  ): Promise<() => void> {
+    const sseClient = new SSEClient();
+    return sseClient.connect(streamUrl, handlers, options);
   }
 
   // -------------------------------------------------------------------------
@@ -1337,12 +1379,35 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
 
       this.checkAborted(abortController, timeoutMs, state);
 
-      // Step 3: Wait for delivery (poll with abort signal)
+      // Step 3: Wait for delivery (SSE if stream_url available, else poll)
       state = { ...state, step: "poll" };
-      const deliveredOrder = await this.waitForDelivery(providerUrl, quote.orderId, {
-        ...pollOptions,
-        signal: abortController.signal,
-      });
+      let deliveredOrder: OrderStatusResponseOutput;
+      if (paymentResult.streamUrl) {
+        try {
+          deliveredOrder = await this.waitViaSSE(
+            paymentResult.streamUrl,
+            quote.orderId,
+            providerUrl,
+            { ...pollOptions, signal: abortController.signal },
+          );
+        } catch (err) {
+          if (err instanceof SSEExhaustedError) {
+            this.emit("sse_fallback", { orderId: quote.orderId, reason: err.message });
+            // Fall through to polling
+            deliveredOrder = await this.waitForDelivery(providerUrl, quote.orderId, {
+              ...pollOptions,
+              signal: abortController.signal,
+            });
+          } else {
+            throw err;
+          }
+        }
+      } else {
+        deliveredOrder = await this.waitForDelivery(providerUrl, quote.orderId, {
+          ...pollOptions,
+          signal: abortController.signal,
+        });
+      }
 
       if (deliveredOrder.status === "delivery_failed") {
         throw new IVXPError(`Delivery failed for order ${quote.orderId}`, "DELIVERY_FAILED", {
@@ -1424,6 +1489,80 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
   // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Wait for order delivery via SSE stream.
+   *
+   * Connects to the SSE stream and resolves when a 'completed' or 'failed'
+   * event is received. Falls back to polling if SSE is exhausted.
+   *
+   * @throws SSEExhaustedError if all SSE retry attempts fail (caller falls back to polling)
+   */
+  private async waitViaSSE(
+    streamUrl: string,
+    orderId: string,
+    providerUrl: string,
+    pollOptions: Omit<OrderPollOptions, "targetStatuses">,
+  ): Promise<OrderStatusResponseOutput> {
+    return new Promise<OrderStatusResponseOutput>((resolve, reject) => {
+      let settled = false;
+      let unsubscribe: (() => void) | undefined;
+
+      const cleanup = (): void => {
+        pollOptions.signal?.removeEventListener("abort", onAbort);
+        unsubscribe?.();
+      };
+
+      const settleResolve = (status: OrderStatusResponseOutput): void => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(status);
+      };
+
+      const settleReject = (error: unknown): void => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(error);
+      };
+
+      const resolveWithFinalStatus = (): void => {
+        this.getOrderStatus(providerUrl, orderId).then(settleResolve).catch(settleReject);
+      };
+
+      const onAbort = (): void => {
+        settleReject(new Error("Aborted"));
+      };
+
+      if (pollOptions.signal?.aborted) {
+        settleReject(new Error("Aborted"));
+        return;
+      }
+
+      pollOptions.signal?.addEventListener("abort", onAbort, { once: true });
+
+      this.subscribeToStream(
+        streamUrl,
+        {
+          onCompleted: resolveWithFinalStatus,
+          onFailed: resolveWithFinalStatus,
+          onExhausted: (error) => {
+            settleReject(error);
+          },
+        },
+        { signal: pollOptions.signal },
+      )
+        .then((unsub) => {
+          if (settled) {
+            unsub();
+            return;
+          }
+          unsubscribe = unsub;
+        })
+        .catch(settleReject);
+    });
+  }
 
   /**
    * Check if the abort signal has fired and throw TimeoutError if so.
