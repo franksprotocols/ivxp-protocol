@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Footer } from "./Footer";
+import { DOCS_URL } from "@/lib/docs-url";
 
 describe("Footer", () => {
   it("renders the footer element", () => {
@@ -16,7 +17,7 @@ describe("Footer", () => {
 
   it("renders a link to documentation", () => {
     render(<Footer />);
-    expect(screen.getByRole("link", { name: /docs/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /docs/i })).toHaveAttribute("href", DOCS_URL);
   });
 
   it("renders a link to GitHub", () => {

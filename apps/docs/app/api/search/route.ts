@@ -1,6 +1,6 @@
 import { createSearchAPI } from "fumadocs-core/search/server";
 import type { AdvancedIndex } from "fumadocs-core/search/server";
-import { sdkSource, protocolSource } from "@/lib/source";
+import { openApiSource, sdkSource, protocolSource } from "@/lib/source";
 
 function toAdvancedIndex(page: { url: string; slugs: string[]; data: unknown }): AdvancedIndex {
   const data = page.data as {
@@ -19,5 +19,7 @@ function toAdvancedIndex(page: { url: string; slugs: string[]; data: unknown }):
 }
 
 export const { GET } = createSearchAPI("advanced", {
-  indexes: [...sdkSource.getPages(), ...protocolSource.getPages()].map(toAdvancedIndex),
+  indexes: [...sdkSource.getPages(), ...protocolSource.getPages(), ...openApiSource.getPages()].map(
+    toAdvancedIndex,
+  ),
 });
