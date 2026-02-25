@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* global console */
 /* eslint-disable no-console */
 
 import { resolve } from "node:path";
