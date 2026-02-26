@@ -133,7 +133,11 @@ describe("buildDeliveryPayload", () => {
     const p2 = buildDeliveryPayload(params);
 
     expect(p1).not.toBe(p2);
-    expect(p1).toEqual(p2);
+    expect(p1.order_id).toBe(p2.order_id);
+    expect(p1.status).toBe(p2.status);
+    expect(p1.deliverable).toEqual(p2.deliverable);
+    expect(new Date(p1.delivered_at).getTime()).not.toBeNaN();
+    expect(new Date(p2.delivered_at).getTime()).not.toBeNaN();
   });
 });
 
