@@ -127,6 +127,35 @@ describe("ServiceCatalogSchema", () => {
     expect(result.timestamp).toBe(VALID_TIMESTAMP);
   });
 
+  it("should parse catalog without capabilities field (backward compatible)", () => {
+    const result = ServiceCatalogSchema.parse(validCatalog);
+    expect(result.capabilities).toBeUndefined();
+  });
+
+  it("should parse catalog with capabilities field", () => {
+    const result = ServiceCatalogSchema.parse({
+      ...validCatalog,
+      capabilities: ["sse"],
+    });
+    expect(result.capabilities).toEqual(["sse"]);
+  });
+
+  it("should parse catalog with unknown future capability strings", () => {
+    const result = ServiceCatalogSchema.parse({
+      ...validCatalog,
+      capabilities: ["sse", "unknown_future_feature"],
+    });
+    expect(result.capabilities).toEqual(["sse", "unknown_future_feature"]);
+  });
+
+  it("should parse catalog with empty capabilities array", () => {
+    const result = ServiceCatalogSchema.parse({
+      ...validCatalog,
+      capabilities: [],
+    });
+    expect(result.capabilities).toEqual([]);
+  });
+
   it("should accept empty services array", () => {
     const result = ServiceCatalogSchema.parse({
       protocol: "IVXP/1.0",

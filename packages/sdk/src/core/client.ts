@@ -15,6 +15,7 @@ import type {
   SDKEventMap,
 } from "@ivxp/protocol";
 import { EventEmitter } from "./events.js";
+import { hasCapability, CAPABILITY_SSE } from "./capabilities.js";
 import {
   PROTOCOL_VERSION,
   ServiceCatalogSchema,
@@ -1341,8 +1342,12 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
     const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
 
     try {
-      // Step 1: Request quote
+      // Step 1: Request quote (also fetch catalog to detect capabilities)
       state = { ...state, step: "quote" };
+      // Validate params early so INVALID_REQUEST_PARAMS is thrown before any HTTP calls
+      validateRequestParams({ serviceType, description, budgetUsdc, deliveryFormat });
+      const catalog = await this.getCatalog(providerUrl);
+      const supportsSSE = hasCapability(catalog, CAPABILITY_SSE);
       const quote = await this.requestQuote(providerUrl, {
         serviceType,
         description,
@@ -1379,17 +1384,16 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
 
       this.checkAborted(abortController, timeoutMs, state);
 
-      // Step 3: Wait for delivery (SSE if stream_url available, else poll)
+      // Step 3: Wait for delivery (SSE if provider declared capability and stream_url available, else poll)
       state = { ...state, step: "poll" };
       let deliveredOrder: OrderStatusResponseOutput;
-      if (paymentResult.streamUrl) {
+      const streamUrl = supportsSSE ? paymentResult.streamUrl : undefined;
+      if (streamUrl) {
         try {
-          deliveredOrder = await this.waitViaSSE(
-            paymentResult.streamUrl,
-            quote.orderId,
-            providerUrl,
-            { ...pollOptions, signal: abortController.signal },
-          );
+          deliveredOrder = await this.waitViaSSE(streamUrl, quote.orderId, providerUrl, {
+            ...pollOptions,
+            signal: abortController.signal,
+          });
         } catch (err) {
           if (err instanceof SSEExhaustedError) {
             this.emit("sse_fallback", { orderId: quote.orderId, reason: err.message });

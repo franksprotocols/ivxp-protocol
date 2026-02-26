@@ -70,6 +70,9 @@ export {
   type SDKEventMap,
   type SDKEventName,
   type SDKEventPayload,
+  hasCapability,
+  CAPABILITY_SSE,
+  type KnownCapability,
 } from "./core/index.js";
 
 // ---------------------------------------------------------------------------

@@ -58,6 +58,7 @@ const ServiceCatalogWireSchema = z.object({
   provider: z.string().min(1),
   wallet_address: HexAddressSchema,
   services: z.array(ServiceDefinitionWireSchema),
+  capabilities: z.array(z.string()).optional(),
   message_type: z.literal("service_catalog").optional(),
   timestamp: ISOTimestampSchema.optional(),
 });
@@ -76,6 +77,7 @@ export const ServiceCatalogSchema = ServiceCatalogWireSchema.transform((data) =>
   provider: data.provider,
   walletAddress: data.wallet_address,
   services: data.services.map(transformServiceDefinition),
+  capabilities: data.capabilities,
   messageType: data.message_type,
   timestamp: data.timestamp,
 }));

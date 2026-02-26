@@ -48,6 +48,15 @@ const DEFAULT_CONFIRM_RESPONSE = {
   confirmed_at: "2026-02-16T13:00:00Z",
 };
 
+/** Default catalog response (wire format, snake_case). */
+const DEFAULT_CATALOG_RESPONSE = {
+  protocol: "IVXP/1.0",
+  provider: "TestProvider",
+  wallet_address: TEST_ACCOUNTS.provider.address,
+  services: [{ type: "code_review", base_price_usdc: 10, estimated_delivery_hours: 1 }],
+  capabilities: ["sse"],
+};
+
 /** Create a fully mocked client for requestService tests. */
 function createMockedClient(mockHttp: MockHttpClient): IVXPClient {
   const mockCrypto = new MockCryptoService({
@@ -81,6 +90,7 @@ function createFullFlowMockHttp(overrides?: {
   deliveryResponse?: ReturnType<typeof createMockDeliveryResponse>;
   orderStatus?: ReturnType<typeof createMockOrderStatusResponse>;
   paymentResponse?: Record<string, unknown>;
+  catalog?: Record<string, unknown>;
 }): MockHttpClient {
   const orderId = DEFAULT_ORDER_ID;
   const quote = overrides?.quote ?? createMockQuote({ order_id: orderId });
@@ -89,6 +99,7 @@ function createFullFlowMockHttp(overrides?: {
   const orderStatus =
     overrides?.orderStatus ?? createMockOrderStatusResponse("delivered", { order_id: orderId });
   const paymentResponse = overrides?.paymentResponse ?? { status: "paid" };
+  const catalog = overrides?.catalog ?? DEFAULT_CATALOG_RESPONSE;
 
   // Validate orderId consistency: if overrides are provided, all must
   // share the same order_id to prevent silent mismatches in test data.
@@ -112,6 +123,9 @@ function createFullFlowMockHttp(overrides?: {
   }
 
   const mockHttp = new MockHttpClient();
+
+  // GET /ivxp/catalog -> catalog with capabilities
+  mockHttp.onGet(`${PROVIDER_URL}/ivxp/catalog`, () => catalog);
 
   // POST /ivxp/request -> quote
   mockHttp.onPost(`${PROVIDER_URL}/ivxp/request`, () => quote);
@@ -647,6 +661,9 @@ describe("IVXPClient.requestService()", () => {
       const orderId = DEFAULT_ORDER_ID;
       const quote = createMockQuote({ order_id: orderId });
 
+      // GET /ivxp/catalog -> catalog (required for capability detection)
+      mockHttp.onGet(`${PROVIDER_URL}/ivxp/catalog`, () => DEFAULT_CATALOG_RESPONSE);
+
       // POST /ivxp/request -> quote (success)
       mockHttp.onPost(`${PROVIDER_URL}/ivxp/request`, () => quote);
 
@@ -691,6 +708,9 @@ describe("IVXPClient.requestService()", () => {
       const orderId = DEFAULT_ORDER_ID;
       const quote = createMockQuote({ order_id: orderId });
 
+      // GET /ivxp/catalog -> catalog (required for capability detection)
+      mockHttp.onGet(`${PROVIDER_URL}/ivxp/catalog`, () => DEFAULT_CATALOG_RESPONSE);
+
       // POST /ivxp/request -> quote (success)
       mockHttp.onPost(`${PROVIDER_URL}/ivxp/request`, () => quote);
 
@@ -730,6 +750,9 @@ describe("IVXPClient.requestService()", () => {
       const mockHttp = new MockHttpClient();
       const orderId = DEFAULT_ORDER_ID;
       const quote = createMockQuote({ order_id: orderId });
+
+      // GET /ivxp/catalog -> catalog (required for capability detection)
+      mockHttp.onGet(`${PROVIDER_URL}/ivxp/catalog`, () => DEFAULT_CATALOG_RESPONSE);
 
       mockHttp.onPost(`${PROVIDER_URL}/ivxp/request`, () => quote);
       mockHttp.onPost(`${PROVIDER_URL}/ivxp/orders/${encodeURIComponent(orderId)}/payment`, () => ({

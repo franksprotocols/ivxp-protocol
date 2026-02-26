@@ -67,6 +67,9 @@ export {
 export { EventEmitter } from "./events.js";
 export type { SDKEvent, SDKEventMap, SDKEventName, SDKEventPayload } from "./events.js";
 
+/** Provider capability detection utilities. */
+export { hasCapability, CAPABILITY_SSE, type KnownCapability } from "./capabilities.js";
+
 /** SDK-specific parameter and result types. */
 export type {
   ServiceRequestParams,

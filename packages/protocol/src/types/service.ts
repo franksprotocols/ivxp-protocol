@@ -47,6 +47,20 @@ export interface ServiceCatalog {
   /** Array of services offered by this Provider. */
   readonly services: readonly ServiceDefinition[];
 
+  /**
+   * Optional list of capability identifiers supported by this Provider.
+   *
+   * Known values:
+   * - `"sse"` — Provider supports real-time SSE streaming via GET /ivxp/stream/:orderId
+   *
+   * Absence of this field (or an empty array) means IVXP/1.0 baseline only.
+   * Clients MUST silently ignore any unrecognized capability strings to
+   * ensure forward compatibility.
+   *
+   * @since IVXP/3.0
+   */
+  readonly capabilities?: readonly string[];
+
   // -- Extension fields (optional, backward-compatible) --
 
   /** Message type discriminator. */
