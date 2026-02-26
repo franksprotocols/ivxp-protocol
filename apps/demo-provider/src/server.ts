@@ -205,7 +205,7 @@ export function createServer(deps: ServerDependencies): ServerInstance {
   app.get("/ivxp/catalog", async (_req: Request, res: Response) => {
     try {
       const catalog = await provider.getCatalog();
-      res.json(catalog);
+      res.json({ ...catalog, capabilities: ["sse"] });
     } catch (error: unknown) {
       logger.error({ error }, "catalog error");
       res.status(500).json({ error: "Internal server error" });
