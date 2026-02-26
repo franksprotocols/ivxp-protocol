@@ -20,10 +20,7 @@ export interface StreamRouteHooks {
  *
  * @param emitter - The shared SSEOrderEmitter instance (singleton per server)
  */
-export function createStreamRoute(
-  emitter: SSEOrderEmitter,
-  hooks: StreamRouteHooks = {},
-) {
+export function createStreamRoute(emitter: SSEOrderEmitter, hooks: StreamRouteHooks = {}) {
   return async function handleStream(req: Request, res: Response): Promise<void> {
     const rawParam = req.params["order_id"];
     const orderId = Array.isArray(rawParam) ? (rawParam[0] ?? "") : (rawParam ?? "");

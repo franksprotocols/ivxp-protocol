@@ -15,13 +15,14 @@ describe("formatSSEEvent", () => {
 
   it("formats a progress event correctly", () => {
     const result = formatSSEEvent("progress", { percent: 75, message: "Generating report" });
-    expect(result).toBe(
-      'event: progress\ndata: {"percent":75,"message":"Generating report"}\n\n',
-    );
+    expect(result).toBe('event: progress\ndata: {"percent":75,"message":"Generating report"}\n\n');
   });
 
   it("formats a completed event correctly", () => {
-    const result = formatSSEEvent("completed", { orderId: "abc123", deliverableUrl: "/ivxp/download/abc123" });
+    const result = formatSSEEvent("completed", {
+      orderId: "abc123",
+      deliverableUrl: "/ivxp/download/abc123",
+    });
     expect(result).toBe(
       'event: completed\ndata: {"orderId":"abc123","deliverableUrl":"/ivxp/download/abc123"}\n\n',
     );
@@ -29,9 +30,7 @@ describe("formatSSEEvent", () => {
 
   it("formats a failed event correctly", () => {
     const result = formatSSEEvent("failed", { orderId: "abc123", reason: "Provider error" });
-    expect(result).toBe(
-      'event: failed\ndata: {"orderId":"abc123","reason":"Provider error"}\n\n',
-    );
+    expect(result).toBe('event: failed\ndata: {"orderId":"abc123","reason":"Provider error"}\n\n');
   });
 });
 
