@@ -7,6 +7,7 @@ export default defineConfig({
     "payment/index": "src/payment/index.ts",
     "core/index": "src/core/index.ts",
     "errors/index": "src/errors/index.ts",
+    "provider/index": "src/provider/index.ts",
   },
   format: ["esm", "cjs"],
   dts: true,

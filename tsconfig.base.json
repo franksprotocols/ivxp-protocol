@@ -19,6 +19,7 @@
     "paths": {
       "@ivxp/protocol": ["./packages/protocol/src/index.ts"],
       "@ivxp/sdk": ["./packages/sdk/src/index.ts"],
+      "@ivxp/sdk/provider": ["./packages/sdk/src/provider/index.ts"],
       "@ivxp/test-utils": ["./packages/test-utils/src/index.ts"]
     }
   },

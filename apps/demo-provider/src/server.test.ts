@@ -18,7 +18,7 @@
  * - Body size limit enforcement
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createServer, type ServerInstance } from "./server.js";
 import { IVXPProvider } from "@ivxp/sdk";
 import { MockCryptoService, MockPaymentService, TEST_ACCOUNTS } from "@ivxp/test-utils";
@@ -337,6 +337,63 @@ describe("canonical /ivxp/orders/* endpoints", () => {
     expect(deliverableRes.status).toBe(200);
     expect(deliverableRes.body["order_id"]).toBe(orderId);
     expect(deliverableRes.body["content_hash"]).toBeTypeOf("string");
+  });
+});
+
+describe("SSE polling strategy", () => {
+  it("starts order polling lazily only after an SSE subscriber connects", async () => {
+    const getSpy = vi.spyOn(serverInstance.orderRepository, "get");
+
+    const quoteRes = await fetchJson("/ivxp/request", {
+      method: "POST",
+      body: JSON.stringify(
+        validServiceRequestBody({
+          service_request: {
+            type: "text_echo",
+            description: "Lazy SSE polling test",
+            budget_usdc: 1,
+          },
+        }),
+      ),
+    });
+
+    expect(quoteRes.status).toBe(200);
+    const orderId = quoteRes.body["order_id"] as string;
+
+    const deliveryRes = await fetchJson(`/ivxp/orders/${orderId}/delivery`, {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: orderId,
+        payment: {
+          tx_hash: "0x" + "aa".repeat(32),
+          network: "base-sepolia",
+        },
+        signature: {
+          message: `IVXP payment for order ${orderId}`,
+          sig: "0x" + "cd".repeat(65),
+          signer: TEST_ACCOUNTS.client.address,
+        },
+      }),
+    });
+    expect(deliveryRes.status).toBe(200);
+
+    const callsAfterDelivery = getSpy.mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    expect(getSpy.mock.calls.length).toBe(callsAfterDelivery);
+
+    const abortController = new AbortController();
+    const streamRes = await fetch(`${baseUrl}/ivxp/stream/${orderId}`, {
+      headers: { Accept: "text/event-stream" },
+      signal: abortController.signal,
+    });
+    expect(streamRes.status).toBe(200);
+    expect(streamRes.headers.get("content-type")).toContain("text/event-stream");
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    expect(getSpy.mock.calls.length).toBeGreaterThan(callsAfterDelivery);
+
+    abortController.abort();
+    getSpy.mockRestore();
   });
 });
 
