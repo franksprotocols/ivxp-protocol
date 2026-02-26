@@ -18,6 +18,7 @@ import express, { type Request, type Response, type NextFunction } from "express
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { IVXPProvider, IVXPError } from "@ivxp/sdk";
+import { SSEOrderEmitter } from "@ivxp/sdk/provider";
 import type { ServiceRequest, DeliveryRequest } from "@ivxp/protocol";
 import { z } from "zod";
 import type { ProviderConfig } from "./config.js";
@@ -27,6 +28,7 @@ import { createLogger, type Logger } from "./logger.js";
 import { ServiceRequestBodySchema, DeliveryRequestBodySchema } from "./schemas.js";
 import { initializeDatabase, DEFAULT_CLEANUP_INTERVAL_MS } from "./db/index.js";
 import { OrderRepository } from "./db/orders.js";
+import { createStreamRoute } from "./routes/ivxp-stream.js";
 
 /**
  * Maximum JSON body size accepted by Express.
@@ -94,6 +96,7 @@ export interface ServerInstance {
   readonly provider: IVXPProvider;
   readonly logger: Logger;
   readonly orderRepository: OrderRepository;
+  readonly sseEmitter: SSEOrderEmitter;
   /** Close the database connection and stop cleanup scheduler. */
   readonly shutdown: () => void;
 }
@@ -107,6 +110,9 @@ export function createServer(deps: ServerDependencies): ServerInstance {
   const { config } = deps;
   const logger = deps.logger ?? createLogger(config.logLevel);
   const orderInputById = new Map<string, unknown>();
+  const sseEmitter = new SSEOrderEmitter();
+  const activeSSEPollingOrderIds = new Set<string>();
+  const sseSubscriberCountByOrderId = new Map<string, number>();
 
   // Initialize SQLite database and order repository
   const dbInstance = initializeDatabase({
@@ -264,7 +270,12 @@ export function createServer(deps: ServerDependencies): ServerInstance {
       const accepted = await provider.handleDeliveryRequest(
         parseResult.data as unknown as DeliveryRequest,
       );
-      res.json(accepted);
+
+      // Include stream_url for SSE-capable clients (AC #2)
+      const streamUrl = `${req.protocol}://${req.get("host")}/ivxp/stream/${accepted.order_id}`;
+      const response = { ...accepted, stream_url: streamUrl };
+
+      res.json(response);
     } catch (error: unknown) {
       handleIVXPError(error, res, logger);
     }
@@ -306,7 +317,12 @@ export function createServer(deps: ServerDependencies): ServerInstance {
       };
 
       const accepted = await provider.handleDeliveryRequest(legacyPayload);
-      res.json(accepted);
+
+      // Include stream_url for SSE-capable clients (AC #2)
+      const streamUrl = `${req.protocol}://${req.get("host")}/ivxp/stream/${accepted.order_id}`;
+      const response = { ...accepted, stream_url: streamUrl };
+
+      res.json(response);
     } catch (error: unknown) {
       handleIVXPError(error, res, logger);
     }
@@ -335,6 +351,55 @@ export function createServer(deps: ServerDependencies): ServerInstance {
       handleIVXPError(error, res, logger);
     }
   });
+
+  const hasActiveSSESubscribers = (orderId: string): boolean =>
+    (sseSubscriberCountByOrderId.get(orderId) ?? 0) > 0;
+
+  const ensureSSEPollingForOrder = (orderId: string): void => {
+    if (activeSSEPollingOrderIds.has(orderId)) {
+      return;
+    }
+
+    if (!hasActiveSSESubscribers(orderId)) {
+      return;
+    }
+
+    activeSSEPollingOrderIds.add(orderId);
+    pollAndPushOrderEvents(
+      orderId,
+      orderRepository,
+      sseEmitter,
+      logger,
+      () => hasActiveSSESubscribers(orderId),
+      () => {
+        activeSSEPollingOrderIds.delete(orderId);
+      },
+    );
+  };
+
+  const handleSSEStreamConnected = (orderId: string): void => {
+    const nextCount = (sseSubscriberCountByOrderId.get(orderId) ?? 0) + 1;
+    sseSubscriberCountByOrderId.set(orderId, nextCount);
+    ensureSSEPollingForOrder(orderId);
+  };
+
+  const handleSSEStreamDisconnected = (orderId: string): void => {
+    const currentCount = sseSubscriberCountByOrderId.get(orderId) ?? 0;
+    if (currentCount <= 1) {
+      sseSubscriberCountByOrderId.delete(orderId);
+      return;
+    }
+    sseSubscriberCountByOrderId.set(orderId, currentCount - 1);
+  };
+
+  // GET /ivxp/stream/:order_id (SSE real-time order events)
+  app.get(
+    "/ivxp/stream/:order_id",
+    createStreamRoute(sseEmitter, {
+      onStreamConnected: handleSSEStreamConnected,
+      onStreamDisconnected: handleSSEStreamDisconnected,
+    }),
+  );
 
   // GET /ivxp/download/:orderId
   app.get("/ivxp/download/:orderId", async (req: Request, res: Response) => {
@@ -365,7 +430,90 @@ export function createServer(deps: ServerDependencies): ServerInstance {
     dbInstance.close();
   };
 
-  return { app, provider, logger, orderRepository, shutdown };
+  return { app, provider, logger, orderRepository, sseEmitter, shutdown };
+}
+
+// ---------------------------------------------------------------------------
+// SSE order event polling
+// ---------------------------------------------------------------------------
+
+/** Poll interval for order status checks (ms). */
+const SSE_POLL_INTERVAL_MS = 200;
+
+/** Maximum polling duration before giving up (ms). */
+const SSE_POLL_TIMEOUT_MS = 300_000; // 5 minutes
+
+/**
+ * Poll the order repository and push SSE events as the order status transitions.
+ *
+ * Runs as a fire-and-forget background process. Stops when the order reaches
+ * a terminal state (completed / failed / delivered) or the timeout is exceeded.
+ */
+function pollAndPushOrderEvents(
+  orderId: string,
+  repo: OrderRepository,
+  emitter: SSEOrderEmitter,
+  logger: Logger,
+  hasActiveSubscriber: () => boolean,
+  onStopped: () => void,
+): void {
+  let lastStatus: string | undefined;
+  const startTime = Date.now();
+  let stopped = false;
+
+  const stopPolling = (): void => {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
+    clearInterval(interval);
+    onStopped();
+  };
+
+  const interval = setInterval(() => {
+    if (!hasActiveSubscriber()) {
+      stopPolling();
+      return;
+    }
+
+    if (Date.now() - startTime > SSE_POLL_TIMEOUT_MS) {
+      stopPolling();
+      emitter.push(orderId, { type: "failed", data: { orderId, reason: "Processing timeout" } });
+      return;
+    }
+
+    repo
+      .get(orderId)
+      .then((order) => {
+        if (!order) return;
+
+        if (order.status !== lastStatus) {
+          lastStatus = order.status;
+
+          if (order.status === "delivered") {
+            stopPolling();
+            emitter.push(orderId, {
+              type: "completed",
+              data: { orderId, deliverableUrl: `/ivxp/download/${orderId}` },
+            });
+          } else if (order.status === "delivery_failed") {
+            stopPolling();
+            emitter.push(orderId, {
+              type: "failed",
+              data: { orderId, reason: "Order processing failed" },
+            });
+          } else {
+            emitter.push(orderId, {
+              type: "status_update",
+              data: { status: order.status, orderId },
+            });
+          }
+        }
+      })
+      .catch((err: unknown) => {
+        logger.warn({ err, orderId }, "SSE poll error");
+      });
+  }, SSE_POLL_INTERVAL_MS);
 }
 
 // ---------------------------------------------------------------------------
