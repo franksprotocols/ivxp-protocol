@@ -2,29 +2,24 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { GET, POST } from "../route";
 import { resetStore, createAdapter, updateAdapterStatus } from "@/lib/adapter-store";
-import { VALID_ADAPTER_INPUT, OPERATOR_SECRET } from "@/lib/__tests__/fixtures";
+import { VALID_ADAPTER_INPUT } from "@/lib/__tests__/fixtures";
 
 beforeEach(() => {
   resetStore();
-  vi.stubEnv("HUB_OPERATOR_SECRET", OPERATOR_SECRET);
 });
 
 afterEach(() => {
-  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 function makeGetRequest(query = ""): NextRequest {
   return new NextRequest(new URL(`/api/adapters${query}`, "http://localhost:3000"));
 }
 
-function makePostRequest(body: unknown, token?: string): NextRequest {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+function makePostRequest(body: unknown): NextRequest {
   return new NextRequest(new URL("/api/adapters", "http://localhost:3000"), {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
@@ -160,21 +155,8 @@ describe("GET /api/adapters", () => {
 });
 
 describe("POST /api/adapters", () => {
-  it("returns 401 without auth token", async () => {
-    const res = await POST(makePostRequest(VALID_ADAPTER_INPUT));
-    const data = await res.json();
-
-    expect(res.status).toBe(401);
-    expect(data.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("returns 401 with wrong token", async () => {
-    const res = await POST(makePostRequest(VALID_ADAPTER_INPUT, "wrong-token"));
-    expect(res.status).toBe(401);
-  });
-
   it("creates adapter with pending_audit status", async () => {
-    const res = await POST(makePostRequest(VALID_ADAPTER_INPUT, OPERATOR_SECRET));
+    const res = await POST(makePostRequest(VALID_ADAPTER_INPUT));
     const data = await res.json();
 
     expect(res.status).toBe(201);
@@ -185,9 +167,7 @@ describe("POST /api/adapters", () => {
   });
 
   it("records frameworkType metadata", async () => {
-    const res = await POST(
-      makePostRequest({ ...VALID_ADAPTER_INPUT, frameworkType: "A2A" }, OPERATOR_SECRET),
-    );
+    const res = await POST(makePostRequest({ ...VALID_ADAPTER_INPUT, frameworkType: "A2A" }));
     const data = await res.json();
 
     expect(data.data.frameworkType).toBe("A2A");
@@ -195,7 +175,7 @@ describe("POST /api/adapters", () => {
 
   it("returns 400 for invalid body (missing name)", async () => {
     const { name: _, ...noName } = VALID_ADAPTER_INPUT;
-    const res = await POST(makePostRequest(noName, OPERATOR_SECRET));
+    const res = await POST(makePostRequest(noName));
     const data = await res.json();
 
     expect(res.status).toBe(400);
@@ -207,7 +187,6 @@ describe("POST /api/adapters", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPERATOR_SECRET}`,
       },
       body: "not valid json{{{",
     });
@@ -219,15 +198,13 @@ describe("POST /api/adapters", () => {
   });
 
   it("returns 400 for invalid version format", async () => {
-    const res = await POST(
-      makePostRequest({ ...VALID_ADAPTER_INPUT, version: "bad" }, OPERATOR_SECRET),
-    );
+    const res = await POST(makePostRequest({ ...VALID_ADAPTER_INPUT, version: "bad" }));
     expect(res.status).toBe(400);
   });
 
   it("returns 400 for invalid npm package name", async () => {
     const res = await POST(
-      makePostRequest({ ...VALID_ADAPTER_INPUT, npmPackage: "INVALID PACKAGE" }, OPERATOR_SECRET),
+      makePostRequest({ ...VALID_ADAPTER_INPUT, npmPackage: "INVALID PACKAGE" }),
     );
     expect(res.status).toBe(400);
   });
