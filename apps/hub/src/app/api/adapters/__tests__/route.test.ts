@@ -82,6 +82,81 @@ describe("GET /api/adapters", () => {
     expect(adapter).toHaveProperty("npmPackage");
     expect(adapter).toHaveProperty("status");
   });
+
+  it("filters by frameworkType query param", async () => {
+    const mcp = createAdapter(VALID_ADAPTER_INPUT);
+    updateAdapterStatus(mcp.id, "published", { auditResult: true });
+
+    const a2a = createAdapter({
+      ...VALID_ADAPTER_INPUT,
+      name: "A2A Adapter",
+      npmPackage: "@ivxp/adapter-a2a",
+      frameworkType: "A2A",
+    });
+    updateAdapterStatus(a2a.id, "published", { auditResult: true });
+
+    const res = await GET(makeGetRequest("?frameworkType=MCP"));
+    const data = await res.json();
+
+    expect(data.data).toHaveLength(1);
+    expect(data.data[0].frameworkType).toBe("MCP");
+  });
+
+  it("ignores invalid frameworkType and returns all published", async () => {
+    const entry = createAdapter(VALID_ADAPTER_INPUT);
+    updateAdapterStatus(entry.id, "published", { auditResult: true });
+
+    const res = await GET(makeGetRequest("?frameworkType=InvalidType"));
+    const data = await res.json();
+
+    expect(data.data).toHaveLength(1);
+  });
+
+  it("returns 0 results for frameworkType with no matching adapters", async () => {
+    const mcp = createAdapter(VALID_ADAPTER_INPUT);
+    updateAdapterStatus(mcp.id, "published", { auditResult: true });
+
+    const a2a = createAdapter({
+      ...VALID_ADAPTER_INPUT,
+      name: "A2A Adapter",
+      npmPackage: "@ivxp/adapter-a2a",
+      frameworkType: "A2A",
+    });
+    updateAdapterStatus(a2a.id, "published", { auditResult: true });
+
+    const res = await GET(makeGetRequest("?frameworkType=LangGraph"));
+    const data = await res.json();
+
+    expect(data.data).toHaveLength(0);
+    expect(data.meta.total).toBe(0);
+  });
+
+  it("treats frameworkType=All as invalid and returns all published", async () => {
+    const mcp = createAdapter(VALID_ADAPTER_INPUT);
+    updateAdapterStatus(mcp.id, "published", { auditResult: true });
+
+    const a2a = createAdapter({
+      ...VALID_ADAPTER_INPUT,
+      name: "A2A Adapter",
+      npmPackage: "@ivxp/adapter-a2a",
+      frameworkType: "A2A",
+    });
+    updateAdapterStatus(a2a.id, "published", { auditResult: true });
+
+    const res = await GET(makeGetRequest("?frameworkType=All"));
+    const data = await res.json();
+
+    expect(data.data).toHaveLength(2);
+    expect(data.meta.total).toBe(2);
+  });
+
+  it("returns 400 for empty string page param", async () => {
+    const res = await GET(makeGetRequest("?page=&limit=20"));
+    const data = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(data.error.code).toBe("INVALID_PARAMETERS");
+  });
 });
 
 describe("POST /api/adapters", () => {
