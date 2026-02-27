@@ -61,6 +61,7 @@
     "test:interop:ts-python": "vitest run --config vitest.interop.config.ts --reporter=verbose src/__tests__/interop/ts-python.test.ts",
     "test:interop:python-ts": "vitest run --config vitest.interop.config.ts --reporter=verbose src/__tests__/interop/python-ts.test.ts",
     "test:interop:a2a": "vitest run --config vitest.interop.config.ts --reporter=verbose --reporter=junit --outputFile.junit=test-results/a2a-junit.xml src/__tests__/interop/a2a.interop.test.ts",
+    "test:interop:langgraph": "vitest run --config vitest.interop.config.ts --reporter=verbose --reporter=junit --outputFile.junit=test-results/langgraph-junit.xml src/__tests__/interop/langgraph.interop.test.ts",
     "test:interop:python": "vitest run --config vitest.interop.config.ts --reporter=verbose src/__tests__/interop/ts-python.test.ts src/__tests__/interop/python-ts.test.ts",
     "prepublishOnly": "pnpm build && pnpm test",
     "publish:dry": "npm publish --dry-run",
@@ -73,9 +74,12 @@
   },
   "devDependencies": {
     "@ivxp/adapter-a2a": "workspace:*",
+    "@ivxp/adapter-langgraph": "workspace:*",
     "@ivxp/test-utils": "workspace:*",
     "@a2a-js/sdk": "^0.3.0",
+    "@langchain/langgraph": "^0.2.0",
     "@vitest/coverage-v8": "4.0.18",
+    "vitest": "3.2.4",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0"
   },
