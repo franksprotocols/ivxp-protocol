@@ -1,4 +1,4 @@
-import type { NetworkType } from '@ivxp/sdk';
+import type { NetworkType } from "@ivxp/sdk";
 
 export interface A2AAdapterConfig {
   /** EIP-191 private key for signing — load from IVXP_PRIVATE_KEY env var */
@@ -7,4 +7,6 @@ export interface A2AAdapterConfig {
   network?: NetworkType;
   /** Provider URL for client-side requests — load from IVXP_PROVIDER_URL env var */
   providerUrl?: string;
+  /** Provider name used in delivery responses (default: 'a2a-provider') */
+  providerName?: string;
 }
