@@ -1,18 +1,6 @@
-// Placeholder stub — full implementation in v3-4-3
-import type { IVXPMCPAdapterConfig, MCPTool } from "./types.js";
-
-export class IVXPMCPAdapter {
-  constructor(_config: IVXPMCPAdapterConfig) {}
-  async init(): Promise<void> {}
-  getTools(): MCPTool[] {
-    return [];
-  }
-  async handleToolCall(_name: string, _args: unknown): Promise<unknown> {
-    return {};
-  }
-}
-
+export { IVXPMCPAdapter } from "./mcp-adapter.js";
 export { SchemaGenerator } from "./schema-generator.js";
+export { assertNotSSRF } from "./ssrf-guard.js";
 export type {
   MCPTool,
   MCPToolInputSchema,
