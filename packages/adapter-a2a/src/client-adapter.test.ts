@@ -12,8 +12,8 @@ import type { Task } from "@a2a-js/sdk";
 
 const mockHttpPost = vi.fn();
 
-vi.mock("@ivxp/sdk", async (importOriginal) => {
-  const actual = await importOriginal<SdkModule>();
+vi.mock("@ivxp/sdk", async (importOriginal: () => Promise<typeof SdkModule>) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     IVXPClient: vi.fn(),

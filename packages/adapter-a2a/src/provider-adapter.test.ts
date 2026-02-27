@@ -8,8 +8,8 @@ import type * as SdkModule from "@ivxp/sdk";
 // Mock IVXPProvider
 // ---------------------------------------------------------------------------
 
-vi.mock("@ivxp/sdk", async (importOriginal) => {
-  const actual = await importOriginal<SdkModule>();
+vi.mock("@ivxp/sdk", async (importOriginal: () => Promise<typeof SdkModule>) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     IVXPProvider: vi.fn(),

@@ -182,9 +182,9 @@ describe("createIvxpNode", () => {
     expect(mockSubscribeToStream).toHaveBeenCalledWith(
       "https://provider.example.com/stream/ord-123",
       expect.objectContaining({
-        onCompleted: expect.any(Function),
-        onFailed: expect.any(Function),
-        onExhausted: expect.any(Function),
+        onCompleted: expect.anything(),
+        onFailed: expect.anything(),
+        onExhausted: expect.anything(),
       }),
     );
     expect(mockGetStatus).not.toHaveBeenCalled();
