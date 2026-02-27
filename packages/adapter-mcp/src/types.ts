@@ -2,6 +2,18 @@ export interface IVXPMCPAdapterConfig {
   providerUrl: string;
   privateKey: string;
   network: string;
+  /**
+   * Optional pre-built IVXPClient instance for dependency injection.
+   * When provided, the adapter skips creating its own client in init().
+   * Useful for testing with mock crypto/payment services.
+   */
+  client?: unknown;
+  /**
+   * When true AND a `client` is injected, skip SSRF checks on handleToolCall
+   * provider URLs. Only intended for local integration testing against
+   * localhost providers. Has no effect when `client` is not provided.
+   */
+  dangerouslyDisableSSRF?: boolean;
 }
 
 export interface MCPToolInputSchemaProperty {

@@ -9,6 +9,7 @@ on:
       - "packages/test-utils/**"
       - "packages/adapter-a2a/**"
       - "packages/adapter-langgraph/**"
+      - "packages/adapter-mcp/**"
       - "pnpm-lock.yaml"
 
 jobs:
@@ -240,6 +241,7 @@ jobs:
         run: |
           pnpm --filter @ivxp/protocol build
           pnpm --filter @ivxp/test-utils build
+          pnpm --filter @ivxp/sdk build
           pnpm --filter @ivxp/adapter-langgraph build
 
       - name: Set up Python venv for interop tests
@@ -287,5 +289,78 @@ jobs:
         with:
           name: Interop LangGraph Results
           path: "test-results/langgraph-junit.xml"
+          reporter: java-junit
+          fail-on-error: false
+
+  interop-mcp:
+    name: MCP Adapter Interop
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm --filter @ivxp/protocol build
+          pnpm --filter @ivxp/test-utils build
+          pnpm --filter @ivxp/sdk build
+          pnpm --filter @ivxp/adapter-mcp build
+
+      - name: Set up Python venv for interop tests
+        run: |
+          cd packages/sdk/src/__tests__/interop/python
+          python3 -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Run MCP interop tests
+        run: pnpm --filter @ivxp/sdk test:interop:mcp
+
+      - name: Stop Python provider
+        if: always()
+        run: pkill -f minimal_provider.py || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interop-mcp-results
+          path: packages/sdk/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  interop-mcp-report:
+    name: Publish MCP Test Report
+    needs: interop-mcp
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: interop-mcp-results
+          path: test-results/
+        continue-on-error: true
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        continue-on-error: true
+        with:
+          name: Interop MCP Results
+          path: "test-results/mcp-junit.xml"
           reporter: java-junit
           fail-on-error: false
