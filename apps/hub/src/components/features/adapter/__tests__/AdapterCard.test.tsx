@@ -2,9 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AdapterCard } from "../AdapterCard";
 import type { AdapterEntry } from "@/lib/adapter-store";
+import type * as UtilsModule from "@/lib/utils";
 
-vi.mock("@/lib/utils", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/utils")>();
+vi.mock("@/lib/utils", async (importOriginal: () => Promise<typeof UtilsModule>) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     copyToClipboard: vi.fn().mockResolvedValue(true),
@@ -42,16 +43,12 @@ describe("AdapterCard", () => {
 
   it("renders description", () => {
     render(<AdapterCard adapter={mockAdapter} />);
-    expect(
-      screen.getByText("MCP adapter for IVXP protocol"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("MCP adapter for IVXP protocol")).toBeInTheDocument();
   });
 
   it("renders npm install command", () => {
     render(<AdapterCard adapter={mockAdapter} />);
-    expect(
-      screen.getByText("npm install @ivxp/adapter-mcp"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("npm install @ivxp/adapter-mcp")).toBeInTheDocument();
   });
 
   it("links to adapter detail page", () => {
@@ -62,8 +59,6 @@ describe("AdapterCard", () => {
 
   it("renders copy button for install command", () => {
     render(<AdapterCard adapter={mockAdapter} />);
-    expect(
-      screen.getByRole("button", { name: /copy install command/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy install command/i })).toBeInTheDocument();
   });
 });

@@ -82,7 +82,10 @@ async function main() {
 
   // 1. Fetch the service catalog
   const catalog = await adapter.getCatalog();
-  console.log("Services available:", catalog.services.map((s) => s.serviceId));
+  console.log(
+    "Services available:",
+    catalog.services.map((s) => s.serviceId),
+  );
 
   // 2. Request a service (catalog → quote → payment → deliver → download)
   const serviceId = catalog.services[0].serviceId;
@@ -120,12 +123,12 @@ Deliverable: { format: 'text', content: '...' }
 
 If you see an error:
 
-| Error | Likely cause |
-|-------|-------------|
-| `InsufficientBalanceError` | Wallet has no test USDC — visit the faucet |
-| `ServiceUnavailableError` | Provider URL is unreachable — check `IVXP_PROVIDER_URL` |
-| `SignatureVerificationError` | Private key is malformed — must be `0x` + 64 hex chars |
-| `PaymentFailedError` | RPC endpoint issue — try a different provider URL |
+| Error                        | Likely cause                                            |
+| ---------------------------- | ------------------------------------------------------- |
+| `InsufficientBalanceError`   | Wallet has no test USDC — visit the faucet              |
+| `ServiceUnavailableError`    | Provider URL is unreachable — check `IVXP_PROVIDER_URL` |
+| `SignatureVerificationError` | Private key is malformed — must be `0x` + 64 hex chars  |
+| `PaymentFailedError`         | RPC endpoint issue — try a different provider URL       |
 
 ---
 

@@ -13,11 +13,11 @@ pnpm --filter @ivxp/adapter-langgraph build
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `IVXP_PRIVATE_KEY` | Yes | 0x-prefixed 64-char hex private key (32 bytes) |
-| `IVXP_PROVIDER_URL` | Yes | Provider base URL (e.g. `http://localhost:3001`) |
-| `IVXP_NETWORK` | No | `base-sepolia` (default) or `base-mainnet` |
+| Variable            | Required | Description                                      |
+| ------------------- | -------- | ------------------------------------------------ |
+| `IVXP_PRIVATE_KEY`  | Yes      | 0x-prefixed 64-char hex private key (32 bytes)   |
+| `IVXP_PROVIDER_URL` | Yes      | Provider base URL (e.g. `http://localhost:3001`) |
+| `IVXP_NETWORK`      | No       | `base-sepolia` (default) or `base-mainnet`       |
 
 ## Run
 
@@ -47,13 +47,16 @@ import { ivxpNode } from "@ivxp/adapter-langgraph";
 import type { IVXPLangGraphState } from "@ivxp/adapter-langgraph";
 
 const stateChannels = {
-  providerUrl:  { value: (_a: string, b: string) => b },
-  serviceType:  { value: (_a: string, b: string) => b },
-  input:        { value: (_a: Record<string, unknown>, b: Record<string, unknown>) => b },
-  budgetUsdc:   { value: (_a: number, b: number) => b },
-  ivxpResult:   { value: (_a: unknown, b: unknown) => b, default: () => undefined },
-  ivxpError:    { value: (_a: string | undefined, b: string | undefined) => b, default: () => undefined },
-  pollOptions:  { value: (_a: unknown, b: unknown) => b, default: () => undefined },
+  providerUrl: { value: (_a: string, b: string) => b },
+  serviceType: { value: (_a: string, b: string) => b },
+  input: { value: (_a: Record<string, unknown>, b: Record<string, unknown>) => b },
+  budgetUsdc: { value: (_a: number, b: number) => b },
+  ivxpResult: { value: (_a: unknown, b: unknown) => b, default: () => undefined },
+  ivxpError: {
+    value: (_a: string | undefined, b: string | undefined) => b,
+    default: () => undefined,
+  },
+  pollOptions: { value: (_a: unknown, b: unknown) => b, default: () => undefined },
 };
 
 const graph = new StateGraph<IVXPLangGraphState>({ channels: stateChannels })

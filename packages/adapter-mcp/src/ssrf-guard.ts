@@ -28,9 +28,7 @@ export function assertNotSSRF(url: string): void {
 
   // C1: restrict to http/https only
   if (!["http:", "https:"].includes(parsed.protocol)) {
-    throw new Error(
-      `SSRF guard: disallowed scheme "${parsed.protocol.replace(":", "")}"`,
-    );
+    throw new Error(`SSRF guard: disallowed scheme "${parsed.protocol.replace(":", "")}"`);
   }
 
   const rawHostname = parsed.hostname.toLowerCase();

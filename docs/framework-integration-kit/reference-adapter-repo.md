@@ -40,13 +40,13 @@ packages/adapter-a2a/
 
 Key files to study:
 
-| File | What it teaches |
-|------|----------------|
-| `src/client-adapter.ts` | How to wrap `IVXPClient` for a specific framework |
-| `src/provider-adapter.ts` | How to wrap `IVXPProvider` for a specific framework |
-| `src/types.ts` | How to define framework-specific config and result types |
-| `examples/basic/run.ts` | How to wire up a full end-to-end transaction |
-| `tests/client-adapter.test.ts` | How to test adapter logic with mocked SDK internals |
+| File                           | What it teaches                                          |
+| ------------------------------ | -------------------------------------------------------- |
+| `src/client-adapter.ts`        | How to wrap `IVXPClient` for a specific framework        |
+| `src/provider-adapter.ts`      | How to wrap `IVXPProvider` for a specific framework      |
+| `src/types.ts`                 | How to define framework-specific config and result types |
+| `examples/basic/run.ts`        | How to wire up a full end-to-end transaction             |
+| `tests/client-adapter.test.ts` | How to test adapter logic with mocked SDK internals      |
 
 ---
 

@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { IVXPA2AProviderAdapter } from "./provider-adapter.js";
 import { IVXPProvider, IVXPError } from "@ivxp/sdk";
 import type { DeliveryRequestOutput, ServiceRequestOutput } from "@ivxp/protocol";
+import type * as SdkModule from "@ivxp/sdk";
 
 // ---------------------------------------------------------------------------
 // Mock IVXPProvider
 // ---------------------------------------------------------------------------
 
-vi.mock("@ivxp/sdk", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@ivxp/sdk")>();
+vi.mock("@ivxp/sdk", async (importOriginal: () => Promise<typeof SdkModule>) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     IVXPProvider: vi.fn(),

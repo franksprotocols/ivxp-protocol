@@ -166,9 +166,9 @@ describe("SSEClient — integration with local HTTP server", () => {
 
   it("throws SSEExhaustedError after 3 failed connection attempts", async () => {
     const client = new SSEClient({ maxRetries: 3, retryBaseMs: 0 });
-    await expect(
-      client.connect("http://127.0.0.1:1/stream/order-1", {}),
-    ).rejects.toBeInstanceOf(SSEExhaustedError);
+    await expect(client.connect("http://127.0.0.1:1/stream/order-1", {})).rejects.toBeInstanceOf(
+      SSEExhaustedError,
+    );
   });
 
   it("handles mid-stream disconnect and exhausts retries", async () => {
@@ -185,9 +185,7 @@ describe("SSEClient — integration with local HTTP server", () => {
     const client = new SSEClient({ maxRetries: 3, retryBaseMs: 0 });
     const onStatusUpdate = vi.fn();
 
-    await expect(
-      client.connect(url, { onStatusUpdate }),
-    ).rejects.toBeInstanceOf(SSEExhaustedError);
+    await expect(client.connect(url, { onStatusUpdate })).rejects.toBeInstanceOf(SSEExhaustedError);
   });
 });
 
@@ -260,9 +258,11 @@ describe("IVXPClient.requestService() — SSE degradation integration", () => {
       );
 
     const realFetch = globalThis.fetch.bind(globalThis);
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((...args) =>
-      realFetch(...(args as [RequestInfo | URL, RequestInit | undefined])),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation((...args) =>
+        realFetch(...(args as [RequestInfo | URL, RequestInit | undefined])),
+      );
 
     const onFallback = vi.fn();
     client.on("sse_fallback", onFallback);

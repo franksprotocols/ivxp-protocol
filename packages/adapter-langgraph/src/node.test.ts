@@ -163,10 +163,12 @@ describe("createIvxpNode", () => {
       ...MOCK_PAYMENT_RESULT,
       streamUrl: "https://provider.example.com/stream/ord-123",
     });
-    mockSubscribeToStream.mockImplementation((_url: string, handlers: Record<string, Function>) => {
-      queueMicrotask(() => handlers.onCompleted?.());
-      return Promise.resolve(() => {});
-    });
+    mockSubscribeToStream.mockImplementation(
+      (_url: string, handlers: Record<string, (...args: unknown[]) => unknown>) => {
+        queueMicrotask(() => handlers.onCompleted?.());
+        return Promise.resolve(() => {});
+      },
+    );
     mockDownload.mockResolvedValue(MOCK_DELIVERABLE);
 
     const node = createIvxpNode(mockClient as any);
@@ -180,9 +182,9 @@ describe("createIvxpNode", () => {
     expect(mockSubscribeToStream).toHaveBeenCalledWith(
       "https://provider.example.com/stream/ord-123",
       expect.objectContaining({
-        onCompleted: expect.any(Function),
-        onFailed: expect.any(Function),
-        onExhausted: expect.any(Function),
+        onCompleted: expect.anything(),
+        onFailed: expect.anything(),
+        onExhausted: expect.anything(),
       }),
     );
     expect(mockGetStatus).not.toHaveBeenCalled();
@@ -287,10 +289,12 @@ describe("createIvxpNode", () => {
       ...MOCK_PAYMENT_RESULT,
       streamUrl: "https://provider.example.com/stream/ord-123",
     });
-    mockSubscribeToStream.mockImplementation((_url: string, handlers: Record<string, Function>) => {
-      queueMicrotask(() => handlers.onFailed?.({ reason: "provider error" }));
-      return Promise.resolve(() => {});
-    });
+    mockSubscribeToStream.mockImplementation(
+      (_url: string, handlers: Record<string, (...args: unknown[]) => unknown>) => {
+        queueMicrotask(() => handlers.onFailed?.({ reason: "provider error" }));
+        return Promise.resolve(() => {});
+      },
+    );
 
     const node = createIvxpNode(mockClient as any);
     await expect(node(BASE_STATE)).rejects.toSatisfy((err: Error) => {
@@ -312,10 +316,12 @@ describe("createIvxpNode", () => {
     const exhaustedErr = Object.assign(new Error("max retries exceeded"), {
       name: "SSEExhaustedError",
     });
-    mockSubscribeToStream.mockImplementation((_url: string, handlers: Record<string, Function>) => {
-      queueMicrotask(() => handlers.onExhausted?.(exhaustedErr));
-      return Promise.resolve(() => {});
-    });
+    mockSubscribeToStream.mockImplementation(
+      (_url: string, handlers: Record<string, (...args: unknown[]) => unknown>) => {
+        queueMicrotask(() => handlers.onExhausted?.(exhaustedErr));
+        return Promise.resolve(() => {});
+      },
+    );
 
     const node = createIvxpNode(mockClient as any);
     await expect(node(BASE_STATE)).rejects.toSatisfy((err: Error) => {

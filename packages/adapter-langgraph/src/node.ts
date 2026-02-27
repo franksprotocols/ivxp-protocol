@@ -28,9 +28,7 @@ const PRIVATE_KEY_REGEX = /^0x[0-9a-fA-F]{64}$/;
 function resolvePrivateKey(): `0x${string}` {
   const key = process.env.IVXP_PRIVATE_KEY;
   if (!key) {
-    throw new Error(
-      "[IVXP] Missing environment variable: IVXP_PRIVATE_KEY is required",
-    );
+    throw new Error("[IVXP] Missing environment variable: IVXP_PRIVATE_KEY is required");
   }
   if (!PRIVATE_KEY_REGEX.test(key)) {
     throw new Error(
@@ -67,16 +65,12 @@ export function createIvxpNode(
       const catalog = await adapter.getCatalog(providerUrl);
       const serviceEntry = catalog.services.find((s) => s.type === serviceType);
       if (!serviceEntry) {
-        throw new Error(
-          `[IVXP] Service "${serviceType}" not found in catalog at ${providerUrl}`,
-        );
+        throw new Error(`[IVXP] Service "${serviceType}" not found in catalog at ${providerUrl}`);
       }
 
       // Step 2: Request a quote
       const description =
-        typeof input.description === "string"
-          ? input.description
-          : JSON.stringify(input);
+        typeof input.description === "string" ? input.description : JSON.stringify(input);
 
       const quote = await adapter.requestQuote(providerUrl, {
         serviceType,
@@ -92,14 +86,10 @@ export function createIvxpNode(
       }
 
       // Step 4: Pay on-chain (submitPayment handles tx + provider notification)
-      const paymentResult = await client.submitPayment(
-        providerUrl,
-        quote.orderId,
-        {
-          priceUsdc: quote.quote.priceUsdc,
-          paymentAddress: quote.quote.paymentAddress as `0x${string}`,
-        },
-      );
+      const paymentResult = await client.submitPayment(providerUrl, quote.orderId, {
+        priceUsdc: quote.quote.priceUsdc,
+        paymentAddress: quote.quote.paymentAddress as `0x${string}`,
+      });
 
       // Step 5: Wait for completion via SSE or polling
       if (paymentResult.streamUrl) {
@@ -138,16 +128,11 @@ export function createIvxpNode(
  * - IVXP_PRIVATE_KEY: 0x-prefixed 64-char hex private key
  * - IVXP_NETWORK (optional): "base-mainnet" | "base-sepolia" (default: "base-sepolia")
  */
-export async function ivxpNode(
-  state: IVXPLangGraphState,
-): Promise<Partial<IVXPLangGraphState>> {
+export async function ivxpNode(state: IVXPLangGraphState): Promise<Partial<IVXPLangGraphState>> {
   const privateKey = resolvePrivateKey();
   const client = createIVXPClient({
     privateKey,
-    network: process.env.IVXP_NETWORK as
-      | "base-mainnet"
-      | "base-sepolia"
-      | undefined,
+    network: process.env.IVXP_NETWORK as "base-mainnet" | "base-sepolia" | undefined,
   });
   return createIvxpNode(client)(state);
 }
@@ -164,10 +149,7 @@ const DEFAULT_MAX_POLL_ATTEMPTS = 60;
  * Delegates SSE parsing entirely to the SDK's subscribeToStream.
  * Fixes the race condition by tracking pending cleanup before disconnect fn arrives.
  */
-async function waitViaSSE(
-  client: IVXPClient,
-  streamUrl: string,
-): Promise<void> {
+async function waitViaSSE(client: IVXPClient, streamUrl: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let disconnectFn: (() => void) | undefined;
     let pendingDisconnect = false;
@@ -188,9 +170,7 @@ async function waitViaSSE(
         },
         onFailed: (data) => {
           cleanup();
-          reject(
-            new Error(`[IVXP] Delivery failed via SSE: ${JSON.stringify(data)}`),
-          );
+          reject(new Error(`[IVXP] Delivery failed via SSE: ${JSON.stringify(data)}`));
         },
         onExhausted: (err) => {
           cleanup();
@@ -236,9 +216,7 @@ async function waitViaPolling(
     await delay(intervalMs);
   }
 
-  throw new Error(
-    `[IVXP] Polling timed out after ${maxAttempts} attempts for order ${orderId}`,
-  );
+  throw new Error(`[IVXP] Polling timed out after ${maxAttempts} attempts for order ${orderId}`);
 }
 
 function delay(ms: number): Promise<void> {

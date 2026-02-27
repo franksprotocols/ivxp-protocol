@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { IVXPLangGraphClientAdapter } from "./client-adapter.js";
 import { toLangGraphError } from "./errors.js";
-import { IVXPClient, IVXPError } from "@ivxp/sdk";
+import { IVXPError } from "@ivxp/sdk";
+import type { IVXPClient } from "@ivxp/sdk";
 import type { IHttpClient } from "@ivxp/protocol";
 
 // -- Mock data ----------------------------------------------------------------
