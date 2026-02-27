@@ -5,10 +5,7 @@ import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { FRAMEWORK_TYPES, type FrameworkType } from "@/lib/adapter-store";
 
-const FILTER_OPTIONS: readonly (FrameworkType | "All")[] = [
-  "All",
-  ...FRAMEWORK_TYPES,
-];
+const FILTER_OPTIONS: readonly (FrameworkType | "All")[] = ["All", ...FRAMEWORK_TYPES];
 
 export function FrameworkTypeFilter() {
   const router = useRouter();
@@ -29,11 +26,7 @@ export function FrameworkTypeFilter() {
   );
 
   return (
-    <div
-      className="flex flex-wrap gap-2"
-      role="group"
-      aria-label="Filter by framework type"
-    >
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by framework type">
       {FILTER_OPTIONS.map((option) => {
         const isActive = option === current;
         return (

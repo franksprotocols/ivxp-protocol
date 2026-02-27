@@ -43,20 +43,16 @@ import type {
   OrderStatusResponseOutput,
   DeliveryResponseOutput,
 } from "@ivxp/sdk";
-import type {
-  PaymentProofOutput,
-  HexSignature,
-  DeliveryAcceptedOutput,
-} from "@ivxp/protocol";
+import type { PaymentProofOutput, HexSignature, DeliveryAcceptedOutput } from "@ivxp/protocol";
 ```
 
-| Method             | HTTP Endpoint              | Purpose                          |
-| ------------------ | -------------------------- | -------------------------------- |
-| `getCatalog`       | `GET /ivxp/catalog`        | Fetch provider service catalog   |
-| `requestQuote`     | `POST /ivxp/request`       | Request a service quote          |
-| `requestDelivery`  | `POST /ivxp/deliver`       | Notify payment and request delivery |
-| `getStatus`        | `GET /ivxp/status/:orderId`| Poll order status                |
-| `download`         | `GET /ivxp/download/:orderId` | Download the deliverable      |
+| Method            | HTTP Endpoint                 | Purpose                             |
+| ----------------- | ----------------------------- | ----------------------------------- |
+| `getCatalog`      | `GET /ivxp/catalog`           | Fetch provider service catalog      |
+| `requestQuote`    | `POST /ivxp/request`          | Request a service quote             |
+| `requestDelivery` | `POST /ivxp/deliver`          | Notify payment and request delivery |
+| `getStatus`       | `GET /ivxp/status/:orderId`   | Poll order status                   |
+| `download`        | `GET /ivxp/download/:orderId` | Download the deliverable            |
 
 ### 3.1 Nonce Generation
 
@@ -78,6 +74,7 @@ The `signedMessage` field in delivery requests must follow the canonical format:
 ```
 
 The provider extracts and validates:
+
 - **Nonce** — must be unique per order (replay prevention)
 - **Timestamp** — must be within 300 seconds of server time (freshness check)
 
@@ -172,10 +169,7 @@ export class MyFrameworkClientAdapter implements IVXPClientAdapter {
     return DeliveryAcceptedSchema.parse(rawResponse);
   }
 
-  async getStatus(
-    providerUrl: string,
-    orderId: string,
-  ): Promise<OrderStatusResponseOutput> {
+  async getStatus(providerUrl: string, orderId: string): Promise<OrderStatusResponseOutput> {
     return this.client.getOrderStatus(providerUrl, orderId);
   }
 
@@ -256,11 +250,7 @@ import type {
   DeliveryRequestOutput,
   DeliveryAcceptedOutput,
 } from "@ivxp/protocol";
-import {
-  ServiceCatalogSchema,
-  ServiceQuoteSchema,
-  DeliveryAcceptedSchema,
-} from "@ivxp/protocol";
+import { ServiceCatalogSchema, ServiceQuoteSchema, DeliveryAcceptedSchema } from "@ivxp/protocol";
 
 interface MyProviderAdapterConfig {
   readonly network?: "base-sepolia";
@@ -269,10 +259,7 @@ interface MyProviderAdapterConfig {
 export class MyFrameworkProviderAdapter implements IVXPProviderAdapter {
   private readonly provider: IVXPProvider;
 
-  constructor(
-    config: MyProviderAdapterConfig = {},
-    providerConfig: IVXPProviderConfig,
-  ) {
+  constructor(config: MyProviderAdapterConfig = {}, providerConfig: IVXPProviderConfig) {
     const privateKey = process.env.IVXP_PRIVATE_KEY;
     if (!privateKey) throw new Error("IVXP_PRIVATE_KEY environment variable is required");
 
@@ -284,9 +271,7 @@ export class MyFrameworkProviderAdapter implements IVXPProviderAdapter {
     return ServiceCatalogSchema.parse(wireCatalog);
   }
 
-  async handleRequest(
-    body: ServiceRequestOutput,
-  ): Promise<ServiceQuoteOutput> {
+  async handleRequest(body: ServiceRequestOutput): Promise<ServiceQuoteOutput> {
     // Convert camelCase input to wire-format (snake_case)
     const wireRequest = {
       protocol: body.protocol,
@@ -309,9 +294,7 @@ export class MyFrameworkProviderAdapter implements IVXPProviderAdapter {
     return ServiceQuoteSchema.parse(wireQuote);
   }
 
-  async handleDeliver(
-    body: DeliveryRequestOutput,
-  ): Promise<DeliveryAcceptedOutput> {
+  async handleDeliver(body: DeliveryRequestOutput): Promise<DeliveryAcceptedOutput> {
     // Convert camelCase input to wire-format (snake_case)
     const wireRequest = {
       protocol: body.protocol,
@@ -327,19 +310,14 @@ export class MyFrameworkProviderAdapter implements IVXPProviderAdapter {
       signature: body.signature,
       signed_message: body.signedMessage,
     };
-    const wireAccepted =
-      await this.provider.handleDeliveryRequest(wireRequest);
+    const wireAccepted = await this.provider.handleDeliveryRequest(wireRequest);
     return DeliveryAcceptedSchema.parse(wireAccepted);
   }
 
   async handleStatus(orderId: string): Promise<OrderStatusResponseOutput> {
     const order = await this.provider.getOrder(orderId);
     if (!order) {
-      throw new IVXPError(
-        `Order not found: ${orderId}`,
-        "ORDER_NOT_FOUND",
-        { orderId },
-      );
+      throw new IVXPError(`Order not found: ${orderId}`, "ORDER_NOT_FOUND", { orderId });
     }
     return {
       orderId: order.orderId,
@@ -351,8 +329,7 @@ export class MyFrameworkProviderAdapter implements IVXPProviderAdapter {
   }
 
   async handleDownload(orderId: string): Promise<DeliveryResponseOutput> {
-    const wireDownload =
-      await this.provider.handleDownloadRequest(orderId);
+    const wireDownload = await this.provider.handleDownloadRequest(orderId);
     const walletAddress = await this.provider.getAddress();
 
     return {
@@ -440,11 +417,11 @@ Client                                Provider
 
 ### 6.1 Required Environment Variables
 
-| Variable            | Required | Description                                    |
-| ------------------- | -------- | ---------------------------------------------- |
-| `IVXP_PRIVATE_KEY`  | Yes      | EIP-191 private key for signing (hex, 0x-prefixed) |
-| `IVXP_NETWORK`      | No       | Blockchain network (default: `base-sepolia`)   |
-| `IVXP_PROVIDER_URL` | Yes*     | Provider base URL (* required for client adapters) |
+| Variable            | Required | Description                                         |
+| ------------------- | -------- | --------------------------------------------------- |
+| `IVXP_PRIVATE_KEY`  | Yes      | EIP-191 private key for signing (hex, 0x-prefixed)  |
+| `IVXP_NETWORK`      | No       | Blockchain network (default: `base-sepolia`)        |
+| `IVXP_PROVIDER_URL` | Yes\*    | Provider base URL (\* required for client adapters) |
 
 ### 6.2 Loading Keys Safely
 
@@ -504,7 +481,12 @@ The test suite provides shared fixtures and helpers:
 ```typescript
 import { TEST_ACCOUNTS, MockCryptoService, MockPaymentService } from "@ivxp/test-utils";
 import { startProviderFixture } from "./fixtures/provider-fixture.js";
-import { httpGet, httpPost, buildDeliveryRequestBody, waitForCondition } from "./utils/test-helpers.js";
+import {
+  httpGet,
+  httpPost,
+  buildDeliveryRequestBody,
+  waitForCondition,
+} from "./utils/test-helpers.js";
 import { assertValidContentHash } from "./utils/assertions.js";
 import { computeContentHash } from "@ivxp/sdk";
 ```
@@ -521,43 +503,43 @@ Your adapter must pass all items in this checklist to be considered conformant. 
 
 ### Client Adapter Conformance
 
-| # | Requirement | Interop Test |
-|---|-------------|--------------|
-| C1 | `getCatalog()` returns valid `ServiceCatalogOutput` with `provider`, `walletAddress`, and `services[]` | "should fetch catalog via adapter" |
-| C2 | `requestQuote()` returns `ServiceQuoteOutput` with `orderId` (prefixed `ivxp-`), `priceUsdc`, and `network` | "should request a quote via adapter" |
-| C3 | `requestDelivery()` sends wire-format `delivery_request` with `payment_proof`, `signature`, and `signed_message` | "should complete full flow" |
-| C4 | `getStatus()` returns `OrderStatusResponseOutput` with correct `orderId` and `status` | "should complete full flow" (poll step) |
-| C5 | `download()` returns `DeliveryResponseOutput` with `content` and `contentHash` | "should complete full flow" (download step) |
-| C6 | Content hash integrity: recomputed `sha256(content)` matches provider's `content_hash` (FR12) | "should verify content_hash" |
-| C7 | Nonce is 32-char hex from `randomBytes(16).toString("hex")` | "buildNonce returns 32-char hex" |
-| C8 | Nonce is unique per call | "buildNonce returns unique values" |
-| C9 | `signedMessage` follows canonical `IVXP/1.0 nonce=... content_hash=...` format | "buildSignedMessage produces canonical format" |
-| C10 | All `IVXPError` instances are converted to framework-native errors | "converts IVXPError to native error" |
+| #   | Requirement                                                                                                      | Interop Test                                   |
+| --- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| C1  | `getCatalog()` returns valid `ServiceCatalogOutput` with `provider`, `walletAddress`, and `services[]`           | "should fetch catalog via adapter"             |
+| C2  | `requestQuote()` returns `ServiceQuoteOutput` with `orderId` (prefixed `ivxp-`), `priceUsdc`, and `network`      | "should request a quote via adapter"           |
+| C3  | `requestDelivery()` sends wire-format `delivery_request` with `payment_proof`, `signature`, and `signed_message` | "should complete full flow"                    |
+| C4  | `getStatus()` returns `OrderStatusResponseOutput` with correct `orderId` and `status`                            | "should complete full flow" (poll step)        |
+| C5  | `download()` returns `DeliveryResponseOutput` with `content` and `contentHash`                                   | "should complete full flow" (download step)    |
+| C6  | Content hash integrity: recomputed `sha256(content)` matches provider's `content_hash` (FR12)                    | "should verify content_hash"                   |
+| C7  | Nonce is 32-char hex from `randomBytes(16).toString("hex")`                                                      | "buildNonce returns 32-char hex"               |
+| C8  | Nonce is unique per call                                                                                         | "buildNonce returns unique values"             |
+| C9  | `signedMessage` follows canonical `IVXP/1.0 nonce=... content_hash=...` format                                   | "buildSignedMessage produces canonical format" |
+| C10 | All `IVXPError` instances are converted to framework-native errors                                               | "converts IVXPError to native error"           |
 
 ### Provider Adapter Conformance
 
-| # | Requirement | Interop Test |
-|---|-------------|--------------|
-| P1 | `handleCatalog()` returns valid `ServiceCatalogOutput` | "should handle catalog via adapter" |
-| P2 | `handleRequest()` accepts `ServiceRequestOutput` and returns `ServiceQuoteOutput` | "should handle request via adapter" |
-| P3 | `handleDeliver()` validates timestamp freshness (within 300s) | "rejects stale timestamp" |
-| P4 | `handleDeliver()` validates nonce uniqueness per order | "rejects duplicate nonce" |
-| P5 | `handleDeliver()` allows same nonce for different orders | "allows same nonce for different orders" |
-| P6 | `handleDeliver()` rejects missing nonce in signed message | "rejects when nonce field is missing" |
-| P7 | `handleDeliver()` rejects missing timestamp in signed message | "rejects when timestamp field is missing" |
-| P8 | `handleStatus()` returns `OrderStatusResponseOutput` for existing orders | "returns order status" |
-| P9 | `handleStatus()` throws `ORDER_NOT_FOUND` for missing orders | "throws ORDER_NOT_FOUND" |
-| P10 | `handleDownload()` returns `DeliveryResponseOutput` with `contentHash` | "returns DeliveryResponseOutput with content_hash" |
-| P11 | Wire-format conversion: camelCase input -> snake_case for `IVXPProvider` | All handler tests |
-| P12 | Nonce not registered when on-chain checks fail (allows retry) | "does not register nonce when on-chain checks fail" |
+| #   | Requirement                                                                       | Interop Test                                        |
+| --- | --------------------------------------------------------------------------------- | --------------------------------------------------- |
+| P1  | `handleCatalog()` returns valid `ServiceCatalogOutput`                            | "should handle catalog via adapter"                 |
+| P2  | `handleRequest()` accepts `ServiceRequestOutput` and returns `ServiceQuoteOutput` | "should handle request via adapter"                 |
+| P3  | `handleDeliver()` validates timestamp freshness (within 300s)                     | "rejects stale timestamp"                           |
+| P4  | `handleDeliver()` validates nonce uniqueness per order                            | "rejects duplicate nonce"                           |
+| P5  | `handleDeliver()` allows same nonce for different orders                          | "allows same nonce for different orders"            |
+| P6  | `handleDeliver()` rejects missing nonce in signed message                         | "rejects when nonce field is missing"               |
+| P7  | `handleDeliver()` rejects missing timestamp in signed message                     | "rejects when timestamp field is missing"           |
+| P8  | `handleStatus()` returns `OrderStatusResponseOutput` for existing orders          | "returns order status"                              |
+| P9  | `handleStatus()` throws `ORDER_NOT_FOUND` for missing orders                      | "throws ORDER_NOT_FOUND"                            |
+| P10 | `handleDownload()` returns `DeliveryResponseOutput` with `contentHash`            | "returns DeliveryResponseOutput with content_hash"  |
+| P11 | Wire-format conversion: camelCase input -> snake_case for `IVXPProvider`          | All handler tests                                   |
+| P12 | Nonce not registered when on-chain checks fail (allows retry)                     | "does not register nonce when on-chain checks fail" |
 
 ### Cross-Language Conformance
 
-| # | Requirement | Interop Test |
-|---|-------------|--------------|
-| X1 | Adapter <-> Python Provider full flow succeeds | "should complete full flow against Python provider" |
-| X2 | Content hash matches across TS and Python implementations | "content_hash verified across languages" |
-| X3 | TS Client can talk to adapter's HTTP surface | "should serve TS Client HTTP requests" |
+| #   | Requirement                                               | Interop Test                                        |
+| --- | --------------------------------------------------------- | --------------------------------------------------- |
+| X1  | Adapter <-> Python Provider full flow succeeds            | "should complete full flow against Python provider" |
+| X2  | Content hash matches across TS and Python implementations | "content_hash verified across languages"            |
+| X3  | TS Client can talk to adapter's HTTP surface              | "should serve TS Client HTTP requests"              |
 
 ## 9. Publishing to npm
 
@@ -565,10 +547,10 @@ Your adapter must pass all items in this checklist to be considered conformant. 
 
 IVXP adapter packages follow a strict naming convention:
 
-| Scope | Pattern | Example |
-|-------|---------|---------|
-| Official (IVXP team) | `@ivxp/adapter-{framework}` | `@ivxp/adapter-a2a`, `@ivxp/adapter-mcp` |
-| Community | `ivxp-adapter-{framework}` | `ivxp-adapter-express`, `ivxp-adapter-hono` |
+| Scope                | Pattern                     | Example                                     |
+| -------------------- | --------------------------- | ------------------------------------------- |
+| Official (IVXP team) | `@ivxp/adapter-{framework}` | `@ivxp/adapter-a2a`, `@ivxp/adapter-mcp`    |
+| Community            | `ivxp-adapter-{framework}`  | `ivxp-adapter-express`, `ivxp-adapter-hono` |
 
 Your `package.json` should include:
 
@@ -587,13 +569,13 @@ Your `package.json` should include:
 
 ### 9.2 Official vs Community Packages
 
-| | Official (`@ivxp/adapter-*`) | Community (`ivxp-adapter-*`) |
-|---|---|---|
-| Maintained by | IVXP core team | Community contributors |
-| Published under | `@ivxp` npm scope | Personal/org npm scope |
-| Interop CI gate | Required — CI blocks publish on test failure | Recommended — run interop tests locally |
-| Naming | `@ivxp/adapter-{framework}` | `ivxp-adapter-{framework}` |
-| Examples | `@ivxp/adapter-a2a`, `@ivxp/adapter-mcp`, `@ivxp/adapter-langgraph` | `ivxp-adapter-express`, `ivxp-adapter-hono` |
+|                 | Official (`@ivxp/adapter-*`)                                        | Community (`ivxp-adapter-*`)                |
+| --------------- | ------------------------------------------------------------------- | ------------------------------------------- |
+| Maintained by   | IVXP core team                                                      | Community contributors                      |
+| Published under | `@ivxp` npm scope                                                   | Personal/org npm scope                      |
+| Interop CI gate | Required — CI blocks publish on test failure                        | Recommended — run interop tests locally     |
+| Naming          | `@ivxp/adapter-{framework}`                                         | `ivxp-adapter-{framework}`                  |
+| Examples        | `@ivxp/adapter-a2a`, `@ivxp/adapter-mcp`, `@ivxp/adapter-langgraph` | `ivxp-adapter-express`, `ivxp-adapter-hono` |
 
 To publish a community adapter:
 

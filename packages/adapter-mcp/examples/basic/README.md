@@ -22,11 +22,11 @@ npm install @ivxp/adapter-mcp @ivxp/sdk @modelcontextprotocol/sdk
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `IVXP_PRIVATE_KEY` | Yes | 0x-prefixed 64-char hex private key (32 bytes) |
-| `IVXP_PROVIDER_URL` | Yes | Provider base URL (e.g. `http://localhost:3001`) |
-| `IVXP_NETWORK` | No | `base-sepolia` (default) or `base-mainnet` |
+| Variable            | Required | Description                                      |
+| ------------------- | -------- | ------------------------------------------------ |
+| `IVXP_PRIVATE_KEY`  | Yes      | 0x-prefixed 64-char hex private key (32 bytes)   |
+| `IVXP_PROVIDER_URL` | Yes      | Provider base URL (e.g. `http://localhost:3001`) |
+| `IVXP_NETWORK`      | No       | `base-sepolia` (default) or `base-mainnet`       |
 
 > Replace `0x...` with your actual 64-hex-character private key (e.g. from a test wallet).
 > The server validates the key format on startup and will exit with an error if it is missing or malformed.
@@ -57,10 +57,7 @@ The key pattern is: **always call `adapter.init()` before registering tools**.
 ```typescript
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { IVXPMCPAdapter } from "@ivxp/adapter-mcp";
 
 const adapter = new IVXPMCPAdapter({ providerUrl, privateKey, network });

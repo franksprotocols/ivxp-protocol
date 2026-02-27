@@ -5,11 +5,11 @@ Demonstrates the full IVXP flow through the A2A adapter:
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `IVXP_PRIVATE_KEY` | Yes | 0x-prefixed 64-char hex private key (32 bytes) |
-| `IVXP_NETWORK` | No | `base-sepolia` (default) or `base-mainnet` |
-| `IVXP_PROVIDER_URL` | No | Provider URL (only for standalone client mode) |
+| Variable            | Required | Description                                    |
+| ------------------- | -------- | ---------------------------------------------- |
+| `IVXP_PRIVATE_KEY`  | Yes      | 0x-prefixed 64-char hex private key (32 bytes) |
+| `IVXP_NETWORK`      | No       | `base-sepolia` (default) or `base-mainnet`     |
+| `IVXP_PROVIDER_URL` | No       | Provider URL (only for standalone client mode) |
 
 ## Quick Start
 
