@@ -52,9 +52,9 @@ export const createAdapterSchema = z.object({
   framework: z.string().min(1, "framework is required").max(200),
   version: z
     .string()
-    .min(1, "version is required")
     .max(50)
-    .regex(/^\d+\.\d+\.\d+$/, "version must follow semver (e.g. 1.0.0)"),
+    .regex(/^\d+\.\d+\.\d+$/, "version must follow semver (e.g. 1.0.0)")
+    .default("0.0.0"),
   npmPackage: z
     .string()
     .min(1, "npmPackage is required")

@@ -8,7 +8,6 @@ import {
   FRAMEWORK_TYPES,
   type FrameworkType,
 } from "@/lib/adapter-store";
-import { isAuthorized } from "@/lib/auth";
 
 // ---------------------------------------------------------------------------
 // GET /api/adapters — paginated list of published adapters
@@ -44,17 +43,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/adapters — create a new adapter entry (auth required)
+// POST /api/adapters — create a new adapter entry (no auth; status defaults to pending_audit)
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Missing or invalid authorization token." } },
-      { status: 401 },
-    );
-  }
-
   try {
     const body = await request.json();
     const parsed = createAdapterSchema.parse(body);
