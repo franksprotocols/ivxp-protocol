@@ -36,6 +36,7 @@ const SubmitSchema = z.object({
   frameworkType: z.enum(FRAMEWORK_TYPE_OPTIONS),
 });
 
+type SubmitInput = z.infer<typeof SubmitSchema>;
 type SubmitStatus = "idle" | "submitting" | "success" | "error";
 
 // ---------------------------------------------------------------------------
@@ -58,10 +59,10 @@ function parseApiErrors(details: readonly ApiErrorDetail[]): Record<string, stri
   return errors;
 }
 
-function parseZodErrors(error: z.ZodError): Record<string, string> {
+function parseZodErrors(error: z.ZodError<SubmitInput>): Record<string, string> {
   const flat = error.flatten().fieldErrors;
   const errors: Record<string, string> = {};
-  for (const [key, messages] of Object.entries(flat)) {
+  for (const [key, messages] of Object.entries<string[] | undefined>(flat)) {
     if (messages && messages.length > 0) {
       errors[key] = messages[0];
     }

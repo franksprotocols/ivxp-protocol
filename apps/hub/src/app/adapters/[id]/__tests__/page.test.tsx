@@ -2,12 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AdapterDetailPage from "../page";
-import {
-  resetStore,
-  createAdapter,
-  updateAdapterStatus,
-} from "@/lib/adapter-store";
+import { resetStore, createAdapter, updateAdapterStatus } from "@/lib/adapter-store";
 import { VALID_ADAPTER_INPUT } from "@/lib/__tests__/fixtures";
+import type * as UtilsModule from "@/lib/utils";
 
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
@@ -17,8 +14,8 @@ vi.mock("next/navigation", () => ({
 
 const mockCopyToClipboard = vi.fn().mockResolvedValue(true);
 
-vi.mock("@/lib/utils", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/utils")>();
+vi.mock("@/lib/utils", async (importOriginal: () => Promise<typeof UtilsModule>) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     copyToClipboard: (...args: unknown[]) => mockCopyToClipboard(...args),
@@ -80,10 +77,7 @@ describe("AdapterDetailPage", () => {
     expect(npmLink).toHaveAttribute("rel", "noopener noreferrer");
 
     const ghLink = screen.getByRole("link", { name: "GitHub" });
-    expect(ghLink).toHaveAttribute(
-      "href",
-      "https://github.com/example/adapter-mcp",
-    );
+    expect(ghLink).toHaveAttribute("href", "https://github.com/example/adapter-mcp");
     expect(ghLink).toHaveAttribute("target", "_blank");
     expect(ghLink).toHaveAttribute("rel", "noopener noreferrer");
   });

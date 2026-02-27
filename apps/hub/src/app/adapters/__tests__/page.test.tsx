@@ -1,20 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import AdaptersPage from "../page";
-import {
-  resetStore,
-  createAdapter,
-  updateAdapterStatus,
-} from "@/lib/adapter-store";
+import { resetStore, createAdapter, updateAdapterStatus } from "@/lib/adapter-store";
 import { VALID_ADAPTER_INPUT } from "@/lib/__tests__/fixtures";
+import type * as UtilsModule from "@/lib/utils";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
-vi.mock("@/lib/utils", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/utils")>();
+vi.mock("@/lib/utils", async (importOriginal: () => Promise<typeof UtilsModule>) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     copyToClipboard: vi.fn().mockResolvedValue(true),
