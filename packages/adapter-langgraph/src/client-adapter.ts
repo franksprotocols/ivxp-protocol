@@ -7,7 +7,7 @@
  */
 
 import {
-  IVXPClient,
+  type IVXPClient,
   IVXPError,
   createHttpClient,
   PROTOCOL_VERSION,

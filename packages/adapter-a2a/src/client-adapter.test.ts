@@ -6,13 +6,14 @@ import {
   setTaskState,
   toA2AError,
 } from "./client-adapter.js";
-import { IVXPClient, IVXPError, createHttpClient } from "@ivxp/sdk";
+import { IVXPClient, IVXPError } from "@ivxp/sdk";
+import type * as SdkModule from "@ivxp/sdk";
 import type { Task } from "@a2a-js/sdk";
 
 const mockHttpPost = vi.fn();
 
 vi.mock("@ivxp/sdk", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@ivxp/sdk")>();
+  const actual = await importOriginal<SdkModule>();
   return {
     ...actual,
     IVXPClient: vi.fn(),
@@ -41,12 +42,6 @@ const MOCK_QUOTE = {
   orderId: "ord-1",
   priceUsdc: 1,
   expiresAt: "2026-01-01T00:00:00Z",
-};
-
-const MOCK_DELIVERY_ACCEPTED = {
-  status: "accepted" as const,
-  orderId: "ord-1",
-  message: "Delivery accepted",
 };
 
 const MOCK_ORDER_STATUS = {
