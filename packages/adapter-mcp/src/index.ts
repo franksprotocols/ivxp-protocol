@@ -1,10 +1,10 @@
 // Placeholder stub — full implementation in v3-4-3
-import type { IVXPMCPAdapterConfig } from "./types.js";
+import type { IVXPMCPAdapterConfig, MCPTool } from "./types.js";
 
 export class IVXPMCPAdapter {
   constructor(_config: IVXPMCPAdapterConfig) {}
   async init(): Promise<void> {}
-  getTools(): unknown[] {
+  getTools(): MCPTool[] {
     return [];
   }
   async handleToolCall(_name: string, _args: unknown): Promise<unknown> {
@@ -12,4 +12,10 @@ export class IVXPMCPAdapter {
   }
 }
 
-export type { MCPTool, IVXPMCPAdapterConfig } from "./types.js";
+export { SchemaGenerator } from "./schema-generator.js";
+export type {
+  MCPTool,
+  MCPToolInputSchema,
+  MCPToolInputSchemaProperty,
+  IVXPMCPAdapterConfig,
+} from "./types.js";
