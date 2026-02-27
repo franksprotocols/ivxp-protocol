@@ -142,6 +142,7 @@ jobs:
         run: |
           pnpm --filter @ivxp/protocol build
           pnpm --filter @ivxp/test-utils build
+          pnpm --filter @ivxp/sdk build
           pnpm --filter @ivxp/adapter-a2a build
 
       - name: Set up Python venv for interop tests

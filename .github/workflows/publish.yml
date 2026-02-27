@@ -195,6 +195,7 @@ jobs:
         run: |
           pnpm --filter @ivxp/protocol build
           pnpm --filter @ivxp/test-utils build
+          pnpm --filter @ivxp/sdk build
           pnpm --filter @ivxp/adapter-a2a build
 
       - name: Set up Python venv for interop tests
@@ -258,7 +259,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build adapter-a2a
-        run: pnpm --filter @ivxp/adapter-a2a build
+        run: |
+          pnpm --filter @ivxp/sdk build
+          pnpm --filter @ivxp/adapter-a2a build
 
       - name: Dry-run publish validation
         run: cd packages/adapter-a2a && npm publish --dry-run --access public
