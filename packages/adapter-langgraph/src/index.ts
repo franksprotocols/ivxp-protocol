@@ -2,6 +2,7 @@
 // Placeholder exports -- full implementations added in v3-3-2 and v3-3-3
 
 export { IVXPLangGraphClientAdapter } from "./client-adapter.js";
+export { toLangGraphError } from "./errors.js";
 export { ivxpNode } from "./node.js";
 export type {
   IVXPLangGraphNodeInput,
