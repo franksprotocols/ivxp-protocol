@@ -1,7 +1,13 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { createAdapter, createAdapterSchema, listPublishedAdapters } from "@/lib/adapter-store";
+import {
+  createAdapter,
+  createAdapterSchema,
+  listPublishedAdapters,
+  FRAMEWORK_TYPES,
+  type FrameworkType,
+} from "@/lib/adapter-store";
 import { isAuthorized } from "@/lib/auth";
 
 // ---------------------------------------------------------------------------
@@ -10,10 +16,10 @@ import { isAuthorized } from "@/lib/auth";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl;
-  const rawPage = Number(url.searchParams.get("page") ?? "1");
-  const rawLimit = Number(url.searchParams.get("limit") ?? "20");
+  const rawPage = parseInt(url.searchParams.get("page") ?? "1", 10);
+  const rawLimit = parseInt(url.searchParams.get("limit") ?? "20", 10);
 
-  if (!Number.isFinite(rawPage) || !Number.isFinite(rawLimit)) {
+  if (isNaN(rawPage) || isNaN(rawLimit)) {
     return NextResponse.json(
       { error: { code: "INVALID_PARAMETERS", message: "page and limit must be numbers" } },
       { status: 400 },
@@ -23,7 +29,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const page = Math.max(1, Math.floor(rawPage));
   const limit = Math.min(100, Math.max(1, Math.floor(rawLimit)));
 
-  const result = listPublishedAdapters({ page, limit });
+  const rawFrameworkType = url.searchParams.get("frameworkType");
+  const frameworkType =
+    rawFrameworkType && (FRAMEWORK_TYPES as readonly string[]).includes(rawFrameworkType)
+      ? (rawFrameworkType as FrameworkType)
+      : undefined;
+
+  const result = listPublishedAdapters({ page, limit, frameworkType });
 
   return NextResponse.json({
     data: result.adapters,

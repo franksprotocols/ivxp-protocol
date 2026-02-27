@@ -35,6 +35,7 @@ export interface AdapterStore {
 
 export interface PaginatedAdapters {
   readonly adapters: readonly AdapterEntry[];
+  /** Count of adapters matching the current filter criteria, not the overall store total. */
   readonly total: number;
 }
 
@@ -119,8 +120,16 @@ export function createAdapter(input: CreateAdapterInput): AdapterEntry {
   return entry;
 }
 
-export function listPublishedAdapters(opts: { page: number; limit: number }): PaginatedAdapters {
-  const published = _store.adapters.filter((a) => a.status === "published");
+export function listPublishedAdapters(opts: {
+  page: number;
+  limit: number;
+  frameworkType?: FrameworkType;
+}): PaginatedAdapters {
+  const published = _store.adapters.filter(
+    (a) =>
+      a.status === "published" &&
+      (opts.frameworkType === undefined || a.frameworkType === opts.frameworkType),
+  );
   const start = (opts.page - 1) * opts.limit;
   const sliced = published.slice(start, start + opts.limit);
   return { adapters: sliced, total: published.length };
