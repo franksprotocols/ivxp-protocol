@@ -14,7 +14,7 @@ export async function GET(
   const { id } = await params;
   const entry = getAdapter(id);
 
-  if (!entry) {
+  if (!entry || entry.status !== "published") {
     return NextResponse.json(
       { error: { code: "NOT_FOUND", message: "Adapter not found." } },
       { status: 404 },
