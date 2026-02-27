@@ -97,26 +97,25 @@ export class IVXPMCPAdapter {
   }
 
   async init(): Promise<void> {
-    // H1: guard the config providerUrl before making any network call
-    assertNotSSRF(this.config.providerUrl);
+    // When a pre-built client is injected (e.g. for testing with mocks),
+    // skip SSRF guard and client creation -- the caller owns the client.
+    if (this.config.client) {
+      this.client = this.config.client as IVXPClient;
+    } else {
+      // H1: guard the config providerUrl before making any network call
+      assertNotSSRF(this.config.providerUrl);
 
-    this.client = new IVXPClient({
-      privateKey: this.config.privateKey as `0x${string}`,
-      network: this.config.network as "base-sepolia",
-    });
+      this.client = new IVXPClient({
+        privateKey: this.config.privateKey as `0x${string}`,
+        network: this.config.network as "base-sepolia",
+      });
+    }
 
     const catalogOutput = await this.client.getCatalog(this.config.providerUrl);
 
     // H3: validate catalog shape before using it
-    if (
-      !catalogOutput ||
-      !Array.isArray(
-        (catalogOutput as Record<string, unknown>).services,
-      )
-    ) {
-      throw new Error(
-        "IVXPMCPAdapter: invalid catalog response from provider",
-      );
+    if (!catalogOutput || !Array.isArray((catalogOutput as Record<string, unknown>).services)) {
+      throw new Error("IVXPMCPAdapter: invalid catalog response from provider");
     }
 
     // SchemaGenerator expects the wire-format ServiceCatalog type.
@@ -130,9 +129,7 @@ export class IVXPMCPAdapter {
 
   getTools(): MCPTool[] {
     if (!this.initialized) {
-      throw new Error(
-        "IVXPMCPAdapter not initialized. Call init() before getTools().",
-      );
+      throw new Error("IVXPMCPAdapter not initialized. Call init() before getTools().");
     }
     return [...this.tools];
   }
@@ -140,9 +137,7 @@ export class IVXPMCPAdapter {
   async handleToolCall(name: string, args: unknown): Promise<MCPToolResult> {
     // H2: guard against calls before init()
     if (!this.initialized || !this.client) {
-      return errorResult(
-        "IVXPMCPAdapter: call init() before handleToolCall()",
-      );
+      return errorResult("IVXPMCPAdapter: call init() before handleToolCall()");
     }
 
     if (name !== "ivxp_call_service") {
@@ -155,11 +150,13 @@ export class IVXPMCPAdapter {
     }
 
     try {
-      assertNotSSRF(parsed.provider);
+      // Skip SSRF check only when an injected client is provided AND
+      // dangerouslyDisableSSRF is explicitly set (testing against localhost).
+      if (!(this.config.client && this.config.dangerouslyDisableSSRF)) {
+        assertNotSSRF(parsed.provider);
+      }
     } catch (err) {
-      return errorResult(
-        err instanceof Error ? err.message : "SSRF guard: blocked",
-      );
+      return errorResult(err instanceof Error ? err.message : "SSRF guard: blocked");
     }
 
     try {

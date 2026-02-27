@@ -358,6 +358,10 @@ importers:
         version: 2.1.9(@types/node@22.19.11)(jsdom@28.1.0(@noble/hashes@1.8.0))(lightningcss@1.30.2)
 
   packages/adapter-mcp/examples/basic:
+    dependencies:
+      '@ivxp/sdk':
+        specifier: workspace:*
+        version: link:../../../sdk
     devDependencies:
       '@ivxp/adapter-mcp':
         specifier: workspace:*
@@ -403,6 +407,9 @@ importers:
       '@ivxp/adapter-langgraph':
         specifier: workspace:*
         version: link:../adapter-langgraph
+      '@ivxp/adapter-mcp':
+        specifier: workspace:*
+        version: link:../adapter-mcp
       '@ivxp/test-utils':
         specifier: workspace:*
         version: link:../test-utils

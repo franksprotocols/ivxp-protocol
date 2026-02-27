@@ -345,3 +345,78 @@ jobs:
           echo "✓ @ivxp/adapter-langgraph published successfully"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # NFR10: MCP interop tests must pass before adapter-mcp can be published
+  mcp-interop-gate:
+    name: MCP Interop Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm --filter @ivxp/protocol build
+          pnpm --filter @ivxp/test-utils build
+          pnpm --filter @ivxp/sdk build
+          pnpm --filter @ivxp/adapter-mcp build
+
+      - name: Set up Python venv for interop tests
+        run: |
+          cd packages/sdk/src/__tests__/interop/python
+          python3 -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Run MCP interop tests
+        run: pnpm --filter @ivxp/sdk test:interop:mcp
+
+      - name: Stop Python provider
+        if: always()
+        run: pkill -f minimal_provider.py || true
+
+  publish-adapter-mcp:
+    name: Publish @ivxp/adapter-mcp
+    needs: [publish, mcp-interop-gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build adapter-mcp
+        run: |
+          pnpm --filter @ivxp/sdk build
+          pnpm --filter @ivxp/adapter-mcp build
+
+      - name: Dry-run publish validation
+        run: cd packages/adapter-mcp && npm publish --dry-run --access public
+
+      - name: Publish @ivxp/adapter-mcp
+        run: |
+          echo "Publishing @ivxp/adapter-mcp..."
+          pnpm --filter @ivxp/adapter-mcp publish --provenance --access public --no-git-checks
+          echo "✓ @ivxp/adapter-mcp published successfully"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
