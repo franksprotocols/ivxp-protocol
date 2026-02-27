@@ -15,7 +15,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "example": "tsx examples/basic/run.ts"
   },
   "peerDependencies": {
     "@ivxp/sdk": "workspace:*",
@@ -28,6 +29,7 @@
     "@a2a-js/sdk": "^0.3.0",
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0",
+    "tsx": "^4.19.0",
     "vitest": "^2.0.0"
   },
   "files": [
