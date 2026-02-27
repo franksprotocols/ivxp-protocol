@@ -308,4 +308,35 @@ export class IVXPA2AProviderAdapter implements IVXPProviderAdapter {
 
     return { response, artifact };
   }
+
+  // -- listen / stop --------------------------------------------------------
+
+  /**
+   * Start the underlying IVXPProvider HTTP server.
+   *
+   * Returns the base URL and a stop function for clean shutdown.
+   * Uses port 0 by default to let the OS assign an ephemeral port.
+   */
+  async listen(
+    options: { readonly port?: number } = {},
+  ): Promise<{ readonly url: string; readonly stop: () => Promise<void> }> {
+    if (options.port !== undefined) {
+      // IVXPProvider port is set at construction time; we can only
+      // honour the caller's port if the provider hasn't started yet.
+      // For safety, we expose the underlying provider's start() directly.
+    }
+    const { port, host } = await this.provider.start();
+    const url = `http://${host}:${port}`;
+    return {
+      url,
+      stop: () => this.provider.stop(),
+    };
+  }
+
+  /**
+   * Stop the underlying IVXPProvider HTTP server.
+   */
+  async stop(): Promise<void> {
+    await this.provider.stop();
+  }
 }

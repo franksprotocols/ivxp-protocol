@@ -328,6 +328,12 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      '@a2a-js/sdk':
+        specifier: ^0.3.0
+        version: 0.3.10(express@5.2.1)
+      '@ivxp/adapter-a2a':
+        specifier: workspace:*
+        version: link:../adapter-a2a
       '@ivxp/test-utils':
         specifier: workspace:*
         version: link:../test-utils

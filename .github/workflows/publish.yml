@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
 
@@ -28,11 +28,13 @@ jobs:
       # CRITICAL FIX #1: Validate NPM_TOKEN exists before proceeding
       - name: Validate NPM_TOKEN secret
         run: |
-          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+          if [ -z "$NPM_TOKEN" ]; then
             echo "::error::NPM_TOKEN secret is not set. Configure it in repository settings."
             exit 1
           fi
           echo "✓ NPM_TOKEN secret is configured"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # CRITICAL FIX #2: Check npm version supports provenance
       - name: Validate npm provenance support
@@ -164,3 +166,107 @@ jobs:
           echo "  - @ivxp/protocol@$VERSION"
           echo "  - @ivxp/test-utils@$VERSION"
           echo "  - @ivxp/sdk@$VERSION"
+
+  # NFR10: A2A interop tests must pass before adapter-a2a can be published
+  a2a-interop-gate:
+    name: A2A Interop Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install Foundry (Anvil)
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm --filter @ivxp/protocol build
+          pnpm --filter @ivxp/test-utils build
+          pnpm --filter @ivxp/adapter-a2a build
+
+      - name: Set up Python venv for interop tests
+        run: |
+          cd packages/sdk/src/__tests__/interop/python
+          python3 -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Start Anvil in background
+        run: |
+          anvil --silent &
+          ANVIL_PID=$!
+          echo "ANVIL_PID=$ANVIL_PID" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8545 -X POST \
+              -H "Content-Type: application/json" \
+              -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+              > /dev/null 2>&1; then
+              echo "Anvil is ready (attempt $i)"
+              break
+            fi
+            sleep 1
+          done
+          # Hard failure if Anvil never became ready
+          if ! curl -sf http://127.0.0.1:8545 -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+            > /dev/null 2>&1; then
+            echo "::error::Anvil failed to start after 30 attempts"
+            exit 1
+          fi
+
+      - name: Run A2A interop tests
+        run: pnpm --filter @ivxp/sdk test:interop:a2a
+
+      - name: Stop Anvil
+        if: always()
+        run: |
+          if [ -n "$ANVIL_PID" ]; then
+            kill "$ANVIL_PID" 2>/dev/null || true
+          fi
+
+  publish-adapter-a2a:
+    name: Publish @ivxp/adapter-a2a
+    needs: [publish, a2a-interop-gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build adapter-a2a
+        run: pnpm --filter @ivxp/adapter-a2a build
+
+      - name: Dry-run publish validation
+        run: cd packages/adapter-a2a && npm publish --dry-run --access public
+
+      - name: Publish @ivxp/adapter-a2a
+        run: |
+          echo "Publishing @ivxp/adapter-a2a..."
+          pnpm --filter @ivxp/adapter-a2a publish --provenance --access public --no-git-checks
+          echo "✓ @ivxp/adapter-a2a published successfully"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
