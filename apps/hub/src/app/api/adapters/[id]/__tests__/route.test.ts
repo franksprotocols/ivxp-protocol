@@ -27,8 +27,9 @@ function makeRequest(method: string, id: string, token?: string): NextRequest {
 }
 
 describe("GET /api/adapters/[id]", () => {
-  it("returns adapter by id wrapped in data envelope", async () => {
+  it("returns published adapter by id wrapped in data envelope", async () => {
     const entry = createAdapter(VALID_ADAPTER_INPUT);
+    updateAdapterStatus(entry.id, "published", { auditResult: true });
     const res = await GET(makeRequest("GET", entry.id), makeParams(entry.id));
     const data = await res.json();
 
@@ -45,7 +46,17 @@ describe("GET /api/adapters/[id]", () => {
     expect(data.error.code).toBe("NOT_FOUND");
   });
 
-  it("strips rejectionReason from public response", async () => {
+  it("returns 404 for non-published adapter", async () => {
+    const entry = createAdapter(VALID_ADAPTER_INPUT);
+    // entry is pending_audit by default
+    const res = await GET(makeRequest("GET", entry.id), makeParams(entry.id));
+    const data = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(data.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 404 for rejected adapter", async () => {
     const entry = createAdapter(VALID_ADAPTER_INPUT);
     updateAdapterStatus(entry.id, "rejected", {
       auditResult: false,
@@ -55,8 +66,17 @@ describe("GET /api/adapters/[id]", () => {
     const res = await GET(makeRequest("GET", entry.id), makeParams(entry.id));
     const data = await res.json();
 
+    expect(res.status).toBe(404);
+    expect(data.error.code).toBe("NOT_FOUND");
+  });
+
+  it("strips rejectionReason from published response", async () => {
+    const entry = createAdapter(VALID_ADAPTER_INPUT);
+    updateAdapterStatus(entry.id, "published", { auditResult: true });
+    const res = await GET(makeRequest("GET", entry.id), makeParams(entry.id));
+    const data = await res.json();
+
     expect(res.status).toBe(200);
-    expect(data.data.status).toBe("rejected");
     expect(data.data).not.toHaveProperty("rejectionReason");
   });
 });
