@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: interop-ts-ts-results
           path: test-results/
@@ -204,7 +204,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: interop-a2a-results
           path: test-results/
@@ -277,7 +277,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: interop-langgraph-results
           path: test-results/
@@ -350,7 +350,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: interop-mcp-results
           path: test-results/
