@@ -178,9 +178,7 @@ export default async function DocsPageComponent({ params }: PageProps) {
   const markdownUrl = `${page.url}.mdx`;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pageFile = (page as any).file as { path?: string } | undefined;
-  const githubUrl = pageFile?.path
-    ? buildGithubUrl(normalizedSection, pageFile.path)
-    : undefined;
+  const githubUrl = pageFile?.path ? buildGithubUrl(normalizedSection, pageFile.path) : undefined;
 
   return (
     <DocsPage toc={pageData.toc} full={pageData.full}>

@@ -9,12 +9,11 @@
 // (protocolSource, sdkSource, etc.) without needing a union type.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getLLMText(page: any): Promise<string> {
-    const getText = page?.data?.getText;
-    const processed: string =
-        typeof getText === "function" ? await getText("processed") : "";
+  const getText = page?.data?.getText;
+  const processed: string = typeof getText === "function" ? await getText("processed") : "";
 
-    const title: string = page?.data?.title ?? "";
-    const url: string = page?.url ?? "";
+  const title: string = page?.data?.title ?? "";
+  const url: string = page?.url ?? "";
 
-    return `# ${title} (${url})\n\n${processed}`;
+  return `# ${title} (${url})\n\n${processed}`;
 }
