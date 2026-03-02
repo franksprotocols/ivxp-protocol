@@ -49,7 +49,11 @@ function formatDate(isoString: string | null | undefined): string {
   });
 }
 
-export function ProviderStatusCard({ provider, onClaim, isClaiming = false }: ProviderStatusCardProps) {
+export function ProviderStatusCard({
+  provider,
+  onClaim,
+  isClaiming = false,
+}: ProviderStatusCardProps) {
   const verificationStatus = provider.verification_status ?? "pending";
   const registrationStatus = provider.registration_status ?? "claimed";
 
@@ -81,7 +85,9 @@ export function ProviderStatusCard({ provider, onClaim, isClaiming = false }: Pr
             <CardTitle>{provider.name}</CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{REGISTRATION_LABEL[registrationStatus]}</Badge>
-              <Badge variant={STATUS_BADGE_VARIANT[verificationStatus]}>{STATUS_LABEL[verificationStatus]}</Badge>
+              <Badge variant={STATUS_BADGE_VARIANT[verificationStatus]}>
+                {STATUS_LABEL[verificationStatus]}
+              </Badge>
             </div>
           </div>
         </CardHeader>

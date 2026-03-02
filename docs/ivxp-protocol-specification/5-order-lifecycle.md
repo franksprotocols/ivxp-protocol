@@ -102,4 +102,3 @@ When the retention window has elapsed, Providers should return `410` with `ORDER
 For the complete state machine specification, see [state-machine.md](./state-machine.md).
 
 ---
-

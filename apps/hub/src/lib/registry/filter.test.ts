@@ -181,8 +181,8 @@ describe("filterPubliclyVisibleProviders", () => {
   it("returns only claimed providers", () => {
     const result = filterPubliclyVisibleProviders(mockProviders);
     expect(result).toHaveLength(2);
-    expect(result.every((provider) => (provider.registration_status ?? "claimed") === "claimed")).toBe(
-      true,
-    );
+    expect(
+      result.every((provider) => (provider.registration_status ?? "claimed") === "claimed"),
+    ).toBe(true);
   });
 });

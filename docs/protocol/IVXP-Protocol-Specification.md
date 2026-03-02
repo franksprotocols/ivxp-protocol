@@ -288,13 +288,13 @@ The strict signature profile uses:
 IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}
 ```
 
-| Field          | Description                                                 |
-| -------------- | ----------------------------------------------------------- |
-| `IVXP-DELIVER` | Fixed prefix — prevents cross-protocol replay               |
-| `order_id`     | The order identifier from the quote                         |
-| `tx_hash`      | The on-chain USDC transaction hash                          |
-| `nonce`        | Optional replay-protection string (min 16 chars when used)  |
-| `timestamp`    | ISO 8601 timestamp of the delivery request                  |
+| Field          | Description                                                |
+| -------------- | ---------------------------------------------------------- |
+| `IVXP-DELIVER` | Fixed prefix — prevents cross-protocol replay              |
+| `order_id`     | The order identifier from the quote                        |
+| `tx_hash`      | The on-chain USDC transaction hash                         |
+| `nonce`        | Optional replay-protection string (min 16 chars when used) |
+| `timestamp`    | ISO 8601 timestamp of the delivery request                 |
 
 The Provider recovers the signer address from the signature and verifies it matches `payment_proof.from_address`. See [security.md](./security.md) for the full verification algorithm.
 

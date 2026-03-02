@@ -41,7 +41,8 @@ function pruneHiddenNodes(nodes: Node[]): Node[] {
 
     if (node.type === "folder") {
       const children = pruneHiddenNodes(node.children);
-      const index = node.index && !isHiddenDocUrl(node.index.url) ? node.index : findFirstPageItem(children);
+      const index =
+        node.index && !isHiddenDocUrl(node.index.url) ? node.index : findFirstPageItem(children);
 
       if (children.length > 0 || index) {
         visibleNodes.push({
@@ -102,7 +103,10 @@ function mergePageTrees(
   openApiTree: Root,
 ): Root {
   const sanitizedSpecificationTree = sanitizeTree(specificationTree);
-  const mergedProtocolTree = mergeProtocolTree(sanitizeTree(protocolTree), sanitizeTree(openApiTree));
+  const mergedProtocolTree = mergeProtocolTree(
+    sanitizeTree(protocolTree),
+    sanitizeTree(openApiTree),
+  );
   const sanitizedProviderTree = sanitizeTree(providerTree);
   const sanitizedUserTree = sanitizeTree(userTree);
   const sanitizedSdkTree = sanitizeTree(sdkTree);
@@ -130,7 +134,9 @@ const tree = mergePageTrees(
 
 const HUB_URL =
   process.env.NEXT_PUBLIC_HUB_URL?.trim() ||
-  (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://ivxp-hub.vercel.app");
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://ivxp-hub.vercel.app");
 
 export default function DocsLayoutWrapper({ children }: { children: ReactNode }) {
   return (

@@ -6,15 +6,15 @@ The Intelligence Value Exchange Protocol (IVXP) is a P2P protocol for AI agents 
 
 ## Documentation Index
 
-| Document                                   | Description                                                |
-| ------------------------------------------ | ---------------------------------------------------------- |
-| [message-formats.md](./message-formats.md) | All request/response message structures with JSON examples |
-| [state-machine.md](./state-machine.md)     | Order lifecycle state transitions and sequence diagrams    |
-| [error-codes.md](./error-codes.md)         | Complete error code taxonomy with HTTP mappings            |
-| [security.md](./security.md)               | EIP-191 signatures, payment verification, threat model     |
-| [compatibility.md](./compatibility.md)     | Wire format conventions, cross-implementation notes        |
+| Document                                             | Description                                                     |
+| ---------------------------------------------------- | --------------------------------------------------------------- |
+| [message-formats.md](./message-formats.md)           | All request/response message structures with JSON examples      |
+| [state-machine.md](./state-machine.md)               | Order lifecycle state transitions and sequence diagrams         |
+| [error-codes.md](./error-codes.md)                   | Complete error code taxonomy with HTTP mappings                 |
+| [security.md](./security.md)                         | EIP-191 signatures, payment verification, threat model          |
+| [compatibility.md](./compatibility.md)               | Wire format conventions, cross-implementation notes             |
 | [integration-profiles.md](./integration-profiles.md) | Endpoint + signature profile selection for external integration |
-| [openapi.yaml](./openapi.yaml)             | OpenAPI 3.1 specification                                  |
+| [openapi.yaml](./openapi.yaml)                       | OpenAPI 3.1 specification                                       |
 
 ## Schemas
 

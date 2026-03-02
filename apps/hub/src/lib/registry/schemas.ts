@@ -87,7 +87,10 @@ const providerRegistrationBaseSchema = z.object({
 
 export const registerProviderBodySchema = providerRegistrationBaseSchema
   .extend({
-    provider_address: z.string().regex(HEX_ADDRESS_REGEX, "Invalid Ethereum address format").optional(),
+    provider_address: z
+      .string()
+      .regex(HEX_ADDRESS_REGEX, "Invalid Ethereum address format")
+      .optional(),
     signature: z
       .string()
       .regex(SIGNATURE_REGEX, "Invalid signature format (must be 0x + 130 hex chars)")

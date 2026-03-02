@@ -507,35 +507,35 @@ Your adapter must pass all items in this checklist to be considered conformant. 
 
 ### Client Adapter Conformance
 
-| #   | Requirement                                                                                                      | Interop Test                                   |
-| --- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| C1  | `getCatalog()` returns valid `ServiceCatalogOutput` with `provider`, `walletAddress`, and `services[]`           | "should fetch catalog via adapter"             |
-| C2  | `requestQuote()` returns `ServiceQuoteOutput` with `orderId` (prefixed `ivxp-`), `priceUsdc`, and `network`      | "should request a quote via adapter"           |
-| C3  | `requestDelivery()` sends wire-format `delivery_request` with `payment_proof`, `signature`, and `signed_message` | "should complete full flow"                    |
-| C4  | `getStatus()` returns `OrderStatusResponseOutput` with correct `orderId` and `status`                            | "should complete full flow" (poll step)        |
-| C5  | `download()` returns `DeliveryResponseOutput` with `content` and `contentHash`                                   | "should complete full flow" (download step)    |
-| C6  | Content hash integrity: recomputed `sha256(content)` matches provider's `content_hash` (FR12)                    | "should verify content_hash"                   |
-| C7  | For strict profile integrations, nonce is 32-char hex from `randomBytes(16).toString("hex")`                   | "buildNonce returns 32-char hex"               |
-| C8  | For strict profile integrations, nonce is unique per call                                                        | "buildNonce returns unique values"             |
-| C9  | `signedMessage` follows provider-compatible deterministic format (strict or minimal profile)                     | "buildSignedMessage matches provider profile"  |
-| C10 | All `IVXPError` instances are converted to framework-native errors                                               | "converts IVXPError to native error"           |
+| #   | Requirement                                                                                                      | Interop Test                                  |
+| --- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| C1  | `getCatalog()` returns valid `ServiceCatalogOutput` with `provider`, `walletAddress`, and `services[]`           | "should fetch catalog via adapter"            |
+| C2  | `requestQuote()` returns `ServiceQuoteOutput` with `orderId` (prefixed `ivxp-`), `priceUsdc`, and `network`      | "should request a quote via adapter"          |
+| C3  | `requestDelivery()` sends wire-format `delivery_request` with `payment_proof`, `signature`, and `signed_message` | "should complete full flow"                   |
+| C4  | `getStatus()` returns `OrderStatusResponseOutput` with correct `orderId` and `status`                            | "should complete full flow" (poll step)       |
+| C5  | `download()` returns `DeliveryResponseOutput` with `content` and `contentHash`                                   | "should complete full flow" (download step)   |
+| C6  | Content hash integrity: recomputed `sha256(content)` matches provider's `content_hash` (FR12)                    | "should verify content_hash"                  |
+| C7  | For strict profile integrations, nonce is 32-char hex from `randomBytes(16).toString("hex")`                     | "buildNonce returns 32-char hex"              |
+| C8  | For strict profile integrations, nonce is unique per call                                                        | "buildNonce returns unique values"            |
+| C9  | `signedMessage` follows provider-compatible deterministic format (strict or minimal profile)                     | "buildSignedMessage matches provider profile" |
+| C10 | All `IVXPError` instances are converted to framework-native errors                                               | "converts IVXPError to native error"          |
 
 ### Provider Adapter Conformance
 
-| #   | Requirement                                                                       | Interop Test                                        |
-| --- | --------------------------------------------------------------------------------- | --------------------------------------------------- |
-| P1  | `handleCatalog()` returns valid `ServiceCatalogOutput`                            | "should handle catalog via adapter"                 |
-| P2  | `handleRequest()` accepts `ServiceRequestOutput` and returns `ServiceQuoteOutput` | "should handle request via adapter"                 |
-| P3  | `handleDeliver()` validates timestamp freshness (within 300s)                     | "rejects stale timestamp"                           |
-| P4  | `handleDeliver()` enforces nonce uniqueness per order when nonce is present/required by profile                 | "rejects duplicate nonce"                           |
-| P5  | `handleDeliver()` allows same nonce for different orders (when nonce tracking is enabled)                       | "allows same nonce for different orders"            |
-| P6  | `handleDeliver()` validates signed payload fields against the declared signature profile                         | "rejects when signed payload format mismatches"     |
-| P7  | `handleDeliver()` rejects stale timestamps based on provider freshness policy                                   | "rejects when timestamp is stale"                   |
-| P8  | `handleStatus()` returns `OrderStatusResponseOutput` for existing orders          | "returns order status"                              |
-| P9  | `handleStatus()` throws `ORDER_NOT_FOUND` for missing orders                      | "throws ORDER_NOT_FOUND"                            |
-| P10 | `handleDownload()` returns `DeliveryResponseOutput` with `contentHash`            | "returns DeliveryResponseOutput with content_hash"  |
-| P11 | Wire-format conversion: camelCase input -> snake_case for `IVXPProvider`          | All handler tests                                   |
-| P12 | Nonce state not registered when on-chain checks fail (allows retry) when nonce is used                          | "does not register nonce when on-chain checks fail" |
+| #   | Requirement                                                                                     | Interop Test                                        |
+| --- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| P1  | `handleCatalog()` returns valid `ServiceCatalogOutput`                                          | "should handle catalog via adapter"                 |
+| P2  | `handleRequest()` accepts `ServiceRequestOutput` and returns `ServiceQuoteOutput`               | "should handle request via adapter"                 |
+| P3  | `handleDeliver()` validates timestamp freshness (within 300s)                                   | "rejects stale timestamp"                           |
+| P4  | `handleDeliver()` enforces nonce uniqueness per order when nonce is present/required by profile | "rejects duplicate nonce"                           |
+| P5  | `handleDeliver()` allows same nonce for different orders (when nonce tracking is enabled)       | "allows same nonce for different orders"            |
+| P6  | `handleDeliver()` validates signed payload fields against the declared signature profile        | "rejects when signed payload format mismatches"     |
+| P7  | `handleDeliver()` rejects stale timestamps based on provider freshness policy                   | "rejects when timestamp is stale"                   |
+| P8  | `handleStatus()` returns `OrderStatusResponseOutput` for existing orders                        | "returns order status"                              |
+| P9  | `handleStatus()` throws `ORDER_NOT_FOUND` for missing orders                                    | "throws ORDER_NOT_FOUND"                            |
+| P10 | `handleDownload()` returns `DeliveryResponseOutput` with `contentHash`                          | "returns DeliveryResponseOutput with content_hash"  |
+| P11 | Wire-format conversion: camelCase input -> snake_case for `IVXPProvider`                        | All handler tests                                   |
+| P12 | Nonce state not registered when on-chain checks fail (allows retry) when nonce is used          | "does not register nonce when on-chain checks fail" |
 
 ### Cross-Language Conformance
 

@@ -51,4 +51,3 @@ IVXP sits as a **horizontal economic layer** that spans all Agent communication 
 The correct integration direction is: **frameworks implement IVXP adapters**. IVXP does not become a plugin of any framework. This is the same relationship as banks implementing SWIFT adapters — SWIFT is the standard, banks are the implementors.
 
 ---
-

@@ -50,8 +50,7 @@ const {
   generateProviderId,
   claimProviderByEndpoint,
   updateProviderVerifications,
-} =
-  await import("./writer");
+} = await import("./writer");
 
 const mockProviders: RegistryProviderWire[] = [
   {

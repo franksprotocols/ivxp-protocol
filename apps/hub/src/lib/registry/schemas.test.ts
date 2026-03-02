@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { claimProviderBodySchema, listProvidersQuerySchema, mineProvidersQuerySchema } from "./schemas";
+import {
+  claimProviderBodySchema,
+  listProvidersQuerySchema,
+  mineProvidersQuerySchema,
+} from "./schemas";
 
 describe("listProvidersQuerySchema", () => {
   it("parses valid defaults when no params provided", () => {

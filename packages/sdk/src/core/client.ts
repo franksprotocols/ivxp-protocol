@@ -483,17 +483,19 @@ const HubProviderWireSchema = z
     claimed_by: z.string().regex(HEX_ADDRESS_REGEX).nullable().optional().default(null),
     claimed_at: z.string().nullable().optional().default(null),
   })
-  .transform((wire): HubProviderRecord => ({
-    providerId: wire.provider_id,
-    providerAddress: wire.provider_address,
-    name: wire.name,
-    description: wire.description,
-    endpointUrl: wire.endpoint_url,
-    status: wire.status,
-    registrationStatus: wire.registration_status,
-    claimedBy: wire.claimed_by,
-    claimedAt: wire.claimed_at,
-  }));
+  .transform(
+    (wire): HubProviderRecord => ({
+      providerId: wire.provider_id,
+      providerAddress: wire.provider_address,
+      name: wire.name,
+      description: wire.description,
+      endpointUrl: wire.endpoint_url,
+      status: wire.status,
+      registrationStatus: wire.registration_status,
+      claimedBy: wire.claimed_by,
+      claimedAt: wire.claimed_at,
+    }),
+  );
 
 const HubProviderResponseSchema = z.object({
   provider: HubProviderWireSchema,

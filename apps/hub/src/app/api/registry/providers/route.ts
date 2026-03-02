@@ -174,7 +174,8 @@ export async function POST(
         const errorResponse: RegistryErrorResponseWire = {
           error: {
             code: "REGISTRY_FULL",
-            message: "The registry is currently at maximum capacity for pending unverified providers. Please try again later.",
+            message:
+              "The registry is currently at maximum capacity for pending unverified providers. Please try again later.",
           },
         };
         return NextResponse.json(errorResponse, { status: 503 });

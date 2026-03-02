@@ -71,4 +71,3 @@ For complete message schemas and JSON examples, see [message-formats.md](./messa
 For the OpenAPI 3.1 specification, see [openapi.yaml](./openapi.yaml).
 
 ---
-

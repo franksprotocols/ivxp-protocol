@@ -123,7 +123,11 @@ describe("POST /api/registry/providers/claim", () => {
   it("returns 409 when provider is already claimed", async () => {
     const { loadProviders } = await import("@/lib/registry/loader");
     (loadProviders as ReturnType<typeof vi.fn>).mockReturnValueOnce([
-      { ...pendingProvider, registration_status: "claimed", claimed_by: pendingProvider.provider_address },
+      {
+        ...pendingProvider,
+        registration_status: "claimed",
+        claimed_by: pendingProvider.provider_address,
+      },
     ]);
 
     const body = await buildClaimRequestBody();

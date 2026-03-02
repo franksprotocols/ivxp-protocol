@@ -33,4 +33,6 @@ export function getDocsUrl(env: NodeJS.ProcessEnv): string {
 const DEFAULT_DOCS_URL =
   process.env.NODE_ENV === "development" ? DEFAULT_LOCAL_DOCS_URL : DEFAULT_PRODUCTION_DOCS_URL;
 
-export const DOCS_URL = withSpecEntryPath(process.env.NEXT_PUBLIC_DOCS_URL?.trim() || DEFAULT_DOCS_URL);
+export const DOCS_URL = withSpecEntryPath(
+  process.env.NEXT_PUBLIC_DOCS_URL?.trim() || DEFAULT_DOCS_URL,
+);

@@ -58,7 +58,9 @@ describe("GET /api/registry/providers", () => {
   });
 
   it("filters by search query", async () => {
-    const response = await GET(createRequest("/api/registry/providers?q=alpha&include_unclaimed=true"));
+    const response = await GET(
+      createRequest("/api/registry/providers?q=alpha&include_unclaimed=true"),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(200);

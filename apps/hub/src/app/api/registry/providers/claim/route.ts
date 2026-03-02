@@ -70,7 +70,10 @@ function parseClaimMessage(message: string): {
   };
 }
 
-async function verifyClaimChallenge(endpointUrl: string, walletAddress: string): Promise<{
+async function verifyClaimChallenge(
+  endpointUrl: string,
+  walletAddress: string,
+): Promise<{
   ok: boolean;
   status?: number;
   code?: string;
@@ -161,8 +164,9 @@ async function verifyClaimChallenge(endpointUrl: string, walletAddress: string):
       ok: false,
       status: 503,
       code: "CHALLENGE_REQUEST_FAILED",
-      message: `Failed to reach challenge endpoint: ${error instanceof Error ? error.message : "Unknown error"
-        }`,
+      message: `Failed to reach challenge endpoint: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
     };
   }
 }
@@ -216,7 +220,8 @@ export async function POST(
         {
           error: {
             code: "MESSAGE_EXPIRED",
-            message: "The claim message has expired or has an invalid timestamp (must be within 5 minutes).",
+            message:
+              "The claim message has expired or has an invalid timestamp (must be within 5 minutes).",
           },
         },
         { status: 400 },
@@ -294,7 +299,10 @@ export async function POST(
       );
     }
 
-    const claimedProvider = await claimProviderByEndpoint(parsed.endpoint_url, parsed.wallet_address);
+    const claimedProvider = await claimProviderByEndpoint(
+      parsed.endpoint_url,
+      parsed.wallet_address,
+    );
 
     return NextResponse.json(
       {
