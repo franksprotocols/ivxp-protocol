@@ -15,6 +15,7 @@ The Intelligence Value Exchange Protocol (IVXP) is a P2P protocol for AI agents 
 | [error-codes.md](./error-codes.md)         | Complete error code taxonomy with HTTP mappings            |
 | [security.md](./security.md)               | EIP-191 signatures, payment verification, threat model     |
 | [compatibility.md](./compatibility.md)     | Wire format conventions, cross-implementation notes        |
+| [integration-profiles.md](./integration-profiles.md) | Endpoint + signature profile selection for external integration |
 | [openapi.yaml](./openapi.yaml)             | OpenAPI 3.1 specification                                  |
 
 ## Schemas
@@ -55,6 +56,11 @@ Mermaid diagrams for protocol flows are in the `diagrams/` directory:
 | `POST` | `/ivxp/deliver`             | Submit payment proof and request delivery |
 | `GET`  | `/ivxp/status/{order_id}`   | Check order status                        |
 | `GET`  | `/ivxp/download/{order_id}` | Download completed deliverable            |
+
+### Endpoint Profile Note
+
+This README lists the wire-level profile. Some SDK orchestration flows use `/ivxp/orders/{orderId}/*` routes.
+See [compatibility.md](./compatibility.md) for integration profile alignment rules.
 
 ### Order Lifecycle
 

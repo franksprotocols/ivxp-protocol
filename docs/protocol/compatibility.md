@@ -32,6 +32,33 @@ Content-Type: application/json
 Accept: application/json
 ```
 
+## Endpoint Profiles
+
+IVXP implementations in this repository currently appear in two compatible endpoint profiles:
+
+| Profile | Endpoints | Typical Usage |
+| ------- | --------- | ------------- |
+| **Wire Profile** | `/ivxp/catalog`, `/ivxp/request`, `/ivxp/deliver`, `/ivxp/status/{order_id}`, `/ivxp/download/{order_id}` | protocol-level interoperability and reference providers |
+| **SDK Workflow Profile** | `/ivxp/orders/{orderId}/payment`, `/ivxp/orders/{orderId}`, `/ivxp/orders/{orderId}/deliverable`, `/ivxp/orders/{orderId}/confirm` | some SDK orchestration flows |
+
+Compatibility rule:
+
+- Clients and providers MUST agree on one profile for a given integration.
+- A provider MAY expose both profiles through explicit compatibility routing.
+- Public documentation MUST state which profile is supported.
+
+## Delivery Signature Profiles
+
+`DeliveryRequest.signed_message` is required, but its exact string format is implementation-profile specific.
+
+- **Strict profile (recommended):** canonical `IVXP-DELIVER | ... | Nonce: ... | Timestamp: ...`
+- **Minimal profile:** any deterministic signed payload that binds order/payment context and can be verified against the signer address
+
+Compatibility rule:
+
+- Implementations MUST document the expected signed message rendering.
+- Integrators MUST generate signed messages that match provider verification logic.
+
 ## Protocol Version Negotiation
 
 The `protocol` field in every message must be exactly `"IVXP/1.0"`. If a provider receives a message with an unsupported protocol version, it returns:
@@ -60,6 +87,7 @@ IVXP/1.0 supports optional extension fields that do not break existing implement
 | `ServiceCatalog`   | `message_type`      | 1.0      | Optional discriminator  |
 | `ServiceCatalog`   | `timestamp`         | 1.0      | Catalog generation time |
 | `ServiceQuote`     | `terms`             | 1.0      | Payment/service terms   |
+| `DeliveryRequest`  | `nonce`             | 1.0      | Replay-protection extension field |
 | `DeliveryRequest`  | `delivery_endpoint` | 1.0      | P2P push endpoint       |
 | `DeliveryResponse` | `content_hash`      | 1.0      | Integrity verification  |
 | `DeliveryResponse` | `signature`         | 1.0      | Provider signature      |

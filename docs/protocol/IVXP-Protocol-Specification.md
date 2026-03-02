@@ -283,7 +283,8 @@ Any IVXP implementation must conform to these identity and payment conventions:
 
 #### Identity: EIP-191 Signatures
 
-The Client signs a delivery request message using EIP-191 (`personal_sign`). The signed message format is:
+The Client signs a delivery request message using EIP-191 (`personal_sign`).
+The strict signature profile uses:
 
 ```text
 IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}
@@ -294,12 +295,13 @@ IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timesta
 | `IVXP-DELIVER` | Fixed prefix — prevents cross-protocol replay               |
 | `order_id`     | The order identifier from the quote                         |
 | `tx_hash`      | The on-chain USDC transaction hash                          |
-| `nonce`        | A unique random string (min 16 chars) generated per request |
+| `nonce`        | Optional replay-protection string (min 16 chars when used)  |
 | `timestamp`    | ISO 8601 timestamp of the delivery request                  |
 
 The Provider recovers the signer address from the signature and verifies it matches `payment_proof.from_address`. See [security.md](./security.md) for the full verification algorithm.
 
-The `DeliveryRequest` payload carries `nonce` as a dedicated field. The Provider must rebuild the canonical message from `order_id`, `payment_proof.tx_hash`, `nonce`, and `timestamp`, and reject requests where `signed_message` does not match this canonical string exactly.
+The `DeliveryRequest` payload may carry `nonce` as an extension field.
+Providers should publish their accepted signature profile and rebuild the expected signed payload from request context before verification.
 
 #### Payment Verification
 
@@ -459,6 +461,9 @@ For `GET /ivxp/catalog`, `GET /ivxp/status/{order_id}`, and `GET /ivxp/download/
 | `GET`  | `/ivxp/status/{order_id}`   | Check order status                        |
 | `GET`  | `/ivxp/download/{order_id}` | Download completed deliverable            |
 
+These are the wire-profile endpoints. Some SDK orchestration flows may use `/ivxp/orders/{orderId}/*`.
+Implementations should publish their supported endpoint profile explicitly.
+
 ### 6.3 HTTP Status Codes
 
 | Code  | Meaning             | Use Case                                               |
@@ -522,17 +527,17 @@ The Provider computes `content_hash = "sha256:" + hex(SHA-256(JSON.stringify(del
 The Provider verifies the Client's signature using this algorithm:
 
 ```text
-1. message = "IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}"
-2. prefixed = "\x19Ethereum Signed Message:\n" + len(message) + message
+1. expected_message = render_message(signature_profile, request_context)
+2. prefixed = "\x19Ethereum Signed Message:\n" + len(expected_message) + expected_message
 3. hash = keccak256(prefixed)
 4. recovered_address = ecrecover(hash, signature)
 5. assert recovered_address == payment_proof.from_address  (case-insensitive)
-6. assert nonce has not been seen before for this order_id
-7. assert signed_message == message
+6. if nonce is present (or required by profile), assert nonce has not been seen before for this order_id
+7. assert signed_message == expected_message
 8. assert |now() - parse(timestamp)| <= MAX_TIMESTAMP_AGE (300 seconds)
 ```
 
-The `nonce` field (min 16 chars, unique per request) prevents replay attacks even if the same `order_id` and `tx_hash` appear in multiple requests. `timestamp` in the signed payload must match the request-body `timestamp`.
+`DeliveryRequest.nonce` is an optional extension field. In the strict profile (recommended), nonce is included in `signed_message` and should be at least 16 characters and unique per order. Implementations using a minimal profile must still define replay-protection behavior explicitly in provider docs.
 
 ### 7.3 Timestamp Freshness
 
@@ -651,8 +656,9 @@ A conformant IVXP/1.0 Provider must:
 **Required behaviors:**
 
 - Verify all payment checks (Section 4.3) before accepting a delivery request
-- Verify EIP-191 signature and nonce uniqueness before accepting a delivery request
-- Verify `signed_message` exactly matches the canonical message built from `order_id`, `payment_proof.tx_hash`, `nonce`, and `timestamp`
+- Verify EIP-191 signature before accepting a delivery request
+- If a nonce is included in the delivery request, enforce per-order nonce uniqueness
+- Verify `signed_message` exactly matches the provider's declared signature profile using values reconstructed from request context
 - Validate timestamp freshness (MAX_TIMESTAMP_AGE = 300s)
 - Enforce payment timeout (default 3600s)
 - Use integer micro-USDC arithmetic (`10^6`) for amount checks and comparison
@@ -677,9 +683,9 @@ A conformant IVXP/1.0 Client must:
 
 - Include `protocol: "IVXP/1.0"` in all request bodies (`POST /ivxp/request`, `POST /ivxp/deliver`)
 - Include a valid `wallet_address` in `client_agent`
-- Generate a unique `nonce` field (min 16 chars) for each delivery request
+- For strict signature profile, generate a unique `nonce` field (min 16 chars) for each delivery request
 - Sign the delivery request message using EIP-191 (`personal_sign`)
-- Build `signed_message` from canonical fields: `order_id`, `payment_proof.tx_hash`, `nonce`, `timestamp`
+- Build `signed_message` according to the provider's documented signature profile (strict or minimal)
 - Verify `content_hash` against the received deliverable before processing
 - Handle `delivery_failed` status by downloading via `GET /ivxp/download/{order_id}`
 

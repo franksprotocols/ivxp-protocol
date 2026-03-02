@@ -54,29 +54,31 @@ import type { PaymentProofOutput, HexSignature, DeliveryAcceptedOutput } from "@
 | `getStatus`       | `GET /ivxp/status/:orderId`   | Poll order status                   |
 | `download`        | `GET /ivxp/download/:orderId` | Download the deliverable            |
 
-### 3.1 Nonce Generation
+### 3.1 Nonce Generation (Strict Profile)
 
-Every delivery request must include a unique nonce to prevent replay attacks. Use the canonical generation method:
+`nonce` is an optional `DeliveryRequest` extension field. If the provider declares the strict signature profile, include a unique nonce to prevent replay attacks:
 
 ```typescript
 import { randomBytes } from "crypto";
 const nonce = randomBytes(16).toString("hex");
 ```
 
-This produces a 32-character hex string. The nonce must be unique per order — providers reject duplicate nonces for the same `order_id`.
+This produces a 32-character hex string. For strict profile integrations, nonce values should be unique per order. Minimal-profile integrations may omit nonce if the provider documents an alternative replay-protection strategy.
 
 ### 3.2 Signed Message Format
 
-The `signedMessage` field in delivery requests must follow the canonical format:
+The `signedMessage` field must follow the provider's verification profile.
+The strict profile (recommended) is:
 
 ```typescript
-// signedMessage = `IVXP/1.0 nonce=${nonce} content_hash=${sha256(canonicalBody)}`
+// signedMessage = `IVXP-DELIVER | Order: ${orderId} | Payment: ${txHash} | Nonce: ${nonce} | Timestamp: ${timestamp}`
 ```
 
-The provider extracts and validates:
+The provider validates:
 
-- **Nonce** — must be unique per order (replay prevention)
-- **Timestamp** — must be within 300 seconds of server time (freshness check)
+- **Signed payload shape** — must match the provider's documented signature profile
+- **Nonce** (when used) — should be unique per order (replay prevention)
+- **Timestamp freshness** — request timestamp should be within 300 seconds of server time
 
 ### 3.3 Full Client Adapter Example
 
@@ -182,17 +184,19 @@ export class MyFrameworkClientAdapter implements IVXPClientAdapter {
   }
 }
 
-/** Build canonical nonce per IVXP/1.0 spec (32-char hex). */
+/** Build strict-profile nonce (32-char hex). */
 export function buildNonce(): string {
   return randomBytes(16).toString("hex");
 }
 
-/** Build canonical signed_message per IVXP/1.0 spec. */
+/** Build strict-profile signed_message. Adjust if your provider uses a minimal profile. */
 export function buildSignedMessage(params: {
+  readonly orderId: string;
+  readonly txHash: `0x${string}`;
   readonly nonce: string;
-  readonly contentHash: string;
+  readonly timestamp: string;
 }): string {
-  return `IVXP/1.0 nonce=${params.nonce} content_hash=${params.contentHash}`;
+  return `IVXP-DELIVER | Order: ${params.orderId} | Payment: ${params.txHash} | Nonce: ${params.nonce} | Timestamp: ${params.timestamp}`;
 }
 
 /** Factory: create adapter from environment variables. */
@@ -399,11 +403,11 @@ Client                                Provider
 
 2. **requestQuote** — Send a service request with `serviceType`, `description`, and `budgetUsdc`. Receive an `orderId`, quoted `priceUsdc`, and `paymentAddress`.
 
-3. **Sign message** — Construct the canonical `signedMessage` (see Section 3.2) and sign it with the client's private key using EIP-191 personal sign.
+3. **Sign message** — Construct `signedMessage` using the provider's declared signature profile (see Section 3.2), then sign it with the client's private key using EIP-191 personal sign.
 
 4. **Send USDC payment** — Transfer the quoted `priceUsdc` in USDC to the provider's `paymentAddress` on the specified `network`. Record the `txHash`.
 
-5. **requestDelivery** — POST the `payment_proof` (txHash, fromAddress, network), `signature`, and `signed_message` to the provider. The provider verifies: order exists, order is in `quoted` status, signed message contains the order_id, payment network matches, on-chain payment is valid, and EIP-191 signature is valid.
+5. **requestDelivery** — POST the `payment_proof` (txHash, fromAddress, network), `signature`, and `signed_message` to the provider. The provider verifies: order exists, order is in `quoted` status, signed message matches its declared profile, payment network matches, on-chain payment is valid, and EIP-191 signature is valid.
 
 6. **Poll status** — Poll `GET /ivxp/status/:orderId` until the status transitions to `delivered`. Use exponential backoff.
 
@@ -511,9 +515,9 @@ Your adapter must pass all items in this checklist to be considered conformant. 
 | C4  | `getStatus()` returns `OrderStatusResponseOutput` with correct `orderId` and `status`                            | "should complete full flow" (poll step)        |
 | C5  | `download()` returns `DeliveryResponseOutput` with `content` and `contentHash`                                   | "should complete full flow" (download step)    |
 | C6  | Content hash integrity: recomputed `sha256(content)` matches provider's `content_hash` (FR12)                    | "should verify content_hash"                   |
-| C7  | Nonce is 32-char hex from `randomBytes(16).toString("hex")`                                                      | "buildNonce returns 32-char hex"               |
-| C8  | Nonce is unique per call                                                                                         | "buildNonce returns unique values"             |
-| C9  | `signedMessage` follows canonical `IVXP/1.0 nonce=... content_hash=...` format                                   | "buildSignedMessage produces canonical format" |
+| C7  | For strict profile integrations, nonce is 32-char hex from `randomBytes(16).toString("hex")`                   | "buildNonce returns 32-char hex"               |
+| C8  | For strict profile integrations, nonce is unique per call                                                        | "buildNonce returns unique values"             |
+| C9  | `signedMessage` follows provider-compatible deterministic format (strict or minimal profile)                     | "buildSignedMessage matches provider profile"  |
 | C10 | All `IVXPError` instances are converted to framework-native errors                                               | "converts IVXPError to native error"           |
 
 ### Provider Adapter Conformance
@@ -523,15 +527,15 @@ Your adapter must pass all items in this checklist to be considered conformant. 
 | P1  | `handleCatalog()` returns valid `ServiceCatalogOutput`                            | "should handle catalog via adapter"                 |
 | P2  | `handleRequest()` accepts `ServiceRequestOutput` and returns `ServiceQuoteOutput` | "should handle request via adapter"                 |
 | P3  | `handleDeliver()` validates timestamp freshness (within 300s)                     | "rejects stale timestamp"                           |
-| P4  | `handleDeliver()` validates nonce uniqueness per order                            | "rejects duplicate nonce"                           |
-| P5  | `handleDeliver()` allows same nonce for different orders                          | "allows same nonce for different orders"            |
-| P6  | `handleDeliver()` rejects missing nonce in signed message                         | "rejects when nonce field is missing"               |
-| P7  | `handleDeliver()` rejects missing timestamp in signed message                     | "rejects when timestamp field is missing"           |
+| P4  | `handleDeliver()` enforces nonce uniqueness per order when nonce is present/required by profile                 | "rejects duplicate nonce"                           |
+| P5  | `handleDeliver()` allows same nonce for different orders (when nonce tracking is enabled)                       | "allows same nonce for different orders"            |
+| P6  | `handleDeliver()` validates signed payload fields against the declared signature profile                         | "rejects when signed payload format mismatches"     |
+| P7  | `handleDeliver()` rejects stale timestamps based on provider freshness policy                                   | "rejects when timestamp is stale"                   |
 | P8  | `handleStatus()` returns `OrderStatusResponseOutput` for existing orders          | "returns order status"                              |
 | P9  | `handleStatus()` throws `ORDER_NOT_FOUND` for missing orders                      | "throws ORDER_NOT_FOUND"                            |
 | P10 | `handleDownload()` returns `DeliveryResponseOutput` with `contentHash`            | "returns DeliveryResponseOutput with content_hash"  |
 | P11 | Wire-format conversion: camelCase input -> snake_case for `IVXPProvider`          | All handler tests                                   |
-| P12 | Nonce not registered when on-chain checks fail (allows retry)                     | "does not register nonce when on-chain checks fail" |
+| P12 | Nonce state not registered when on-chain checks fail (allows retry) when nonce is used                          | "does not register nonce when on-chain checks fail" |
 
 ### Cross-Language Conformance
 

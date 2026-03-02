@@ -240,11 +240,11 @@ Every IVXP message includes a `message_type` field for routing:
 | `message_type`      | `"delivery_request"` | Yes      | Message discriminator         |
 | `timestamp`         | `ISOTimestamp`       | Yes      | Request timestamp             |
 | `order_id`          | `string`             | Yes      | Order ID from quote           |
-| `nonce`             | `string`             | Yes      | Unique nonce (min 16)         |
+| `nonce`             | `string`             | No       | Optional nonce (min 16)       |
 | `payment_proof`     | `PaymentProof`       | Yes      | On-chain payment proof        |
 | `delivery_endpoint` | `string` (URL)       | No       | P2P push endpoint             |
 | `signature`         | `HexSignature`       | Yes      | EIP-191 signature             |
-| `signed_message`    | `string`             | Yes      | Canonical signed message text |
+| `signed_message`    | `string`             | Yes      | Provider-compatible signed message text |
 
 ### `PaymentProof`
 
@@ -257,14 +257,18 @@ Every IVXP message includes a `message_type` field for routing:
 | `amount_usdc`  | `string`     | No       | Raw USDC amount (6 decimals) |
 | `block_number` | `integer`    | No       | Block number                 |
 
-### Signed Message Format
+### Signed Message Profiles
 
 ```text
 IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}
 ```
 
-The `nonce` is a unique random string (min 16 chars) generated per request to prevent replay attacks.
-`timestamp` in the request body and in the signed message must be identical.
+The canonical string above is the strict profile (recommended). Some providers accept a minimal profile with a different deterministic rendering.
+
+Compatibility requirements:
+
+- `signed_message` must match provider verification logic.
+- if `nonce` is present, providers should validate replay protection semantics.
 
 ---
 

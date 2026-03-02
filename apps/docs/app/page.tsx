@@ -4,8 +4,14 @@ import { Card, Cards } from "fumadocs-ui/components/card";
 import type { LinkItemType } from "fumadocs-ui/layouts/shared";
 
 const HOME_LINKS: LinkItemType[] = [
+  {
+    text: "IVXP Protocol Specification",
+    url: "/docs/ivxp-protocol-specification/1-what-is-ivxp",
+  },
+  { text: "Protocol", url: "/docs/protocol/integration-profiles" },
+  { text: "Provider", url: "/docs/provider" },
+  { text: "Service User", url: "/docs/user" },
   { text: "SDK", url: "/docs/sdk" },
-  { text: "Protocol", url: "/docs/protocol" },
   { text: "API Reference", url: "/docs/protocol/api" },
 ];
 
@@ -23,30 +29,59 @@ export default function HomePage() {
             IVXP Documentation
           </p>
           <h1 className="mx-auto mb-4 max-w-3xl text-4xl font-semibold tracking-tight text-fd-foreground sm:text-5xl">
-            Build and integrate value-exchanging AI agents.
+            Protocol first. Then provider integration and service consumption.
           </h1>
           <p className="mx-auto mb-8 max-w-2xl text-base text-fd-muted-foreground sm:text-lg">
-            SDK guides, protocol specifications, and generated API reference for IVXP.
+            Start from the IVXP specification, then follow role-based guides for providers and service
+            users.
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link
-              href="/docs/sdk/getting-started/installation"
+              href="/docs/ivxp-protocol-specification/1-what-is-ivxp"
               className="rounded-lg bg-fd-primary px-4 py-2 text-sm font-medium text-fd-primary-foreground transition-colors hover:bg-fd-primary/90"
             >
-              Get Started
+              Read Specification
             </Link>
             <Link
-              href="/docs/protocol/api"
+              href="/docs/provider"
               className="rounded-lg border bg-fd-card px-4 py-2 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
             >
-              API Reference
+              I am a Provider
             </Link>
           </div>
         </div>
       </section>
 
       <section className="container mx-auto px-4 py-12 sm:py-16">
-        <Cards className="grid-cols-1 gap-4 md:grid-cols-3">
+        <Cards className="grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
+          <Card
+            title="IVXP Protocol Specification"
+            description="Read the standard first: message formats, security model, state machine, and compatibility."
+            href="/docs/ivxp-protocol-specification/1-what-is-ivxp"
+          >
+            Source of truth for IVXP behavior
+          </Card>
+          <Card
+            title="Protocol References"
+            description="Integration profiles, compatibility rules, schemas, and security deep dives."
+            href="/docs/protocol/integration-profiles"
+          >
+            Supporting references around the core spec
+          </Card>
+          <Card
+            title="Provider"
+            description="Implement provider endpoints, payment verification, delivery flow, and conformance checks."
+            href="/docs/provider"
+          >
+            Integration path for service providers
+          </Card>
+          <Card
+            title="Service User"
+            description="Connect wallet, purchase services, inspect orders, and verify deliverables safely."
+            href="/docs/user"
+          >
+            Task-based guide for service consumers
+          </Card>
           <Card
             title="SDK"
             description="Install the SDK, connect wallets, request quotes, and process delivery."
@@ -55,18 +90,11 @@ export default function HomePage() {
             Installation, guides, and code examples
           </Card>
           <Card
-            title="Protocol"
-            description="Understand message formats, state machine, errors, and compatibility rules."
-            href="/docs/protocol"
-          >
-            Wire format and security model
-          </Card>
-          <Card
             title="API Reference"
-            description="Explore generated endpoint docs directly from OpenAPI definitions."
+            description="Browse generated endpoint documentation from OpenAPI."
             href="/docs/protocol/api"
           >
-            Operation-by-operation reference
+            Operation-by-operation schema details
           </Card>
         </Cards>
       </section>

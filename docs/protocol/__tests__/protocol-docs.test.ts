@@ -341,7 +341,6 @@ describe("Schema Structure", () => {
     expect(required).toContain("protocol");
     expect(required).toContain("message_type");
     expect(required).toContain("order_id");
-    expect(required).toContain("nonce");
     expect(required).toContain("payment_proof");
     expect(required).toContain("signature");
     expect(required).toContain("signed_message");
@@ -349,6 +348,7 @@ describe("Schema Structure", () => {
     const properties = schema.properties as Record<string, Record<string, unknown>>;
     expect(properties.message_type.const).toBe("delivery_request");
     expect(properties.signature.pattern).toBe("^0x[a-fA-F0-9]{130}$");
+    expect(properties.nonce.minLength).toBe(16);
   });
 
   it("status-response schema matches OrderStatusResponse type", () => {

@@ -66,3 +66,12 @@ const result = await client.requestService({
   budgetUsdc: 10,
 });
 ```
+
+## Integration Note: Route Profile Alignment
+
+Depending on integration profile, providers may expose either:
+
+- wire profile endpoints (`/ivxp/catalog`, `/ivxp/request`, `/ivxp/deliver`, `/ivxp/status/{order_id}`, `/ivxp/download/{order_id}`)
+- SDK workflow endpoints (`/ivxp/orders/{orderId}/*`) used by some orchestration methods
+
+Before integration, confirm client and provider use the same endpoint profile.
