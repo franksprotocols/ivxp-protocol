@@ -31,17 +31,17 @@ Optional script-level verification:
 
 ## Required Environment Variables
 
-| Variable               | Required | Notes                                              |
-| ---------------------- | -------- | -------------------------------------------------- |
-| `PORT`                 | Yes      | provider HTTP port                                 |
-| `PROVIDER_PRIVATE_KEY` | Yes      | `0x` + 64 hex chars                                |
-| `NETWORK`              | Yes      | `base-mainnet` or `base-sepolia`                   |
-| `NODE_ENV`             | Yes      | use `production` for deployed runtime              |
-| `CORS_ALLOWED_ORIGINS` | No       | comma-separated allowed origins                    |
-| `RATE_LIMIT_MAX`       | No       | request limit threshold                            |
-| `RATE_LIMIT_WINDOW_MS` | No       | request limit window                               |
-| `DB_PATH`              | No       | provider storage path                              |
-| `ORDER_TTL_SECONDS`    | No       | order retention policy                             |
+| Variable               | Required | Notes                                 |
+| ---------------------- | -------- | ------------------------------------- |
+| `PORT`                 | Yes      | provider HTTP port                    |
+| `PROVIDER_PRIVATE_KEY` | Yes      | `0x` + 64 hex chars                   |
+| `NETWORK`              | Yes      | `base-mainnet` or `base-sepolia`      |
+| `NODE_ENV`             | Yes      | use `production` for deployed runtime |
+| `CORS_ALLOWED_ORIGINS` | No       | comma-separated allowed origins       |
+| `RATE_LIMIT_MAX`       | No       | request limit threshold               |
+| `RATE_LIMIT_WINDOW_MS` | No       | request limit window                  |
+| `DB_PATH`              | No       | provider storage path                 |
+| `ORDER_TTL_SECONDS`    | No       | order retention policy                |
 
 ## Release Sequence
 

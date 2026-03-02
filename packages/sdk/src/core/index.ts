@@ -72,6 +72,10 @@ export { hasCapability, CAPABILITY_SSE, type KnownCapability } from "./capabilit
 
 /** SDK-specific parameter and result types. */
 export type {
+  ClaimProviderOnHubParams,
+  HubProviderRecord,
+  HubProviderServiceInput,
+  RegisterToHubParams,
   ServiceRequestParams,
   SubmitPaymentQuote,
   PaymentResult,

@@ -802,7 +802,7 @@ describe("IVXPClient", () => {
       const wireQuote = createMockQuote();
       const mockHttp = new MockHttpClient({ defaultPostResponse: wireQuote });
       const client = createClientWithMocks(mockHttp);
-      const deadline = new Date("2026-03-01T12:00:00Z");
+      const deadline = new Date(Date.now() + 60 * 60 * 1000);
 
       await client.requestQuote("http://provider.test", {
         ...DEFAULT_REQUEST_PARAMS,
@@ -812,7 +812,7 @@ describe("IVXPClient", () => {
       const calls = mockHttp.getPostCalls();
       const body = calls[0].body as Record<string, unknown>;
       const serviceRequest = body.service_request as Record<string, unknown>;
-      expect(serviceRequest.deadline).toBe("2026-03-01T12:00:00.000Z");
+      expect(serviceRequest.deadline).toBe(deadline.toISOString());
     });
 
     it("should include optional contact endpoint", async () => {
@@ -1256,6 +1256,120 @@ describe("IVXPClient", () => {
       // No HTTP calls should have been made
       expect(mockHttp.getPostCallCount()).toBe(0);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hub registration and claim tests
+// ---------------------------------------------------------------------------
+
+describe("IVXPClient - Hub Registration", () => {
+  it("registerToHub() posts snake_case payload and returns mapped provider record", async () => {
+    const mockHttp = new MockHttpClient();
+    mockHttp.onPost("https://hub.example.com/api/registry/providers", () => ({
+      provider: {
+        provider_id: "prov-001",
+        provider_address: TEST_ACCOUNTS.provider.address,
+        name: "Hub Provider",
+        description: "Hub provider description",
+        endpoint_url: "https://provider.example.com",
+        status: "active",
+        registration_status: "pending",
+        claimed_by: null,
+        claimed_at: null,
+      },
+    }));
+
+    const client = new IVXPClient({
+      ...MINIMAL_CONFIG,
+      httpClient: mockHttp,
+    });
+
+    const result = await client.registerToHub({
+      hubUrl: "https://hub.example.com",
+      name: "Hub Provider",
+      description: "Hub provider description",
+      endpointUrl: "https://provider.example.com",
+      services: [
+        {
+          serviceType: "text_echo",
+          name: "Text Echo",
+          description: "Echo",
+          priceUsdc: "0.10",
+          estimatedTimeSeconds: 5,
+        },
+      ],
+    });
+
+    expect(result.providerId).toBe("prov-001");
+    expect(result.endpointUrl).toBe("https://provider.example.com");
+    expect(result.registrationStatus).toBe("pending");
+
+    const calls = mockHttp.getPostCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("https://hub.example.com/api/registry/providers");
+    expect(calls[0].body).toMatchObject({
+      name: "Hub Provider",
+      endpoint_url: "https://provider.example.com",
+      services: [
+        {
+          service_type: "text_echo",
+          price_usdc: "0.10",
+        },
+      ],
+    });
+  });
+
+  it("claimProviderOnHub() signs claim message and calls claim API", async () => {
+    const mockHttp = new MockHttpClient();
+    mockHttp.onPost("https://hub.example.com/api/registry/providers/claim", (_url, body) => ({
+      provider: {
+        provider_id: "prov-001",
+        provider_address: (body as { wallet_address: string }).wallet_address,
+        name: "Hub Provider",
+        description: "Hub provider description",
+        endpoint_url: "https://provider.example.com",
+        status: "active",
+        registration_status: "claimed",
+        claimed_by: (body as { wallet_address: string }).wallet_address,
+        claimed_at: "2026-03-02T09:30:00Z",
+      },
+    }));
+
+    const client = new IVXPClient({
+      ...MINIMAL_CONFIG,
+      httpClient: mockHttp,
+    });
+
+    const claimed = await client.claimProviderOnHub({
+      hubUrl: "https://hub.example.com",
+      endpointUrl: "https://provider.example.com",
+    });
+
+    expect(claimed.registrationStatus).toBe("claimed");
+    expect(claimed.claimedBy).toBe(TEST_ACCOUNTS.client.address);
+
+    const calls = mockHttp.getPostCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("https://hub.example.com/api/registry/providers/claim");
+    expect(calls[0].body).toHaveProperty("wallet_address", TEST_ACCOUNTS.client.address);
+    expect(calls[0].body).toHaveProperty("endpoint_url", "https://provider.example.com");
+    expect(calls[0].body).toHaveProperty("signature");
+    expect(calls[0].body).toHaveProperty("message");
+  });
+
+  it("registerToHub() rejects empty services", async () => {
+    const client = new IVXPClient(MINIMAL_CONFIG);
+
+    await expect(
+      client.registerToHub({
+        hubUrl: "https://hub.example.com",
+        name: "Hub Provider",
+        description: "Hub provider description",
+        endpointUrl: "https://provider.example.com",
+        services: [],
+      }),
+    ).rejects.toThrow("services must be a non-empty array");
   });
 });
 

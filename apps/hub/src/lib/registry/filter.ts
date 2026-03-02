@@ -47,6 +47,28 @@ export function filterByStatus(
 }
 
 /**
+ * Registration status filtering helper.
+ */
+export function filterByRegistrationStatus(
+  providers: readonly RegistryProviderWire[],
+  registrationStatus: "pending" | "claimed" | "revoked",
+): RegistryProviderWire[] {
+  return providers.filter((p) => {
+    const current = p.registration_status ?? "claimed";
+    return current === registrationStatus;
+  });
+}
+
+/**
+ * Default public visibility: hide unclaimed/revoked providers.
+ */
+export function filterPubliclyVisibleProviders(
+  providers: readonly RegistryProviderWire[],
+): RegistryProviderWire[] {
+  return providers.filter((provider) => (provider.registration_status ?? "claimed") === "claimed");
+}
+
+/**
  * Sort providers by the specified field and order.
  */
 export function sortProviders(
@@ -88,8 +110,16 @@ export function queryProviders(
 ): { items: RegistryProviderWire[]; total: number } {
   let result: readonly RegistryProviderWire[] = providers;
 
+  if (!query.include_unclaimed) {
+    result = filterPubliclyVisibleProviders(result);
+  }
+
   if (query.status) {
     result = filterByStatus(result, query.status);
+  }
+
+  if (query.registration_status) {
+    result = filterByRegistrationStatus(result, query.registration_status);
   }
 
   if (query.service_type) {

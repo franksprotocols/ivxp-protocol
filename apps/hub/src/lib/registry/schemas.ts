@@ -2,6 +2,8 @@ import { z } from "zod";
 import { isAllowedProviderEndpointUrl } from "@/lib/provider-endpoint-url";
 
 const MAX_SERVICES_PER_PROVIDER = 20;
+const HEX_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
+const SIGNATURE_REGEX = /^0x[a-fA-F0-9]{130}$/;
 
 export const listProvidersQuerySchema = z.object({
   page: z
@@ -21,6 +23,13 @@ export const listProvidersQuerySchema = z.object({
   sort_by: z.enum(["name", "service_count"]).optional().default("name"),
   sort_order: z.enum(["asc", "desc"]).optional().default("asc"),
   status: z.enum(["active", "inactive"]).optional(),
+  registration_status: z.enum(["pending", "claimed", "revoked"]).optional(),
+  include_unclaimed: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((value) => value === "true")
+    .pipe(z.boolean()),
 });
 
 export type ListProvidersQueryInput = z.input<typeof listProvidersQuerySchema>;
@@ -47,8 +56,7 @@ const providerServiceSchema = z.object({
   estimated_time_seconds: z.number().int().min(1).max(604800),
 });
 
-export const registerProviderBodySchema = z.object({
-  provider_address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address format"),
+const providerRegistrationBaseSchema = z.object({
   name: z
     .string()
     .min(3, "name must be at least 3 characters")
@@ -75,14 +83,80 @@ export const registerProviderBodySchema = z.object({
       },
       { message: "Duplicate service_type values are not allowed" },
     ),
+});
+
+export const registerProviderBodySchema = providerRegistrationBaseSchema
+  .extend({
+    provider_address: z
+      .string()
+      .regex(HEX_ADDRESS_REGEX, "Invalid Ethereum address format")
+      .optional(),
+    signature: z
+      .string()
+      .regex(SIGNATURE_REGEX, "Invalid signature format (must be 0x + 130 hex chars)")
+      .optional(),
+    message: z.string().min(1, "Signed message is required").optional(),
+  })
+  .superRefine((value, ctx) => {
+    const hasSignature = typeof value.signature === "string";
+    const hasMessage = typeof value.message === "string";
+
+    if (hasSignature !== hasMessage) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: hasSignature ? ["message"] : ["signature"],
+        message: "signature and message must be provided together",
+      });
+    }
+
+    if ((hasSignature || hasMessage) && !value.provider_address) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["provider_address"],
+        message: "provider_address is required for signed registration",
+      });
+    }
+  });
+
+export const claimProviderBodySchema = z.object({
+  endpoint_url: z
+    .string()
+    .url("endpoint_url must be a valid URL")
+    .refine(
+      isAllowedProviderEndpointUrl,
+      "endpoint_url must use HTTPS, or http://localhost (127.0.0.1 / [::1]) for local dev",
+    ),
+  wallet_address: z.string().regex(HEX_ADDRESS_REGEX, "Invalid Ethereum address format"),
+  message: z.string().min(1, "Claim message is required"),
   signature: z
     .string()
-    .regex(/^0x[a-fA-F0-9]{130}$/, "Invalid signature format (must be 0x + 130 hex chars)"),
-  message: z.string().min(1, "Signed message is required"),
+    .regex(SIGNATURE_REGEX, "Invalid signature format (must be 0x + 130 hex chars)"),
+});
+
+export const mineProvidersQuerySchema = z.object({
+  wallet_address: z.string().regex(HEX_ADDRESS_REGEX, "Invalid Ethereum address format"),
+  page: z
+    .string()
+    .optional()
+    .default("1")
+    .transform(Number)
+    .pipe(z.number().int().min(1, "page must be >= 1")),
+  page_size: z
+    .string()
+    .optional()
+    .default("20")
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(100, "page_size must be <= 100")),
+  status: z.enum(["active", "inactive"]).optional(),
+  registration_status: z.enum(["pending", "claimed", "revoked"]).optional(),
 });
 
 export type RegisterProviderBodyInput = z.input<typeof registerProviderBodySchema>;
 export type RegisterProviderBodyParsed = z.output<typeof registerProviderBodySchema>;
+export type ClaimProviderBodyInput = z.input<typeof claimProviderBodySchema>;
+export type ClaimProviderBodyParsed = z.output<typeof claimProviderBodySchema>;
+export type MineProvidersQueryInput = z.input<typeof mineProvidersQuerySchema>;
+export type MineProvidersQueryParsed = z.output<typeof mineProvidersQuerySchema>;
 
 export const updateProviderBodySchema = z.object({
   name: z

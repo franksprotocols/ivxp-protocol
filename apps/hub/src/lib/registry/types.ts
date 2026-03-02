@@ -2,6 +2,7 @@
 
 /** Verification status for a registered provider */
 export type VerificationStatus = "verified" | "unresponsive" | "pending";
+export type RegistrationStatus = "pending" | "claimed" | "revoked";
 
 /** A single service offered by a provider */
 export interface ProviderServiceWire {
@@ -21,6 +22,9 @@ export interface RegistryProviderWire {
   endpoint_url: string;
   services: ProviderServiceWire[];
   status: "active" | "inactive";
+  registration_status?: RegistrationStatus;
+  claimed_by?: string | null;
+  claimed_at?: string | null;
   registered_at: string;
   updated_at: string;
   verification_status: VerificationStatus;
@@ -48,17 +52,30 @@ export interface RegistryErrorResponseWire {
 
 /** Registration request body sent by the provider owner */
 export interface RegisterProviderRequestWire {
-  provider_address: string;
+  provider_address?: string;
   name: string;
   description: string;
   endpoint_url: string;
   services: ProviderServiceWire[];
-  signature: string;
-  message: string;
+  signature?: string;
+  message?: string;
 }
 
 /** Successful registration response */
 export interface RegisterProviderResponseWire {
+  provider: RegistryProviderWire;
+}
+
+/** Claim request body */
+export interface ClaimProviderRequestWire {
+  endpoint_url: string;
+  wallet_address: string;
+  message: string;
+  signature: string;
+}
+
+/** Successful claim response */
+export interface ClaimProviderResponseWire {
   provider: RegistryProviderWire;
 }
 

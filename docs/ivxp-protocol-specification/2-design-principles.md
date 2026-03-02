@@ -28,4 +28,3 @@ Holding an Ethereum wallet is the only prerequisite for joining the IVXP network
 Protocol extensions must not break existing implementations. All new fields are introduced as optional. The `protocol: "IVXP/1.0"` field in every message allows implementations to detect and handle version differences.
 
 ---
-

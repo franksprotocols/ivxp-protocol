@@ -17,6 +17,20 @@ import type {
   RegistryProviderWire,
 } from "@/lib/registry/types";
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+function hasSignedRegistrationPayload(payload: {
+  provider_address?: string;
+  signature?: string;
+  message?: string;
+}): payload is {
+  provider_address: string;
+  signature: string;
+  message: string;
+} {
+  return Boolean(payload.provider_address && payload.signature && payload.message);
+}
+
 export async function GET(
   request: NextRequest,
 ): Promise<NextResponse<ListProvidersResponseWire | RegistryErrorResponseWire>> {
@@ -25,6 +39,9 @@ export async function GET(
     const rawParams = Object.fromEntries(searchParams.entries());
 
     const query = listProvidersQuerySchema.parse(rawParams);
+
+    // Security: Unauthenticated public queries must never include unclaimed providers
+    query.include_unclaimed = false;
 
     const allProviders = loadProviders();
 
@@ -84,50 +101,53 @@ export async function POST(
     // 1. Parse and validate request body
     const body = await request.json();
     const parsed = registerProviderBodySchema.parse(body);
+    const isSignedRegistration = hasSignedRegistrationPayload(parsed);
 
-    // 2. Validate message format and ensure it matches request body
-    const parsedMessage = parseRegistrationMessage(parsed.message);
-    if (!parsedMessage) {
-      const errorResponse: RegistryErrorResponseWire = {
-        error: {
-          code: "INVALID_MESSAGE_FORMAT",
-          message: "Message does not match the required IVXP Provider Registration format.",
-        },
-      };
-      return NextResponse.json(errorResponse, { status: 400 });
-    }
+    if (isSignedRegistration) {
+      // 2. Validate message format and ensure it matches request body
+      const parsedMessage = parseRegistrationMessage(parsed.message);
+      if (!parsedMessage) {
+        const errorResponse: RegistryErrorResponseWire = {
+          error: {
+            code: "INVALID_MESSAGE_FORMAT",
+            message: "Message does not match the required IVXP Provider Registration format.",
+          },
+        };
+        return NextResponse.json(errorResponse, { status: 400 });
+      }
 
-    // Ensure message fields match request body
-    if (
-      parsedMessage.providerAddress.toLowerCase() !== parsed.provider_address.toLowerCase() ||
-      parsedMessage.name !== parsed.name ||
-      parsedMessage.endpointUrl !== parsed.endpoint_url
-    ) {
-      const errorResponse: RegistryErrorResponseWire = {
-        error: {
-          code: "MESSAGE_MISMATCH",
-          message: "Message fields do not match the request body (address, name, or endpoint).",
-        },
-      };
-      return NextResponse.json(errorResponse, { status: 400 });
-    }
+      // Ensure message fields match request body
+      if (
+        parsedMessage.providerAddress.toLowerCase() !== parsed.provider_address.toLowerCase() ||
+        parsedMessage.name !== parsed.name ||
+        parsedMessage.endpointUrl !== parsed.endpoint_url
+      ) {
+        const errorResponse: RegistryErrorResponseWire = {
+          error: {
+            code: "MESSAGE_MISMATCH",
+            message: "Message fields do not match the request body (address, name, or endpoint).",
+          },
+        };
+        return NextResponse.json(errorResponse, { status: 400 });
+      }
 
-    // 3. Verify EIP-191 signature
-    const signatureValid = await verifyRegistrationSignature({
-      message: parsed.message,
-      signature: parsed.signature as `0x${string}`,
-      expectedAddress: parsed.provider_address as `0x${string}`,
-    });
+      // 3. Verify EIP-191 signature
+      const signatureValid = await verifyRegistrationSignature({
+        message: parsed.message,
+        signature: parsed.signature as `0x${string}`,
+        expectedAddress: parsed.provider_address as `0x${string}`,
+      });
 
-    if (!signatureValid) {
-      const errorResponse: RegistryErrorResponseWire = {
-        error: {
-          code: "SIGNATURE_INVALID",
-          message:
-            "EIP-191 signature verification failed. The signature does not match the declared provider_address.",
-        },
-      };
-      return NextResponse.json(errorResponse, { status: 401 });
+      if (!signatureValid) {
+        const errorResponse: RegistryErrorResponseWire = {
+          error: {
+            code: "SIGNATURE_INVALID",
+            message:
+              "EIP-191 signature verification failed. The signature does not match the declared provider_address.",
+          },
+        };
+        return NextResponse.json(errorResponse, { status: 401 });
+      }
     }
 
     // 4. Verify provider endpoint is reachable
@@ -142,20 +162,43 @@ export async function POST(
       return NextResponse.json(errorResponse, { status: 422 });
     }
 
-    // 5. Build and persist the new provider entry
+    // 5. Prevent zero-auth DoS by limiting total pending registrations
+    if (!isSignedRegistration) {
+      const allProviders = loadProviders();
+      let pendingCount = 0;
+      for (const p of allProviders) {
+        if (p.registration_status === "pending") pendingCount++;
+      }
+
+      if (pendingCount >= 100) {
+        const errorResponse: RegistryErrorResponseWire = {
+          error: {
+            code: "REGISTRY_FULL",
+            message:
+              "The registry is currently at maximum capacity for pending unverified providers. Please try again later.",
+          },
+        };
+        return NextResponse.json(errorResponse, { status: 503 });
+      }
+    }
+
+    // 6. Build and persist the new provider entry
     const now = new Date().toISOString();
     const newProvider: RegistryProviderWire = {
       provider_id: generateProviderId(),
-      provider_address: parsed.provider_address,
+      provider_address: parsed.provider_address ?? ZERO_ADDRESS,
       name: parsed.name,
       description: parsed.description,
       endpoint_url: parsed.endpoint_url,
       services: parsed.services,
       status: "active",
+      registration_status: isSignedRegistration ? "claimed" : "pending",
+      claimed_by: isSignedRegistration ? parsed.provider_address : null,
+      claimed_at: isSignedRegistration ? now : null,
       registered_at: now,
       updated_at: now,
-      verification_status: "verified",
-      last_verified_at: now,
+      verification_status: isSignedRegistration ? "verified" : "pending",
+      last_verified_at: isSignedRegistration ? now : null,
       last_check_at: now,
       consecutive_failures: 0,
     };
@@ -196,7 +239,7 @@ export async function POST(
     if (error instanceof Error && error.message.includes("already exists")) {
       const errorResponse: RegistryErrorResponseWire = {
         error: {
-          code: "PROVIDER_ALREADY_REGISTERED",
+          code: "DUPLICATE_ENDPOINT",
           message: error.message,
         },
       };

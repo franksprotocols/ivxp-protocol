@@ -499,6 +499,44 @@ describe("IVXPProvider", () => {
       expect(response.status).toBe(405);
     });
 
+    it("should serve POST /.well-known/ivxp-verify for claim challenge", async () => {
+      const config = createConfigWithMocks({ port: 0, host: "127.0.0.1" });
+      const provider = new IVXPProvider(config);
+      serversToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/.well-known/ivxp-verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challenge: "ivxp-claim:test-challenge",
+          wallet_address: TEST_ACCOUNTS.provider.address,
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.challenge).toBe("ivxp-claim:test-challenge");
+      expect(body.signer).toBe(TEST_ACCOUNTS.provider.address);
+      expect(typeof body.signature).toBe("string");
+      expect(body.signature.startsWith("0x")).toBe(true);
+    });
+
+    it("should return 405 for GET /.well-known/ivxp-verify", async () => {
+      const config = createConfigWithMocks({ port: 0, host: "127.0.0.1" });
+      const provider = new IVXPProvider(config);
+      serversToCleanup.push(provider);
+
+      const result = await provider.start();
+
+      const response = await fetch(`http://127.0.0.1:${result.port}/.well-known/ivxp-verify`, {
+        method: "GET",
+      });
+
+      expect(response.status).toBe(405);
+    });
+
     it("should stop the server gracefully", async () => {
       const config = createConfigWithMocks({ port: 0, host: "127.0.0.1" });
       const provider = new IVXPProvider(config);

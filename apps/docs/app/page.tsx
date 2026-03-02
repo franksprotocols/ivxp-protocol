@@ -32,8 +32,8 @@ export default function HomePage() {
             Protocol first. Then provider integration and service consumption.
           </h1>
           <p className="mx-auto mb-8 max-w-2xl text-base text-fd-muted-foreground sm:text-lg">
-            Start from the IVXP specification, then follow role-based guides for providers and service
-            users.
+            Start from the IVXP specification, then follow role-based guides for providers and
+            service users.
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link

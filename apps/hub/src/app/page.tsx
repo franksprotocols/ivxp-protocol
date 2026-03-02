@@ -67,7 +67,7 @@ function RolePathsSection() {
                 Register provider metadata and publish service offers.
               </p>
               <Button className="w-full" variant="outline" asChild>
-                <Link href="/provider/register">Register Provider</Link>
+                <Link href="/provider/skill-register">Register Provider</Link>
               </Button>
             </CardContent>
           </Card>

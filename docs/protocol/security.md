@@ -28,13 +28,13 @@ IVXP-DELIVER | Order: {order_id} | Payment: {tx_hash} | Nonce: {nonce} | Timesta
 
 2. **Minimal profile** using provider-defined deterministic rendering bound to order/payment context.
 
-| Field          | Description                                                               |
-| -------------- | ------------------------------------------------------------------------- |
-| `IVXP-DELIVER` | Fixed prefix to prevent cross-protocol replay                             |
-| `order_id`     | The order identifier from the quote                                       |
-| `tx_hash`      | The on-chain transaction hash                                             |
-| `nonce`        | Optional replay-protection string (min 16 chars when used)                 |
-| `timestamp`    | ISO 8601 timestamp of the delivery request                                |
+| Field          | Description                                                |
+| -------------- | ---------------------------------------------------------- |
+| `IVXP-DELIVER` | Fixed prefix to prevent cross-protocol replay              |
+| `order_id`     | The order identifier from the quote                        |
+| `tx_hash`      | The on-chain transaction hash                              |
+| `nonce`        | Optional replay-protection string (min 16 chars when used) |
+| `timestamp`    | ISO 8601 timestamp of the delivery request                 |
 
 Example:
 

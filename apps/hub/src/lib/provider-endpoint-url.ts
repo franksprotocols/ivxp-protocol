@@ -11,7 +11,11 @@ export function isAllowedProviderEndpointUrl(value: string): boolean {
       return true;
     }
 
-    return url.protocol === "http:" && LOCAL_HTTP_HOSTS.has(url.hostname);
+    if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+      return url.protocol === "http:" && LOCAL_HTTP_HOSTS.has(url.hostname);
+    }
+
+    return false;
   } catch {
     return false;
   }

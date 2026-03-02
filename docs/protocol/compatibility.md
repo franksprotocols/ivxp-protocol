@@ -34,10 +34,10 @@ Accept: application/json
 
 IVXP implementations in this repository currently appear in two compatible endpoint profiles:
 
-| Profile | Endpoints | Typical Usage |
-| ------- | --------- | ------------- |
-| **Wire Profile** | `/ivxp/catalog`, `/ivxp/request`, `/ivxp/deliver`, `/ivxp/status/{order_id}`, `/ivxp/download/{order_id}` | protocol-level interoperability and reference providers |
-| **SDK Workflow Profile** | `/ivxp/orders/{orderId}/payment`, `/ivxp/orders/{orderId}`, `/ivxp/orders/{orderId}/deliverable`, `/ivxp/orders/{orderId}/confirm` | some SDK orchestration flows |
+| Profile                  | Endpoints                                                                                                                          | Typical Usage                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **Wire Profile**         | `/ivxp/catalog`, `/ivxp/request`, `/ivxp/deliver`, `/ivxp/status/{order_id}`, `/ivxp/download/{order_id}`                          | protocol-level interoperability and reference providers |
+| **SDK Workflow Profile** | `/ivxp/orders/{orderId}/payment`, `/ivxp/orders/{orderId}`, `/ivxp/orders/{orderId}/deliverable`, `/ivxp/orders/{orderId}/confirm` | some SDK orchestration flows                            |
 
 Compatibility rule:
 
@@ -80,18 +80,18 @@ IVXP/1.0 supports optional extension fields that do not break existing implement
 
 ### Extension Fields in IVXP/1.0
 
-| Message            | Field               | Added In | Description             |
-| ------------------ | ------------------- | -------- | ----------------------- |
-| `ServiceCatalog`   | `message_type`      | 1.0      | Optional discriminator  |
-| `ServiceCatalog`   | `timestamp`         | 1.0      | Catalog generation time |
-| `ServiceQuote`     | `terms`             | 1.0      | Payment/service terms   |
+| Message            | Field               | Added In | Description                       |
+| ------------------ | ------------------- | -------- | --------------------------------- |
+| `ServiceCatalog`   | `message_type`      | 1.0      | Optional discriminator            |
+| `ServiceCatalog`   | `timestamp`         | 1.0      | Catalog generation time           |
+| `ServiceQuote`     | `terms`             | 1.0      | Payment/service terms             |
 | `DeliveryRequest`  | `nonce`             | 1.0      | Replay-protection extension field |
-| `DeliveryRequest`  | `delivery_endpoint` | 1.0      | P2P push endpoint       |
-| `DeliveryResponse` | `content_hash`      | 1.0      | Integrity verification  |
-| `DeliveryResponse` | `signature`         | 1.0      | Provider signature      |
-| `PaymentProof`     | `to_address`        | 1.0      | Recipient address       |
-| `PaymentProof`     | `amount_usdc`       | 1.0      | Payment amount          |
-| `PaymentProof`     | `block_number`      | 1.0      | Block number            |
+| `DeliveryRequest`  | `delivery_endpoint` | 1.0      | P2P push endpoint                 |
+| `DeliveryResponse` | `content_hash`      | 1.0      | Integrity verification            |
+| `DeliveryResponse` | `signature`         | 1.0      | Provider signature                |
+| `PaymentProof`     | `to_address`        | 1.0      | Recipient address                 |
+| `PaymentProof`     | `amount_usdc`       | 1.0      | Payment amount                    |
+| `PaymentProof`     | `block_number`      | 1.0      | Block number                      |
 
 ## Timestamp Format
 

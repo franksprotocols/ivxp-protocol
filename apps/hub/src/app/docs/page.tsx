@@ -43,7 +43,7 @@ export default function DocsPage() {
                 Register your endpoint and publish services to the protocol registry.
               </p>
               <Button className="w-full" asChild>
-                <Link href="/provider/register">Register Provider</Link>
+                <Link href="/provider/skill-register">Register Provider</Link>
               </Button>
             </CardContent>
           </Card>

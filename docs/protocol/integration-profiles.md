@@ -9,10 +9,10 @@ This page is the external integration contract checklist for both provider devel
 
 Provider and consumer must agree on one endpoint profile before integration testing.
 
-| Profile | Endpoint Set | Best For | Notes |
-| ------- | ------------ | -------- | ----- |
-| Wire Profile | `/ivxp/catalog`, `/ivxp/request`, `/ivxp/deliver`, `/ivxp/status/{order_id}`, `/ivxp/download/{order_id}` | Protocol-level interoperability, custom clients, cross-language adapters | Canonical baseline for IVXP/1.0 public docs |
-| SDK Workflow Profile | `/ivxp/orders/{orderId}/payment`, `/ivxp/orders/{orderId}`, `/ivxp/orders/{orderId}/deliverable`, `/ivxp/orders/{orderId}/confirm` | SDK-managed orchestration flows | May require adapter/routing compatibility layer |
+| Profile              | Endpoint Set                                                                                                                       | Best For                                                                 | Notes                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------- |
+| Wire Profile         | `/ivxp/catalog`, `/ivxp/request`, `/ivxp/deliver`, `/ivxp/status/{order_id}`, `/ivxp/download/{order_id}`                          | Protocol-level interoperability, custom clients, cross-language adapters | Canonical baseline for IVXP/1.0 public docs     |
+| SDK Workflow Profile | `/ivxp/orders/{orderId}/payment`, `/ivxp/orders/{orderId}`, `/ivxp/orders/{orderId}/deliverable`, `/ivxp/orders/{orderId}/confirm` | SDK-managed orchestration flows                                          | May require adapter/routing compatibility layer |
 
 If profile is not aligned, requests can fail even when payloads are valid.
 
@@ -20,10 +20,10 @@ If profile is not aligned, requests can fail even when payloads are valid.
 
 `DeliveryRequest.signed_message` is required. Rendering format depends on provider profile.
 
-| Signature Profile | Signed Message Rendering | Replay Protection | Recommendation |
-| ----------------- | ------------------------ | ---------------- | -------------- |
-| Strict (recommended) | `IVXP-DELIVER | Order: ... | Payment: ... | Nonce: ... | Timestamp: ...` | `nonce` (>= 16 chars, unique per order) + timestamp freshness | Default for new public integrations |
-| Minimal | Provider-defined deterministic payload binding order/payment context | Provider-defined strategy (must be documented) | Use only when strict profile is not feasible |
+| Signature Profile    | Signed Message Rendering                                             | Replay Protection                              | Recommendation                               |
+| -------------------- | -------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------- | ---------- | --------------- | ------------------------------------------------------------- | ----------------------------------- |
+| Strict (recommended) | `IVXP-DELIVER                                                        | Order: ...                                     | Payment: ...                                 | Nonce: ... | Timestamp: ...` | `nonce` (>= 16 chars, unique per order) + timestamp freshness | Default for new public integrations |
+| Minimal              | Provider-defined deterministic payload binding order/payment context | Provider-defined strategy (must be documented) | Use only when strict profile is not feasible |
 
 ## 3) Provider Declaration Template
 
@@ -31,12 +31,12 @@ Publish this contract in public docs before onboarding integrators:
 
 ```yaml
 endpoint_profile: wire_profile # or sdk_workflow_profile
-signature_profile: strict      # or minimal
+signature_profile: strict # or minimal
 timestamp_policy:
   max_age_seconds: 300
 replay_policy:
-  nonce_required: true         # strict usually true
-  uniqueness_scope: per_order  # when nonce is used
+  nonce_required: true # strict usually true
+  uniqueness_scope: per_order # when nonce is used
 ```
 
 ## 4) Provider Integration Checklist

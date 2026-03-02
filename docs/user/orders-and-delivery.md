@@ -37,11 +37,11 @@ If push fails, pull path may still be available depending on provider behavior.
 
 ## Common Issues
 
-| Issue                    | Action                                                    |
-| ------------------------ | --------------------------------------------------------- |
-| `ORDER_NOT_FOUND`        | verify order source and provider URL                      |
-| `DELIVERABLE_NOT_READY`  | continue status polling until terminal state              |
-| result integrity concern | re-download and compare hash/metadata                     |
+| Issue                    | Action                                       |
+| ------------------------ | -------------------------------------------- |
+| `ORDER_NOT_FOUND`        | verify order source and provider URL         |
+| `DELIVERABLE_NOT_READY`  | continue status polling until terminal state |
+| result integrity concern | re-download and compare hash/metadata        |
 
 ## Related References
 

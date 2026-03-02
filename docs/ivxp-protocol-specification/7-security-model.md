@@ -55,4 +55,3 @@ content_hash = "sha256:" + hex(SHA-256(JSON.stringify(deliverable.content)))
 For the complete security specification including threat model and transport requirements, see [security.md](./security.md).
 
 ---
-

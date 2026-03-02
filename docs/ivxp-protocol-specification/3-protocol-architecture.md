@@ -67,4 +67,3 @@ Client Agent                              Provider Agent
 Steps 7 and 8 may be repeated (polling) until the order reaches a terminal state. If the Provider supports P2P push delivery, step 7 may be skipped — the Provider POSTs the deliverable directly to the Client's `delivery_endpoint`.
 
 ---
-

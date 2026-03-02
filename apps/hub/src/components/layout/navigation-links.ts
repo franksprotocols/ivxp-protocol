@@ -5,7 +5,7 @@ export interface NavigationLink {
   readonly label: string;
 }
 
-export const PROVIDER_REGISTER_PATH = "/provider/register";
+export const PROVIDER_REGISTER_PATH = "/provider/skill-register";
 
 export const NAVIGATION_LINKS: readonly NavigationLink[] = [
   { href: "/", label: "Home" },

@@ -29,17 +29,17 @@ const provider = createIVXPProvider({
 
 ## Configuration Reference
 
-| Option                     | Type                  | Default                    | Description                              |
-| -------------------------- | --------------------- | -------------------------- | ---------------------------------------- |
-| `privateKey`               | `0x${string}`         | required                   | Provider wallet private key              |
-| `services`                 | `ServiceDefinition[]` | required                   | Services offered                         |
-| `network`                  | `NetworkType`         | `base-sepolia`             | Base network                             |
-| `port`                     | `number`              | `3001`                     | HTTP port                                |
-| `host`                     | `string`              | `127.0.0.1`                | HTTP host                                |
-| `providerName`             | `string`              | `IVXP Provider`            | Provider display name                    |
-| `orderStore`               | `IOrderStorage`       | `InMemoryOrderStore`       | Order persistence backend                |
-| `deliverableStore`         | `IDeliverableStore`   | `InMemoryDeliverableStore` | Deliverable persistence backend          |
-| `allowPrivateDeliveryUrls` | `boolean`             | `false`                    | Allow localhost/private push targets     |
+| Option                     | Type                  | Default                    | Description                          |
+| -------------------------- | --------------------- | -------------------------- | ------------------------------------ |
+| `privateKey`               | `0x${string}`         | required                   | Provider wallet private key          |
+| `services`                 | `ServiceDefinition[]` | required                   | Services offered                     |
+| `network`                  | `NetworkType`         | `base-sepolia`             | Base network                         |
+| `port`                     | `number`              | `3001`                     | HTTP port                            |
+| `host`                     | `string`              | `127.0.0.1`                | HTTP host                            |
+| `providerName`             | `string`              | `IVXP Provider`            | Provider display name                |
+| `orderStore`               | `IOrderStorage`       | `InMemoryOrderStore`       | Order persistence backend            |
+| `deliverableStore`         | `IDeliverableStore`   | `InMemoryDeliverableStore` | Deliverable persistence backend      |
+| `allowPrivateDeliveryUrls` | `boolean`             | `false`                    | Allow localhost/private push targets |
 
 ## Register Service Handlers
 

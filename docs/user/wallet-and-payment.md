@@ -5,12 +5,12 @@ description: Wallet setup and payment verification baseline for service users.
 
 ## Supported Networks and Token
 
-| Item          | Value                                                          |
-| ------------- | -------------------------------------------------------------- |
-| Networks      | `base-mainnet`, `base-sepolia`                                |
-| Payment token | USDC                                                           |
-| USDC decimals | `6`                                                            |
-| Sepolia USDC  | `0x036CbD53842c5426634e7929541eC2318f3dCF7e`                  |
+| Item          | Value                                        |
+| ------------- | -------------------------------------------- |
+| Networks      | `base-mainnet`, `base-sepolia`               |
+| Payment token | USDC                                         |
+| USDC decimals | `6`                                          |
+| Sepolia USDC  | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 
 ## Wallet Setup Checklist
 
@@ -35,12 +35,12 @@ description: Wallet setup and payment verification baseline for service users.
 
 ## Common Payment Problems
 
-| Problem                 | What to Check                                            |
-| ----------------------- | -------------------------------------------------------- |
-| Insufficient balance    | ETH gas balance and USDC balance                         |
-| Wrong network           | wallet chain ID and Hub network prompt                   |
-| Payment tx not found    | tx hash correctness and explorer network                 |
-| Payment amount mismatch | quoted price vs transferred amount                       |
+| Problem                 | What to Check                            |
+| ----------------------- | ---------------------------------------- |
+| Insufficient balance    | ETH gas balance and USDC balance         |
+| Wrong network           | wallet chain ID and Hub network prompt   |
+| Payment tx not found    | tx hash correctness and explorer network |
+| Payment amount mismatch | quoted price vs transferred amount       |
 
 ## Security Notes
 

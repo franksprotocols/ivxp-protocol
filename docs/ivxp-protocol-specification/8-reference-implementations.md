@@ -77,4 +77,3 @@ To implement IVXP in Go, Rust, or any other language:
 5. Run the interoperability test cases against the Python interoperability harness.
 
 ---
-

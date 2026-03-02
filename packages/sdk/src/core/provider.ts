@@ -92,6 +92,9 @@ const REQUEST_PATH = "/ivxp/request";
 /** The delivery endpoint path. */
 const DELIVER_PATH = "/ivxp/deliver";
 
+/** The claim verification endpoint path used by Hub claim flow. */
+const CLAIM_VERIFY_PATH = "/.well-known/ivxp-verify";
+
 /** The status endpoint path prefix (followed by /{order_id}). */
 const STATUS_PATH_PREFIX = "/ivxp/status/";
 
@@ -1011,6 +1014,7 @@ export class IVXPProvider {
    * - GET  /ivxp/catalog            -> Service catalog
    * - POST /ivxp/request            -> Quote generation
    * - POST /ivxp/deliver            -> Delivery acceptance
+   * - POST /.well-known/ivxp-verify -> Hub claim challenge response
    * - GET  /ivxp/status/{order_id}  -> Order status
    * - GET  /ivxp/download/{order_id} -> Deliverable download
    *
@@ -1064,6 +1068,18 @@ export class IVXPProvider {
       }
 
       await this.handleDeliverRoute(req, res);
+      return;
+    }
+
+    // Route: POST /.well-known/ivxp-verify
+    if (normalizedPath === CLAIM_VERIFY_PATH) {
+      if (method !== "POST") {
+        res.writeHead(405, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Method not allowed" }));
+        return;
+      }
+
+      await this.handleClaimVerifyRoute(req, res);
       return;
     }
 
@@ -1315,6 +1331,61 @@ export class IVXPProvider {
       }
       throw error;
     }
+  }
+
+  /**
+   * Handle POST /.well-known/ivxp-verify for Hub claim challenge-response.
+   */
+  private async handleClaimVerifyRoute(req: IncomingMsg, res: ServerRes): Promise<void> {
+    let body: unknown;
+    try {
+      const rawBody = await readRequestBody(req);
+      body = JSON.parse(rawBody);
+    } catch (readError: unknown) {
+      if (readError instanceof IVXPError && readError.code === "REQUEST_TOO_LARGE") {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Request body too large" }));
+        return;
+      }
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid JSON body" }));
+      return;
+    }
+
+    if (!body || typeof body !== "object" || !("challenge" in body)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Missing required field: challenge" }));
+      return;
+    }
+
+    const challenge = (body as { challenge?: unknown }).challenge;
+    if (typeof challenge !== "string" || challenge.trim().length === 0) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "challenge must be a non-empty string" }));
+      return;
+    }
+
+    const signer = await this.getAddress();
+    const requestedWallet = (body as { wallet_address?: unknown }).wallet_address;
+    if (
+      typeof requestedWallet === "string" &&
+      requestedWallet.toLowerCase() !== signer.toLowerCase()
+    ) {
+      res.writeHead(422, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "wallet_address does not match provider signer" }));
+      return;
+    }
+
+    const signature = await this.cryptoService.sign(challenge);
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        challenge,
+        signer,
+        signature,
+      }),
+    );
   }
 
   /**

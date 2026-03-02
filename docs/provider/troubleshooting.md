@@ -15,14 +15,14 @@ Use this page when provider integration fails during quote, payment proof, statu
 
 ## Common Failures
 
-| Symptom                          | Probable Cause                                | Action                                                |
-| -------------------------------- | --------------------------------------------- | ----------------------------------------------------- |
-| `SERVICE_NOT_FOUND`              | requested service type not registered         | verify `services[]` config and handler registration   |
-| `ORDER_NOT_FOUND`                | stale or wrong `order_id`                     | verify quote source and provider URL                  |
-| `PAYMENT_VERIFICATION_FAILED`    | tx hash invalid, network mismatch, bad amount | verify `tx_hash`, network, recipient and amount       |
-| `SIGNATURE_VERIFICATION_FAILED`  | signer mismatch or message mismatch           | verify wallet, signed payload and expected signer     |
-| `INVALID_ORDER_STATUS`           | duplicate/late delivery request               | query latest order status before re-submitting        |
-| `DELIVERABLE_NOT_READY`          | async processing not completed                | poll status until terminal state before download      |
+| Symptom                         | Probable Cause                                | Action                                              |
+| ------------------------------- | --------------------------------------------- | --------------------------------------------------- |
+| `SERVICE_NOT_FOUND`             | requested service type not registered         | verify `services[]` config and handler registration |
+| `ORDER_NOT_FOUND`               | stale or wrong `order_id`                     | verify quote source and provider URL                |
+| `PAYMENT_VERIFICATION_FAILED`   | tx hash invalid, network mismatch, bad amount | verify `tx_hash`, network, recipient and amount     |
+| `SIGNATURE_VERIFICATION_FAILED` | signer mismatch or message mismatch           | verify wallet, signed payload and expected signer   |
+| `INVALID_ORDER_STATUS`          | duplicate/late delivery request               | query latest order status before re-submitting      |
+| `DELIVERABLE_NOT_READY`         | async processing not completed                | poll status until terminal state before download    |
 
 ## Endpoint Issues
 
