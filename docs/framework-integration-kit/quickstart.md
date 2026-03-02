@@ -9,7 +9,7 @@ For deeper implementation details, see the [Adapter Development Guide](../adapte
 
 ## Prerequisites
 
-- **Node.js ≥ 18** — check with `node --version`
+- **Node.js ≥ 20** — check with `node --version`
 - **A wallet funded with test USDC** on Base Sepolia
   - Faucet: https://faucet.circle.com (select "Base Sepolia")
 - **An RPC provider URL** for Base Sepolia (e.g., Alchemy, Infura, or a public endpoint)

@@ -121,6 +121,8 @@ paths:
       description: |
         Client submits payment proof (on-chain tx_hash) and an EIP-191 signature.
         Provider verifies the payment on-chain and begins processing.
+        The signed_message format is provider-profile specific. Canonical IVXP-DELIVER
+        rendering is recommended, but provider-documented deterministic variants are allowed.
       requestBody:
         required: true
         content:
@@ -493,7 +495,6 @@ components:
         - message_type
         - timestamp
         - order_id
-        - nonce
         - payment_proof
         - signature
         - signed_message
@@ -513,6 +514,8 @@ components:
         nonce:
           type: string
           minLength: 16
+          maxLength: 128
+          description: Optional replay-protection nonce.
         payment_proof:
           $ref: "#/components/schemas/PaymentProof"
         delivery_endpoint:
@@ -524,8 +527,7 @@ components:
         signed_message:
           type: string
           minLength: 1
-          pattern: "^IVXP-DELIVER \\| Order: .+ \\| Payment: 0x[a-fA-F0-9]{64} \\| Nonce: .{16,} \\| Timestamp: .+$"
-          description: 'Canonical signed payload. Must equal "IVXP-DELIVER | Order: {order_id} | Payment: {payment_proof.tx_hash} | Nonce: {nonce} | Timestamp: {timestamp}"'
+          description: Provider-compatible deterministic signed payload that binds order and payment context.
 
     DeliveryAccepted:
       type: object

@@ -1,6 +1,14 @@
 import { createSearchAPI } from "fumadocs-core/search/server";
 import type { AdvancedIndex } from "fumadocs-core/search/server";
-import { openApiSource, sdkSource, protocolSource } from "@/lib/source";
+import {
+  openApiSource,
+  protocolSource,
+  specificationSource,
+  providerSource,
+  userSource,
+  sdkSource,
+} from "@/lib/source";
+import { isHiddenDocPage } from "@/lib/docs-visibility";
 
 function toAdvancedIndex(page: { url: string; slugs: string[]; data: unknown }): AdvancedIndex {
   const data = page.data as {
@@ -19,7 +27,14 @@ function toAdvancedIndex(page: { url: string; slugs: string[]; data: unknown }):
 }
 
 export const { GET } = createSearchAPI("advanced", {
-  indexes: [...sdkSource.getPages(), ...protocolSource.getPages(), ...openApiSource.getPages()].map(
-    toAdvancedIndex,
-  ),
+  indexes: [
+    ...specificationSource.getPages().filter((page) => !isHiddenDocPage(page)),
+    ...protocolSource.getPages(),
+    ...providerSource.getPages().filter((page) => !isHiddenDocPage(page)),
+    ...userSource.getPages().filter((page) => !isHiddenDocPage(page)),
+    ...sdkSource.getPages().filter((page) => !isHiddenDocPage(page)),
+    ...openApiSource.getPages(),
+  ]
+    .filter((page) => !isHiddenDocPage(page))
+    .map(toAdvancedIndex),
 });
