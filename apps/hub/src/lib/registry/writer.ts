@@ -83,6 +83,17 @@ function getRegistryFilePath(): string {
   return join(process.cwd(), "src", "data", "registry", "providers.json");
 }
 
+function normalizeEndpointUrl(endpointUrl: string): string {
+  try {
+    const parsed = new URL(endpointUrl);
+    const normalizedPath =
+      parsed.pathname.length > 1 ? parsed.pathname.replace(/\/+$/, "") : parsed.pathname;
+    return `${parsed.protocol.toLowerCase()}//${parsed.host.toLowerCase()}${normalizedPath}`;
+  } catch {
+    return endpointUrl.trim().replace(/\/+$/, "").toLowerCase();
+  }
+}
+
 /**
  * Classify and wrap errors from registry write operations
  * with more specific context for callers.
@@ -116,6 +127,17 @@ export function isProviderRegistered(
 }
 
 /**
+ * Check if a provider with the given endpoint is already registered.
+ */
+export function isProviderEndpointRegistered(
+  providers: readonly RegistryProviderWire[],
+  endpointUrl: string,
+): boolean {
+  const target = normalizeEndpointUrl(endpointUrl);
+  return providers.some((provider) => normalizeEndpointUrl(provider.endpoint_url) === target);
+}
+
+/**
  * Generate a new unique provider ID.
  */
 export function generateProviderId(): string {
@@ -127,7 +149,7 @@ export function generateProviderId(): string {
  * Uses file locking and atomic write to prevent race conditions.
  * Invalidates the in-memory cache after successful write.
  *
- * @throws Error if provider_address already exists or lock cannot be acquired
+ * @throws Error if endpoint_url already exists or lock cannot be acquired
  */
 export async function addProvider(
   newProvider: RegistryProviderWire,
@@ -142,8 +164,8 @@ export async function addProvider(
     const raw = readFileSync(filePath, "utf-8");
     const data: RegistryData = JSON.parse(raw);
 
-    if (isProviderRegistered(data.providers, newProvider.provider_address)) {
-      throw new Error(`Provider with address ${newProvider.provider_address} already exists`);
+    if (isProviderEndpointRegistered(data.providers, newProvider.endpoint_url)) {
+      throw new Error(`Provider with endpoint ${newProvider.endpoint_url} already exists`);
     }
 
     const updatedData: RegistryData = {
@@ -174,18 +196,10 @@ export async function addProvider(
   }
 }
 
-/**
- * Update a provider's name, description, and endpoint_url by address.
- * Uses file locking and atomic write to prevent race conditions.
- * Resets verification_status to "pending" when endpoint_url changes.
- * Invalidates the in-memory cache after successful write.
- *
- * @throws Error if provider not found, lock/filesystem/JSON errors
- */
-export async function updateProvider(
-  providerAddress: string,
-  fields: { name: string; description: string; endpoint_url: string },
-): Promise<RegistryProviderWire> {
+async function withRegistryWrite<T>(
+  operation: string,
+  mutator: (data: RegistryData) => { data: RegistryData; result: T },
+): Promise<T> {
   const filePath = getRegistryFilePath();
   const tmpPath = `${filePath}.tmp`;
   let release: (() => Promise<void>) | null = null;
@@ -196,16 +210,48 @@ export async function updateProvider(
     const raw = readFileSync(filePath, "utf-8");
     const data: RegistryData = JSON.parse(raw);
 
-    const index = data.providers.findIndex(
-      (p) => p.provider_address.toLowerCase() === providerAddress.toLowerCase(),
-    );
+    const mutation = mutator(data);
+    writeFileSync(tmpPath, JSON.stringify(mutation.data, null, 2), "utf-8");
+    renameSync(tmpPath, filePath);
 
+    clearProviderCache();
+    clearAggregatorCache();
+
+    return mutation.result;
+  } catch (error) {
+    if (existsSync(tmpPath)) {
+      try {
+        unlinkSync(tmpPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    throw classifyWriteError(error, operation);
+  } finally {
+    if (release) {
+      await release();
+    }
+  }
+}
+
+/**
+ * Update a provider's name, description, and endpoint_url by provider_id.
+ * Uses file locking and atomic write to prevent race conditions.
+ * Resets verification_status to "pending" when endpoint_url changes.
+ */
+export async function updateProviderById(
+  providerId: string,
+  fields: { name: string; description: string; endpoint_url: string },
+): Promise<RegistryProviderWire> {
+  return withRegistryWrite("updateProviderById", (data) => {
+    const index = data.providers.findIndex((provider) => provider.provider_id === providerId);
     if (index === -1) {
-      throw new Error(`Provider with address ${providerAddress} not found`);
+      throw new Error(`Provider with id ${providerId} not found`);
     }
 
     const existing = data.providers[index];
-    const endpointChanged = existing.endpoint_url !== fields.endpoint_url;
+    const endpointChanged =
+      normalizeEndpointUrl(existing.endpoint_url) !== normalizeEndpointUrl(fields.endpoint_url);
 
     const updatedProvider: RegistryProviderWire = {
       ...existing,
@@ -222,30 +268,91 @@ export async function updateProvider(
         : {}),
     };
 
-    const updatedProviders = data.providers.map((p, i) => (i === index ? updatedProvider : p));
-    const updatedData: RegistryData = { ...data, providers: updatedProviders };
+    return {
+      data: {
+        ...data,
+        providers: data.providers.map((provider, providerIndex) =>
+          providerIndex === index ? updatedProvider : provider,
+        ),
+      },
+      result: updatedProvider,
+    };
+  });
+}
 
-    writeFileSync(tmpPath, JSON.stringify(updatedData, null, 2), "utf-8");
-    renameSync(tmpPath, filePath);
+/**
+ * Update a provider by wallet address.
+ *
+ * NOTE: This helper assumes one provider per wallet and is kept for legacy callers.
+ */
+export async function updateProvider(
+  providerAddress: string,
+  fields: { name: string; description: string; endpoint_url: string },
+): Promise<RegistryProviderWire> {
+  const providers = loadProviders();
+  const matchedProvider = providers.find(
+    (provider) => provider.provider_address.toLowerCase() === providerAddress.toLowerCase(),
+  );
 
-    clearProviderCache();
-    clearAggregatorCache();
-
-    return updatedProvider;
-  } catch (error) {
-    if (existsSync(tmpPath)) {
-      try {
-        unlinkSync(tmpPath);
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-    throw classifyWriteError(error, "updateProvider");
-  } finally {
-    if (release) {
-      await release();
-    }
+  if (!matchedProvider) {
+    throw new Error(`Provider with address ${providerAddress} not found`);
   }
+
+  return updateProviderById(matchedProvider.provider_id, fields);
+}
+
+/**
+ * Atomically claim a pending provider by endpoint and wallet.
+ */
+export async function claimProviderByEndpoint(
+  endpointUrl: string,
+  walletAddress: string,
+): Promise<RegistryProviderWire> {
+  return withRegistryWrite("claimProviderByEndpoint", (data) => {
+    const normalizedTarget = normalizeEndpointUrl(endpointUrl);
+    const index = data.providers.findIndex(
+      (provider) => normalizeEndpointUrl(provider.endpoint_url) === normalizedTarget,
+    );
+
+    if (index === -1) {
+      throw new Error(`Provider with endpoint ${endpointUrl} not found`);
+    }
+
+    const current = data.providers[index];
+    const registrationStatus = current.registration_status ?? "claimed";
+
+    if (registrationStatus === "claimed") {
+      throw new Error(`Provider with endpoint ${endpointUrl} already claimed`);
+    }
+
+    if (registrationStatus === "revoked") {
+      throw new Error(`Provider with endpoint ${endpointUrl} has been revoked`);
+    }
+
+    const now = new Date().toISOString();
+    const claimedProvider: RegistryProviderWire = {
+      ...current,
+      provider_address: walletAddress,
+      registration_status: "claimed",
+      claimed_by: walletAddress,
+      claimed_at: now,
+      verification_status: "verified",
+      last_verified_at: now,
+      last_check_at: now,
+      consecutive_failures: 0,
+      updated_at: now,
+    };
+
+    return {
+      data: {
+        ...data,
+        providers: data.providers.map((provider, providerIndex) =>
+          providerIndex === index ? claimedProvider : provider,
+        ),
+      },
+      result: claimedProvider,
+    };
+  });
 }
 
 /**

@@ -21,6 +21,7 @@ export interface UseProviderRegistrationReturn {
 
 const API_ERROR_MESSAGES: Record<string, string> = {
   SIGNATURE_INVALID: "Signature verification failed. Please try again.",
+  DUPLICATE_ENDPOINT: "A provider with this endpoint URL is already registered.",
   PROVIDER_ALREADY_REGISTERED: "A provider with this wallet address is already registered.",
   PROVIDER_UNREACHABLE:
     "Provider endpoint is not reachable. Please check your URL and ensure your provider is running.",

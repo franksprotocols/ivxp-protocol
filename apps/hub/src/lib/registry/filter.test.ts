@@ -3,6 +3,7 @@ import {
   filterByServiceType,
   filterBySearchQuery,
   filterByStatus,
+  filterPubliclyVisibleProviders,
   sortProviders,
   paginateProviders,
   queryProviders,
@@ -143,21 +144,23 @@ describe("queryProviders", () => {
       q: undefined,
       sort_by: "name",
       sort_order: "asc",
+      include_unclaimed: true,
     });
     expect(items).toHaveLength(1);
     expect(total).toBe(1);
     expect(items[0].provider_id).toBe("prov-002");
   });
 
-  it("returns all when no filters applied", () => {
+  it("hides unclaimed providers by default", () => {
     const { items, total } = queryProviders(mockProviders, {
       page: 1,
       page_size: 20,
       sort_by: "name",
       sort_order: "asc",
+      include_unclaimed: false,
     });
-    expect(items).toHaveLength(3);
-    expect(total).toBe(3);
+    expect(items).toHaveLength(2);
+    expect(total).toBe(2);
   });
 
   it("combines search and pagination", () => {
@@ -167,8 +170,19 @@ describe("queryProviders", () => {
       q: "provider",
       sort_by: "name",
       sort_order: "asc",
+      include_unclaimed: false,
     });
     expect(items).toHaveLength(1);
     expect(total).toBe(2);
+  });
+});
+
+describe("filterPubliclyVisibleProviders", () => {
+  it("returns only claimed providers", () => {
+    const result = filterPubliclyVisibleProviders(mockProviders);
+    expect(result).toHaveLength(2);
+    expect(result.every((provider) => (provider.registration_status ?? "claimed") === "claimed")).toBe(
+      true,
+    );
   });
 });

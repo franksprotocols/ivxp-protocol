@@ -195,7 +195,7 @@ describe("Navigation Integration", () => {
       expect(aboutLink).toHaveAttribute("data-active", "true");
     });
 
-    it("provider register link is active on /provider/register", () => {
+    it("provider register link is active on /provider/skill-register", () => {
       mockUsePathname.mockReturnValue(PROVIDER_REGISTER_PATH);
       renderWithProviders(<Navigation />);
 

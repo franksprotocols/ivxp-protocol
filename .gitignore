@@ -99,6 +99,11 @@ ivxp-orders.json
 .claude/
 .worktrees/
 .codex/
+!.codex/
+.codex/*
+!.codex/prompts/
+.codex/prompts/*
+!.codex/prompts/ivxp-register-provider.md
 .sisyphus/
 .agent/
 .agent/*

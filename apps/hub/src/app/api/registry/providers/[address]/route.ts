@@ -5,7 +5,7 @@ import { updateProviderBodySchema } from "@/lib/registry/schemas";
 import { loadProviders } from "@/lib/registry/loader";
 import { verifyRegistrationSignature } from "@/lib/registry/verify-signature";
 import { verifyProviderEndpoint } from "@/lib/registry/verify-endpoint";
-import { updateProvider } from "@/lib/registry/writer";
+import { updateProviderById } from "@/lib/registry/writer";
 import { logError } from "@/lib/logger";
 import type { RegistryProviderWire, RegistryErrorResponseWire } from "@/lib/registry/types";
 
@@ -14,6 +14,37 @@ const MAX_REQUEST_BODY_BYTES = 10_000; // 10 KB limit for update payloads
 
 interface RouteParams {
   params: Promise<{ address: string }>;
+}
+
+function findProvidersByWalletAddress(
+  providers: readonly RegistryProviderWire[],
+  walletAddress: string,
+): RegistryProviderWire[] {
+  const target = walletAddress.toLowerCase();
+  return providers.filter((provider) => {
+    if (provider.claimed_by) {
+      return provider.claimed_by.toLowerCase() === target;
+    }
+
+    const registrationStatus = provider.registration_status ?? "claimed";
+    if (registrationStatus !== "claimed") {
+      return false;
+    }
+
+    return provider.provider_address.toLowerCase() === target;
+  });
+}
+
+function buildMultipleProvidersErrorResponse(providers: readonly RegistryProviderWire[]) {
+  return {
+    error: {
+      code: "MULTIPLE_PROVIDERS_FOR_WALLET",
+      message: "Multiple providers are linked to this wallet. Use /api/registry/providers/mine.",
+      details: {
+        provider_ids: providers.map((provider) => provider.provider_id),
+      },
+    },
+  };
 }
 
 export async function GET(
@@ -36,11 +67,9 @@ export async function GET(
 
   try {
     const allProviders = loadProviders();
-    const provider = allProviders.find(
-      (p) => p.provider_address.toLowerCase() === address.toLowerCase(),
-    );
+    const matchedProviders = findProvidersByWalletAddress(allProviders, address);
 
-    if (!provider) {
+    if (matchedProviders.length === 0) {
       return NextResponse.json(
         {
           error: {
@@ -52,6 +81,13 @@ export async function GET(
       );
     }
 
+    if (matchedProviders.length > 1) {
+      return NextResponse.json(buildMultipleProvidersErrorResponse(matchedProviders), {
+        status: 409,
+      });
+    }
+
+    const provider = matchedProviders[0];
     return NextResponse.json({ provider }, { status: 200 });
   } catch (error) {
     logError("[Registry API] GET /providers/[address] error", error, { address });
@@ -95,11 +131,9 @@ export async function PUT(
 
     // Verify provider exists
     const allProviders = loadProviders();
-    const existingProvider = allProviders.find(
-      (p) => p.provider_address.toLowerCase() === address.toLowerCase(),
-    );
+    const matchedProviders = findProvidersByWalletAddress(allProviders, address);
 
-    if (!existingProvider) {
+    if (matchedProviders.length === 0) {
       return NextResponse.json(
         {
           error: {
@@ -110,6 +144,14 @@ export async function PUT(
         { status: 404 },
       );
     }
+
+    if (matchedProviders.length > 1) {
+      return NextResponse.json(buildMultipleProvidersErrorResponse(matchedProviders), {
+        status: 409,
+      });
+    }
+
+    const existingProvider = matchedProviders[0];
 
     // Verify EIP-191 signature
     const isValidSignature = await verifyRegistrationSignature({
@@ -140,7 +182,7 @@ export async function PUT(
     }
 
     // Update provider in registry
-    const updatedProvider = await updateProvider(address, {
+    const updatedProvider = await updateProviderById(existingProvider.provider_id, {
       name: validated.name,
       description: validated.description,
       endpoint_url: validated.endpoint_url,

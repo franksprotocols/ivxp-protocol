@@ -28,7 +28,10 @@
       "verification_status": "pending",
       "last_verified_at": null,
       "last_check_at": "2026-02-18T04:02:38.686Z",
-      "consecutive_failures": 1
+      "consecutive_failures": 1,
+      "registration_status": "claimed",
+      "claimed_by": "0x0c0feb248548e33571584809113891818d4b0805",
+      "claimed_at": "2026-02-18T04:02:38.686Z"
     },
     {
       "provider_id": "prov-002",
@@ -58,7 +61,10 @@
       "verification_status": "pending",
       "last_verified_at": null,
       "last_check_at": "2026-02-18T04:02:38.691Z",
-      "consecutive_failures": 1
+      "consecutive_failures": 1,
+      "registration_status": "claimed",
+      "claimed_by": "0xA1B2C3D4E5F6789012345678901234567890ABCD",
+      "claimed_at": "2026-02-18T04:02:38.691Z"
     },
     {
       "provider_id": "prov-003",
@@ -81,7 +87,10 @@
       "verification_status": "pending",
       "last_verified_at": null,
       "last_check_at": null,
-      "consecutive_failures": 0
+      "consecutive_failures": 0,
+      "registration_status": "claimed",
+      "claimed_by": "0xDEADBEEF00000000000000000000000000000001",
+      "claimed_at": "2025-03-01T00:00:00Z"
     },
     {
       "provider_id": "prov-eee54359-33f8-4373-992e-d223bf44b10b",
@@ -104,7 +113,10 @@
       "verification_status": "verified",
       "last_verified_at": "2026-02-18T04:35:40.388Z",
       "last_check_at": "2026-02-18T04:35:40.388Z",
-      "consecutive_failures": 0
+      "consecutive_failures": 0,
+      "registration_status": "claimed",
+      "claimed_by": "0xE3b065B016bF9A914D488E413ACBF8Ba7d0e8Feb",
+      "claimed_at": "2026-02-18T04:35:40.388Z"
     }
   ]
 }

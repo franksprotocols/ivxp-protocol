@@ -7,6 +7,7 @@ const mockRenameSync = vi.fn();
 const mockExistsSync = vi.fn().mockReturnValue(false);
 const mockUnlinkSync = vi.fn();
 const mockClearProviderCache = vi.fn();
+const mockClearAggregatorCache = vi.fn();
 const mockLockRelease = vi.fn().mockResolvedValue(undefined);
 const mockLock = vi.fn().mockResolvedValue(mockLockRelease);
 
@@ -36,9 +37,20 @@ vi.mock("proper-lockfile", () => ({
 
 vi.mock("./loader", () => ({
   clearProviderCache: (...args: unknown[]) => mockClearProviderCache(...args),
+  loadProviders: vi.fn(() => []),
 }));
 
-const { isProviderRegistered, generateProviderId, updateProviderVerifications } =
+vi.mock("./service-aggregator", () => ({
+  clearAggregatorCache: (...args: unknown[]) => mockClearAggregatorCache(...args),
+}));
+
+const {
+  isProviderRegistered,
+  isProviderEndpointRegistered,
+  generateProviderId,
+  claimProviderByEndpoint,
+  updateProviderVerifications,
+} =
   await import("./writer");
 
 const mockProviders: RegistryProviderWire[] = [
@@ -76,6 +88,20 @@ describe("isProviderRegistered", () => {
     expect(isProviderRegistered(mockProviders, "0x0000000000000000000000000000000000000001")).toBe(
       false,
     );
+  });
+});
+
+describe("isProviderEndpointRegistered", () => {
+  it("returns true when endpoint_url exists", () => {
+    expect(isProviderEndpointRegistered(mockProviders, "https://existing.example.com")).toBe(true);
+  });
+
+  it("returns true for equivalent trailing slash", () => {
+    expect(isProviderEndpointRegistered(mockProviders, "https://existing.example.com/")).toBe(true);
+  });
+
+  it("returns false when endpoint_url does not exist", () => {
+    expect(isProviderEndpointRegistered(mockProviders, "https://unknown.example.com")).toBe(false);
   });
 });
 
@@ -173,5 +199,48 @@ describe("updateProviderVerifications", () => {
     const writtenContent = mockWriteFileSync.mock.calls[0][1] as string;
     const parsed = JSON.parse(writtenContent);
     expect(parsed.providers[0].verification_status).toBe("pending");
+  });
+});
+
+describe("claimProviderByEndpoint", () => {
+  const registryData = {
+    providers: [
+      {
+        provider_id: "prov-001",
+        provider_address: "0x0000000000000000000000000000000000000000",
+        name: "Pending Provider",
+        description: "Pending",
+        endpoint_url: "https://pending.example.com",
+        services: [],
+        status: "active",
+        registration_status: "pending",
+        claimed_by: null,
+        claimed_at: null,
+        registered_at: "2025-01-01T00:00:00Z",
+        updated_at: "2025-01-01T00:00:00Z",
+        verification_status: "pending",
+        last_verified_at: null,
+        last_check_at: null,
+        consecutive_failures: 0,
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockReadFileSync.mockReturnValue(JSON.stringify(registryData));
+  });
+
+  it("claims pending provider and sets ownership fields", async () => {
+    const claimed = await claimProviderByEndpoint(
+      "https://pending.example.com",
+      "0x1234567890abcdef1234567890abcdef12345678",
+    );
+
+    expect(claimed.registration_status).toBe("claimed");
+    expect(claimed.claimed_by).toBe("0x1234567890abcdef1234567890abcdef12345678");
+    expect(claimed.claimed_at).toBeTruthy();
+    expect(claimed.verification_status).toBe("verified");
+    expect(mockWriteFileSync).toHaveBeenCalledOnce();
   });
 });

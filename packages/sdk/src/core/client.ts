@@ -58,8 +58,12 @@ import type {
   PaymentResult,
   DownloadOptions,
   ConfirmationResult,
+  ClaimProviderOnHubParams,
+  HubProviderRecord,
+  HubProviderServiceInput,
   RequestServiceParams,
   RequestServiceResult,
+  RegisterToHubParams,
 } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -255,6 +259,103 @@ function validateSubmitPaymentParams(orderId: string, quote: SubmitPaymentQuote)
   }
 }
 
+function validateHubServiceDefinition(service: HubProviderServiceInput): void {
+  if (!service.serviceType || service.serviceType.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid registerToHub params: serviceType must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "services[].serviceType" },
+    );
+  }
+
+  if (!service.name || service.name.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid registerToHub params: service name must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "services[].name" },
+    );
+  }
+
+  if (!service.description || service.description.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid registerToHub params: service description must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "services[].description" },
+    );
+  }
+
+  if (!/^\d+\.\d{2}$/.test(service.priceUsdc)) {
+    throw new IVXPError(
+      "Invalid registerToHub params: service priceUsdc must be a decimal string with 2 decimals",
+      "INVALID_REQUEST_PARAMS",
+      { field: "services[].priceUsdc", value: service.priceUsdc },
+    );
+  }
+
+  if (
+    !Number.isInteger(service.estimatedTimeSeconds) ||
+    service.estimatedTimeSeconds <= 0 ||
+    service.estimatedTimeSeconds > 604800
+  ) {
+    throw new IVXPError(
+      "Invalid registerToHub params: estimatedTimeSeconds must be an integer between 1 and 604800",
+      "INVALID_REQUEST_PARAMS",
+      { field: "services[].estimatedTimeSeconds", value: service.estimatedTimeSeconds },
+    );
+  }
+}
+
+function validateRegisterToHubParams(params: RegisterToHubParams): void {
+  if (!params.name || params.name.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid registerToHub params: name must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "name" },
+    );
+  }
+
+  if (!params.description || params.description.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid registerToHub params: description must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "description" },
+    );
+  }
+
+  if (!params.endpointUrl || params.endpointUrl.trim().length === 0) {
+    throw new IVXPError(
+      "Invalid registerToHub params: endpointUrl must be a non-empty string",
+      "INVALID_REQUEST_PARAMS",
+      { field: "endpointUrl" },
+    );
+  }
+
+  if (!params.services || params.services.length === 0) {
+    throw new IVXPError(
+      "Invalid registerToHub params: services must be a non-empty array",
+      "INVALID_REQUEST_PARAMS",
+      { field: "services" },
+    );
+  }
+
+  for (const service of params.services) {
+    validateHubServiceDefinition(service);
+  }
+
+  const hasSignature = params.signature !== undefined;
+  const hasMessage = params.signedMessage !== undefined;
+  const hasAddress = params.providerAddress !== undefined;
+  const hasAnySignedInput = hasSignature || hasMessage || hasAddress;
+
+  if (hasAnySignedInput && !(hasSignature && hasMessage && hasAddress)) {
+    throw new IVXPError(
+      "Invalid registerToHub params: providerAddress, signedMessage, and signature are required together",
+      "INVALID_REQUEST_PARAMS",
+      { field: "signature" },
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Wire-format types (for requestQuote body construction)
 // ---------------------------------------------------------------------------
@@ -368,6 +469,34 @@ const ConfirmationResponseSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/, {
       message: "Invalid ISO 8601 timestamp in confirmed_at",
     }),
+});
+
+const HubProviderWireSchema = z
+  .object({
+    provider_id: z.string().min(1),
+    provider_address: z.string().regex(HEX_ADDRESS_REGEX),
+    name: z.string().min(1),
+    description: z.string().min(1),
+    endpoint_url: z.string().url(),
+    status: z.enum(["active", "inactive"]),
+    registration_status: z.enum(["pending", "claimed", "revoked"]).optional().default("claimed"),
+    claimed_by: z.string().regex(HEX_ADDRESS_REGEX).nullable().optional().default(null),
+    claimed_at: z.string().nullable().optional().default(null),
+  })
+  .transform((wire): HubProviderRecord => ({
+    providerId: wire.provider_id,
+    providerAddress: wire.provider_address,
+    name: wire.name,
+    description: wire.description,
+    endpointUrl: wire.endpoint_url,
+    status: wire.status,
+    registrationStatus: wire.registration_status,
+    claimedBy: wire.claimed_by,
+    claimedAt: wire.claimed_at,
+  }));
+
+const HubProviderResponseSchema = z.object({
+  provider: HubProviderWireSchema,
 });
 
 // ---------------------------------------------------------------------------
@@ -686,6 +815,141 @@ export class IVXPClient extends EventEmitter<SDKEventMap> {
 
       throw new ServiceUnavailableError(
         `Failed to fetch catalog from ${normalizedUrl}: ${errorMessage}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  /**
+   * Register provider metadata to IVXP Hub.
+   *
+   * Supports both unsigned (pending) registration and signed (immediately claimed)
+   * registration when providerAddress/signedMessage/signature are provided.
+   */
+  async registerToHub(params: RegisterToHubParams): Promise<HubProviderRecord> {
+    validateRegisterToHubParams(params);
+
+    const normalizedHubUrl = validateProviderUrl(params.hubUrl);
+    const registerUrl = `${normalizedHubUrl}/api/registry/providers`;
+
+    const wirePayload = {
+      name: params.name,
+      description: params.description,
+      endpoint_url: params.endpointUrl,
+      services: params.services.map((service) => ({
+        service_type: service.serviceType,
+        name: service.name,
+        description: service.description,
+        price_usdc: service.priceUsdc,
+        estimated_time_seconds: service.estimatedTimeSeconds,
+      })),
+      ...(params.providerAddress !== undefined && {
+        provider_address: params.providerAddress,
+      }),
+      ...(params.signedMessage !== undefined && {
+        message: params.signedMessage,
+      }),
+      ...(params.signature !== undefined && {
+        signature: params.signature,
+      }),
+    };
+
+    try {
+      const rawResponse = await this.httpClient.post<unknown>(
+        registerUrl,
+        wirePayload as unknown as JsonSerializable,
+      );
+      const parsed = HubProviderResponseSchema.parse(rawResponse);
+      return parsed.provider;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new IVXPError(
+          `Invalid Hub registration response format: ${error.issues.length} validation issue(s)`,
+          "INVALID_HUB_RESPONSE_FORMAT",
+          { issueCount: error.issues.length, operation: "registerToHub" },
+          error,
+        );
+      }
+
+      if (error instanceof IVXPError) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Unknown error";
+
+      throw new ServiceUnavailableError(
+        `Failed to register provider to Hub at ${normalizedHubUrl}: ${errorMessage}`,
+        error instanceof Error ? error : undefined,
+      );
+    }
+  }
+
+  /**
+   * Claim a pending provider on IVXP Hub with wallet signature + challenge flow.
+   */
+  async claimProviderOnHub(params: ClaimProviderOnHubParams): Promise<HubProviderRecord> {
+    if (!params.endpointUrl || params.endpointUrl.trim().length === 0) {
+      throw new IVXPError(
+        "Invalid claimProviderOnHub params: endpointUrl must be a non-empty string",
+        "INVALID_REQUEST_PARAMS",
+        { field: "endpointUrl" },
+      );
+    }
+
+    const normalizedHubUrl = validateProviderUrl(params.hubUrl);
+    const claimUrl = `${normalizedHubUrl}/api/registry/providers/claim`;
+
+    const walletAddress = await this.getAddress();
+    const message = [
+      "IVXP Provider Claim",
+      `Wallet: ${walletAddress}`,
+      `Endpoint: ${params.endpointUrl}`,
+      `Timestamp: ${new Date().toISOString()}`,
+    ].join("\n");
+    const signature = await this.cryptoService.sign(message);
+
+    const wirePayload = {
+      endpoint_url: params.endpointUrl,
+      wallet_address: walletAddress,
+      message,
+      signature,
+    };
+
+    try {
+      const rawResponse = await this.httpClient.post<unknown>(
+        claimUrl,
+        wirePayload as unknown as JsonSerializable,
+      );
+      const parsed = HubProviderResponseSchema.parse(rawResponse);
+      return parsed.provider;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new IVXPError(
+          `Invalid Hub claim response format: ${error.issues.length} validation issue(s)`,
+          "INVALID_HUB_RESPONSE_FORMAT",
+          { issueCount: error.issues.length, operation: "claimProviderOnHub" },
+          error,
+        );
+      }
+
+      if (error instanceof IVXPError) {
+        throw error;
+      }
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Unknown error";
+
+      throw new ServiceUnavailableError(
+        `Failed to claim provider on Hub at ${normalizedHubUrl}: ${errorMessage}`,
         error instanceof Error ? error : undefined,
       );
     }

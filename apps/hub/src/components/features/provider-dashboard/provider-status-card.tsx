@@ -1,12 +1,19 @@
 "use client";
 
-import type { RegistryProviderWire, VerificationStatus } from "@/lib/registry/types";
+import type {
+  RegistryProviderWire,
+  RegistrationStatus,
+  VerificationStatus,
+} from "@/lib/registry/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface ProviderStatusCardProps {
   provider: RegistryProviderWire;
+  onClaim?: () => Promise<boolean>;
+  isClaiming?: boolean;
 }
 
 const STATUS_BADGE_VARIANT: Record<VerificationStatus, "default" | "destructive" | "secondary"> = {
@@ -21,11 +28,17 @@ const STATUS_LABEL: Record<VerificationStatus, string> = {
   pending: "Pending Verification",
 };
 
+const REGISTRATION_LABEL: Record<RegistrationStatus, string> = {
+  pending: "Pending Claim",
+  claimed: "Claimed",
+  revoked: "Revoked",
+};
+
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-function formatDate(isoString: string | null): string {
+function formatDate(isoString: string | null | undefined): string {
   if (!isoString) return "Never";
   return new Date(isoString).toLocaleDateString("en-US", {
     year: "numeric",
@@ -36,8 +49,9 @@ function formatDate(isoString: string | null): string {
   });
 }
 
-export function ProviderStatusCard({ provider }: ProviderStatusCardProps) {
+export function ProviderStatusCard({ provider, onClaim, isClaiming = false }: ProviderStatusCardProps) {
   const verificationStatus = provider.verification_status ?? "pending";
+  const registrationStatus = provider.registration_status ?? "claimed";
 
   return (
     <div className="space-y-4">
@@ -52,13 +66,23 @@ export function ProviderStatusCard({ provider }: ProviderStatusCardProps) {
         </Alert>
       )}
 
+      {registrationStatus === "pending" && (
+        <Alert>
+          <AlertTitle>Provider Pending Claim</AlertTitle>
+          <AlertDescription>
+            This provider was registered without wallet ownership proof. Claim it to make it public.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <CardTitle>{provider.name}</CardTitle>
-            <Badge variant={STATUS_BADGE_VARIANT[verificationStatus]}>
-              {STATUS_LABEL[verificationStatus]}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{REGISTRATION_LABEL[registrationStatus]}</Badge>
+              <Badge variant={STATUS_BADGE_VARIANT[verificationStatus]}>{STATUS_LABEL[verificationStatus]}</Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -73,17 +97,15 @@ export function ProviderStatusCard({ provider }: ProviderStatusCardProps) {
             </div>
             <div>
               <span className="font-medium">Endpoint URL</span>
-              <p className="text-muted-foreground break-all">{provider.endpoint_url}</p>
+              <p className="break-all text-muted-foreground">{provider.endpoint_url}</p>
             </div>
             <div>
               <span className="font-medium">Registered</span>
               <p className="text-muted-foreground">{formatDate(provider.registered_at)}</p>
             </div>
             <div>
-              <span className="font-medium">Last Verified</span>
-              <p className="text-muted-foreground">
-                {formatDate(provider.last_verified_at ?? null)}
-              </p>
+              <span className="font-medium">Claimed At</span>
+              <p className="text-muted-foreground">{formatDate(provider.claimed_at)}</p>
             </div>
             <div>
               <span className="font-medium">Total Services</span>
@@ -91,9 +113,15 @@ export function ProviderStatusCard({ provider }: ProviderStatusCardProps) {
             </div>
             <div>
               <span className="font-medium">Status</span>
-              <p className="text-muted-foreground capitalize">{provider.status}</p>
+              <p className="capitalize text-muted-foreground">{provider.status}</p>
             </div>
           </div>
+
+          {registrationStatus === "pending" && onClaim && (
+            <Button onClick={() => void onClaim()} disabled={isClaiming}>
+              {isClaiming ? "Claiming..." : "Claim Provider"}
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -267,3 +267,51 @@ export interface RequestServiceResult {
   /** ISO 8601 timestamp of confirmation (only set when autoConfirm is true). */
   readonly confirmedAt?: string;
 }
+
+/**
+ * Provider service payload used by Hub registration APIs.
+ */
+export interface HubProviderServiceInput {
+  readonly serviceType: string;
+  readonly name: string;
+  readonly description: string;
+  readonly priceUsdc: string;
+  readonly estimatedTimeSeconds: number;
+}
+
+/**
+ * Parameters for IVXPClient.registerToHub().
+ */
+export interface RegisterToHubParams {
+  readonly hubUrl: string;
+  readonly name: string;
+  readonly description: string;
+  readonly endpointUrl: string;
+  readonly services: readonly HubProviderServiceInput[];
+  readonly providerAddress?: `0x${string}`;
+  readonly signedMessage?: string;
+  readonly signature?: `0x${string}`;
+}
+
+/**
+ * Provider object returned by Hub registration APIs.
+ */
+export interface HubProviderRecord {
+  readonly providerId: string;
+  readonly providerAddress: string;
+  readonly name: string;
+  readonly description: string;
+  readonly endpointUrl: string;
+  readonly status: "active" | "inactive";
+  readonly registrationStatus: "pending" | "claimed" | "revoked";
+  readonly claimedBy: string | null;
+  readonly claimedAt: string | null;
+}
+
+/**
+ * Parameters for IVXPClient.claimProviderOnHub().
+ */
+export interface ClaimProviderOnHubParams {
+  readonly hubUrl: string;
+  readonly endpointUrl: string;
+}
