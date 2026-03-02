@@ -3,8 +3,6 @@ title: 4. Integration Contract
 description: Adapter direction and minimum interfaces.
 ---
 
-# 4. Integration Contract
-
 This section defines what an external framework must implement to integrate IVXP. Read this section if you are building an IVXP adapter for A2A, LangGraph, AutoGen, or any other Agent framework.
 
 ### 4.1 Integration Direction

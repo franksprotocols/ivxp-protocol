@@ -2,8 +2,6 @@
 title: Quick Start Client
 ---
 
-# Quick Start: Client
-
 This guide walks you through requesting a service from an IVXP provider in under 5 minutes.
 
 ## Hello World: One-Line Service Call

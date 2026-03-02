@@ -2,8 +2,6 @@
 title: Error Handling
 ---
 
-# Error Handling
-
 All SDK errors extend `IVXPError`, which provides structured error information for programmatic handling.
 
 ## Error Hierarchy

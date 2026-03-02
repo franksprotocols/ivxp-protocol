@@ -3,8 +3,6 @@ title: 5. Order Lifecycle
 description: State machine and transition rules.
 ---
 
-# 5. Order Lifecycle
-
 ### 5.1 State Machine
 
 ```mermaid

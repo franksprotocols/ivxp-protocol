@@ -3,8 +3,6 @@ title: Adapter Development
 description: Design and implement production-ready IVXP adapters for external frameworks.
 ---
 
-# Adapter Development
-
 This guide defines adapter responsibilities, mapping rules, and verification criteria for framework integrators.
 
 ## 1. Adapter Interfaces

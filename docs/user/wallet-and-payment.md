@@ -3,8 +3,6 @@ title: Wallet and Payment
 description: Wallet setup and payment verification baseline for service users.
 ---
 
-# Wallet and Payment
-
 ## Supported Networks and Token
 
 | Item          | Value                                                          |

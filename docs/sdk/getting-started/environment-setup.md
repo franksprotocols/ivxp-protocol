@@ -2,8 +2,6 @@
 title: Environment Setup
 ---
 
-# Environment Setup
-
 ## Wallet Setup
 
 The IVXP SDK uses Ethereum-compatible wallets for identity and payment. You need a private key to sign messages and send USDC payments.

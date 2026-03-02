@@ -3,8 +3,6 @@ title: Adapter Quickstart
 description: Fast path for framework teams integrating IVXP adapters.
 ---
 
-# Adapter Quickstart
-
 Use this guide to run one end-to-end transaction through a framework adapter.
 
 ## Prerequisites

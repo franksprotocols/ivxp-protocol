@@ -3,8 +3,6 @@ title: 9. Conformance Requirements
 description: Provider/client conformance requirements and versioning.
 ---
 
-# 9. Conformance Requirements
-
 ### 9.1 Provider Conformance
 
 A conformant IVXP/1.0 Provider must:

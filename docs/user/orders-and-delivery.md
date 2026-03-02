@@ -3,8 +3,6 @@ title: Orders and Delivery
 description: Track order states and validate delivery outputs.
 ---
 
-# Orders and Delivery
-
 ## Order States
 
 | State             | Meaning                                      |

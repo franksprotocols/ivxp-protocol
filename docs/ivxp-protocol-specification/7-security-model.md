@@ -3,8 +3,6 @@ title: 7. Security Model
 description: Signature verification and integrity guarantees.
 ---
 
-# 7. Security Model
-
 ### 7.1 Three Core Security Guarantees
 
 IVXP provides three cryptographic guarantees that hold without trusting any counterparty:

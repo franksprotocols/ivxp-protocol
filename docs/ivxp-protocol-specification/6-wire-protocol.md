@@ -3,8 +3,6 @@ title: 6. Wire Protocol
 description: Transport, endpoints, and error format.
 ---
 
-# 6. Wire Protocol
-
 ### 6.1 Transport
 
 | Parameter        | Value                                                              |

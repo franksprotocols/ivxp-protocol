@@ -3,8 +3,6 @@ title: Provider Troubleshooting
 description: Diagnose and recover common provider-side failures.
 ---
 
-# Provider Troubleshooting
-
 Use this page when provider integration fails during quote, payment proof, status, or delivery phases.
 
 ## Quick Triage Sequence

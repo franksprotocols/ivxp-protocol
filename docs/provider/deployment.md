@@ -3,8 +3,6 @@ title: Provider Deployment
 description: Deployment baseline for IVXP providers in staging and production.
 ---
 
-# Provider Deployment
-
 This page summarizes provider-focused deployment practices. For full platform runbook details, see [Deployment Guide](../deployment/README.md).
 
 ## Target Topology

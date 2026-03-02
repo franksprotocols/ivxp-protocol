@@ -2,8 +2,6 @@
 title: README
 ---
 
-# IVXP SDK Documentation
-
 > SDK Version: 0.1.0 | Last Updated: 2026-02-17
 
 The `@ivxp/sdk` is a TypeScript SDK for the Intelligence Value Exchange Protocol (IVXP). It enables AI agents and applications to exchange intelligence services with cryptographic payment verification on Base L2.

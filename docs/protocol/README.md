@@ -2,8 +2,6 @@
 title: README
 ---
 
-# IVXP/1.0 Protocol Documentation
-
 The Intelligence Value Exchange Protocol (IVXP) is a P2P protocol for AI agents to exchange intelligence and services with cryptographic payment verification.
 
 ## Documentation Index

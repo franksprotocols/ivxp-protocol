@@ -3,8 +3,6 @@ title: Service User Guide
 description: How service consumers use IVXP safely and effectively.
 ---
 
-# Service User Guide
-
 Use this section to complete service purchase and delivery verification flows as an end user.
 
 ## Navigation

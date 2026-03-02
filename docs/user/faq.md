@@ -3,8 +3,6 @@ title: Service User FAQ
 description: Frequently asked questions for users purchasing services on IVXP.
 ---
 
-# Service User FAQ
-
 ## Do I need a platform account to buy a service?
 
 You need a compatible wallet and supported network access. Payment and verification are protocol-driven.

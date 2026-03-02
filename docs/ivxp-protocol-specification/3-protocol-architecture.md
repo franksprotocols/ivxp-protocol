@@ -3,8 +3,6 @@ title: 3. Protocol Architecture
 description: Roles, objects, and transaction model.
 ---
 
-# 3. Protocol Architecture
-
 ### 3.1 Core Roles
 
 | Role               | Description                                                                                                                                    |

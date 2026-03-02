@@ -5,8 +5,6 @@ version: 1.0
 status: Draft
 ---
 
-# IVXP Protocol Specification
-
 **Version:** IVXP/1.0
 **Status:** Draft
 **Audience:** Framework developers, SDK implementors, protocol architects

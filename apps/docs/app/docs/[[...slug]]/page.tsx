@@ -10,9 +10,29 @@ import {
   sdkSource,
 } from "@/lib/source";
 import { isHiddenDocPage } from "@/lib/docs-visibility";
+import { LLMCopyButton } from "@/components/ai/llm-copy-button";
+import { ViewOptions } from "@/components/ai/view-options";
 import type { Metadata } from "next";
 import type { MDXContent } from "mdx/types";
 import type { TOCItemType } from "fumadocs-core/toc";
+
+const GITHUB_REPO = "https://github.com/franksprotocols/ivxp-protocol";
+const GITHUB_BRANCH = "main";
+
+// Maps the first slug segment to the monorepo path of the docs directory
+const SECTION_TO_REPO_PATH: Record<string, string> = {
+  "ivxp-protocol-specification": "docs/ivxp-protocol-specification",
+  protocol: "docs/protocol",
+  provider: "docs/provider",
+  user: "docs/user",
+  sdk: "docs/sdk",
+};
+
+function buildGithubUrl(section: string, filePath: string): string | undefined {
+  const repoPath = SECTION_TO_REPO_PATH[section];
+  if (!repoPath) return undefined;
+  return `${GITHUB_REPO}/blob/${GITHUB_BRANCH}/${repoPath}/${filePath}`;
+}
 
 interface PageProps {
   params: Promise<{ slug?: string[] }>;
@@ -154,8 +174,22 @@ export default async function DocsPageComponent({ params }: PageProps) {
   const pageData = page.data as ResolvedPageData;
   const PageContent = pageData.body;
 
+  const normalizedSection = normalizedSlug[0] ?? "";
+  const markdownUrl = `${page.url}.mdx`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pageFile = (page as any).file as { path?: string } | undefined;
+  const githubUrl = pageFile?.path
+    ? buildGithubUrl(normalizedSection, pageFile.path)
+    : undefined;
+
   return (
     <DocsPage toc={pageData.toc} full={pageData.full}>
+      {!pageData.full && (
+        <div className="flex flex-row flex-wrap gap-2 items-center border-b pt-4 pb-6 mb-8">
+          <LLMCopyButton markdownUrl={markdownUrl} />
+          <ViewOptions markdownUrl={markdownUrl} githubUrl={githubUrl} />
+        </div>
+      )}
       {pageData.full ? null : <DocsTitle>{pageData.title}</DocsTitle>}
       {pageData.full ? null : <DocsDescription>{pageData.description}</DocsDescription>}
       {pageData.full ? (

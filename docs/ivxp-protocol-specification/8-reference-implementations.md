@@ -3,8 +3,6 @@ title: 8. Reference Implementations
 description: SDK and interoperability references.
 ---
 
-# 8. Reference Implementations
-
 ### 8.1 TypeScript SDK (`@ivxp/sdk`)
 
 The official TypeScript SDK provides `IVXPClient`, `IVXPAgent`, and `IVXPProvider` classes that implement the full IVXP protocol.

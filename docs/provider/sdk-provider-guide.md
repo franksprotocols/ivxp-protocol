@@ -3,8 +3,6 @@ title: SDK Provider Guide
 description: Provider-side architecture and implementation guidance using @ivxp/sdk.
 ---
 
-# SDK Provider Guide
-
 Use this guide when you implement provider services directly with `@ivxp/sdk`.
 
 ## Create a Provider

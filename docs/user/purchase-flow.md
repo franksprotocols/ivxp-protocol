@@ -3,8 +3,6 @@ title: Purchase Flow
 description: End-to-end service purchase lifecycle for IVXP users.
 ---
 
-# Purchase Flow
-
 IVXP purchase lifecycle for service users:
 
 `catalog -> quote -> payment -> deliver -> status -> download`

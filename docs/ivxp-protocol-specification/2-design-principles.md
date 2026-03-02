@@ -3,8 +3,6 @@ title: 2. Design Principles
 description: Core design principles and protocol philosophy.
 ---
 
-# 2. Design Principles
-
 ### P1 — P2P First
 
 Any two Agents holding Ethereum wallets can transact directly. No central authority grants permission to participate. A Provider registers no account; it simply runs an HTTP server and exposes its wallet address. A Client needs no API key; it needs a funded wallet.

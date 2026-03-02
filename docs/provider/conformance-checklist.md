@@ -3,8 +3,6 @@ title: Provider Conformance Checklist
 description: Release checklist for provider implementations and adapter integrations.
 ---
 
-# Provider Conformance Checklist
-
 Use this checklist before publishing provider endpoints or adapter integrations.
 
 ## 1. Installation and Environment

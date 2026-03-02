@@ -3,8 +3,6 @@ title: Integration Profiles Quick Reference
 description: One-page contract selection guide for provider integrators and service users.
 ---
 
-# Integration Profiles Quick Reference
-
 This page is the external integration contract checklist for both provider developers and service users.
 
 ## 1) Choose Endpoint Profile First

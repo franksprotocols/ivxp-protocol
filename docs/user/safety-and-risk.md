@@ -3,8 +3,6 @@ title: Safety and Risk
 description: Security checks and risk controls for service users.
 ---
 
-# Safety and Risk
-
 Use this checklist before, during, and after each purchase flow.
 
 ## Before Request

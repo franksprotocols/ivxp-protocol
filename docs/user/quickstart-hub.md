@@ -3,8 +3,6 @@ title: Hub Quick Start
 description: Fast path for service users to complete the first purchase and delivery flow.
 ---
 
-# Hub Quick Start
-
 This guide helps you complete one full purchase flow in IVXP Hub.
 
 ## Prerequisites

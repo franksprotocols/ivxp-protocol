@@ -2,8 +2,6 @@
 title: Installation
 ---
 
-# Installation
-
 ## Prerequisites
 
 - Node.js 20+ LTS

@@ -2,8 +2,6 @@
 title: Client Guide
 ---
 
-# Client SDK Guide
-
 This guide covers the full `IVXPClient` API for consuming IVXP services.
 
 ## Creating a Client

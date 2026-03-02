@@ -3,8 +3,6 @@ title: Provider Guide
 description: Integration entry for IVXP providers.
 ---
 
-# Provider Guide
-
 Use this section to implement and operate IVXP provider services.
 
 ## Navigation

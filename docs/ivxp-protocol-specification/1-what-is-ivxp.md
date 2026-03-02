@@ -3,8 +3,6 @@ title: 1. What is IVXP
 description: Protocol definition and problem statement.
 ---
 
-# 1. What is IVXP
-
 **IVXP (Intelligence Value Exchange Protocol) is an independent economic settlement layer for AI Agents.**
 
 It defines a standard for how any two AI Agents — regardless of the communication framework they use — can exchange paid services with cryptographic guarantees: verifiable payment, verifiable identity, and verifiable delivery.

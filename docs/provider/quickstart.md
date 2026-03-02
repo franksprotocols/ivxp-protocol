@@ -3,8 +3,6 @@ title: Provider Quick Start
 description: Fast path to run an IVXP provider and validate the first order flow.
 ---
 
-# Provider Quick Start
-
 This page gives you the shortest safe path to bring up a Provider and complete one full order lifecycle.
 
 ## Prerequisites
