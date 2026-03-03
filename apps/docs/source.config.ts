@@ -9,34 +9,58 @@ const docPostprocess = {
   },
 } as const;
 
+const DOC_FILE_PATTERNS = [
+  "**/*.{md,mdx}",
+  "!**/CLAUDE.md",
+  "!**/AGENTS.md",
+] as const;
+
 export const protocolDocs = defineDocs({
   dir: "../../docs/protocol",
-  docs: docPostprocess,
+  docs: {
+    ...docPostprocess,
+    files: [...DOC_FILE_PATTERNS],
+  },
 });
 
 export const specificationDocs = defineDocs({
   dir: "../../docs/ivxp-protocol-specification",
-  docs: docPostprocess,
+  docs: {
+    ...docPostprocess,
+    files: [...DOC_FILE_PATTERNS],
+  },
 });
 
 export const providerDocs = defineDocs({
   dir: "../../docs/provider",
-  docs: docPostprocess,
+  docs: {
+    ...docPostprocess,
+    files: [...DOC_FILE_PATTERNS],
+  },
 });
 
 export const userDocs = defineDocs({
   dir: "../../docs/user",
-  docs: docPostprocess,
+  docs: {
+    ...docPostprocess,
+    files: [...DOC_FILE_PATTERNS],
+  },
 });
 
 export const sdkDocs = defineDocs({
   dir: "../../docs/sdk",
-  docs: docPostprocess,
+  docs: {
+    ...docPostprocess,
+    files: [...DOC_FILE_PATTERNS],
+  },
 });
 
 export const openApiDocs = defineDocs({
   dir: "./content/protocol/api",
-  docs: docPostprocess,
+  docs: {
+    ...docPostprocess,
+    files: [...DOC_FILE_PATTERNS],
+  },
 });
 
 export default defineConfig();

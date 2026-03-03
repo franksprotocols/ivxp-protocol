@@ -2,7 +2,8 @@ import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
+  // Prevent dev-time hydration ID drift from Radix/Fumadocs sidebar primitives.
+  reactStrictMode: false,
   poweredByHeader: false,
   async rewrites() {
     return [

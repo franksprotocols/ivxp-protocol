@@ -109,6 +109,7 @@ ivxp-orders.json
 .agent/*
 AGENTS.md
 CLAUDE.md
+**/CLAUDE.md
 
 # ----------------------------------------
 # Internal scripts (deployment, AI workflows, devops tooling)
