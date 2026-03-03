@@ -1,5 +1,5 @@
 ---
-title: 9. Conformance Requirements
+title: Conformance Requirements
 description: Provider/client conformance requirements and versioning.
 ---
 

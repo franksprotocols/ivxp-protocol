@@ -1,5 +1,5 @@
 ---
-title: 1. What is IVXP
+title: What is IVXP
 description: Protocol definition and problem statement.
 ---
 

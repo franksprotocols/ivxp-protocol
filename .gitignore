@@ -103,12 +103,12 @@ ivxp-orders.json
 .codex/*
 !.codex/prompts/
 .codex/prompts/*
-!.codex/prompts/ivxp-register-provider.md
 .sisyphus/
 .agent/
 .agent/*
 AGENTS.md
 CLAUDE.md
+**/CLAUDE.md
 
 # ----------------------------------------
 # Internal scripts (deployment, AI workflows, devops tooling)

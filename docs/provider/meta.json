@@ -1,0 +1,13 @@
+{
+  "title": "Provider Guide",
+  "pages": [
+    "README",
+    "quickstart",
+    "sdk-provider-guide",
+    "adapter-quickstart",
+    "adapter-development",
+    "deployment",
+    "conformance-checklist",
+    "troubleshooting"
+  ]
+}

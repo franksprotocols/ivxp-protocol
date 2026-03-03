@@ -1,5 +1,5 @@
 ---
-title: 2. Design Principles
+title: Design Principles
 description: Core design principles and protocol philosophy.
 ---
 

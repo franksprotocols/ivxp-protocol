@@ -1,5 +1,5 @@
 ---
-title: 6. Wire Protocol
+title: Wire Protocol
 description: Transport, endpoints, and error format.
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: 8. Reference Implementations
+title: Reference Implementations
 description: SDK and interoperability references.
 ---
 

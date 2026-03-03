@@ -1,5 +1,5 @@
 ---
-title: 7. Security Model
+title: Security Model
 description: Signature verification and integrity guarantees.
 ---
 

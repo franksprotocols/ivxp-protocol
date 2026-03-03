@@ -1,0 +1,11 @@
+{
+  "title": "Guides",
+  "pages": [
+    "client-guide",
+    "provider-guide",
+    "payment-guide",
+    "signature-guide",
+    "events",
+    "error-handling"
+  ]
+}
