@@ -9,11 +9,7 @@ const docPostprocess = {
   },
 } as const;
 
-const DOC_FILE_PATTERNS = [
-  "**/*.{md,mdx}",
-  "!**/CLAUDE.md",
-  "!**/AGENTS.md",
-] as const;
+const DOC_FILE_PATTERNS = ["**/*.{md,mdx}", "!**/CLAUDE.md", "!**/AGENTS.md"] as const;
 
 export const protocolDocs = defineDocs({
   dir: "../../docs/protocol",
