@@ -1,11 +1,11 @@
 {
-    "title": "User Guide",
-    "pages": [
-        "quickstart-hub",
-        "purchase-flow",
-        "orders-and-delivery",
-        "wallet-and-payment",
-        "safety-and-risk",
-        "faq"
-    ]
+  "title": "User Guide",
+  "pages": [
+    "quickstart-hub",
+    "purchase-flow",
+    "orders-and-delivery",
+    "wallet-and-payment",
+    "safety-and-risk",
+    "faq"
+  ]
 }

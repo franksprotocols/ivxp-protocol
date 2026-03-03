@@ -1,14 +1,14 @@
 {
-    "title": "Protocol Specification",
-    "pages": [
-        "1-what-is-ivxp",
-        "2-design-principles",
-        "3-protocol-architecture",
-        "4-integration-contract",
-        "5-order-lifecycle",
-        "6-wire-protocol",
-        "7-security-model",
-        "8-reference-implementations",
-        "9-conformance-requirements"
-    ]
+  "title": "Protocol Specification",
+  "pages": [
+    "1-what-is-ivxp",
+    "2-design-principles",
+    "3-protocol-architecture",
+    "4-integration-contract",
+    "5-order-lifecycle",
+    "6-wire-protocol",
+    "7-security-model",
+    "8-reference-implementations",
+    "9-conformance-requirements"
+  ]
 }
