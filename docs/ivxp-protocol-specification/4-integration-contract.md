@@ -1,5 +1,5 @@
 ---
-title: 4. Integration Contract
+title: Integration Contract
 description: Adapter direction and minimum interfaces.
 ---
 

@@ -1,0 +1,9 @@
+{
+    "title": "Getting Started",
+    "pages": [
+        "environment-setup",
+        "installation",
+        "quick-start-client",
+        "quick-start-provider"
+    ]
+}

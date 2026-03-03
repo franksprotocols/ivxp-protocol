@@ -1,5 +1,5 @@
 ---
-title: 5. Order Lifecycle
+title: Order Lifecycle
 description: State machine and transition rules.
 ---
 

@@ -1,0 +1,9 @@
+{
+    "title": "Examples",
+    "pages": [
+        "basic-client",
+        "basic-provider",
+        "event-handling",
+        "error-recovery"
+    ]
+}

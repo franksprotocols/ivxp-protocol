@@ -1,5 +1,5 @@
 ---
-title: 3. Protocol Architecture
+title: Protocol Architecture
 description: Roles, objects, and transaction model.
 ---
 
