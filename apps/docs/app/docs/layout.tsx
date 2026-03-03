@@ -136,7 +136,7 @@ const HUB_URL =
   process.env.NEXT_PUBLIC_HUB_URL?.trim() ||
   (process.env.NODE_ENV === "development"
     ? "http://localhost:3000"
-    : "https://ivxp-hub.vercel.app");
+    : "https://ivxp-protocol.vercel.app");
 
 export default function DocsLayoutWrapper({ children }: { children: ReactNode }) {
   return (
